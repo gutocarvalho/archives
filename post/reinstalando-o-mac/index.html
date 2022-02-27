@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Reinstalando o Macbook Pro</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Reinstalando o Macbook Pro</h1>
+        <div>
+                <time>June 10, 2020</time>
+            </div>
+    </header><p>Eu precisei reinstalar o Macbook Pro esses dias, aproveite para anotar tudo e fazer um passo a passo. Tentei usar o Homebrew para 90% das coisas, acho que deu bom.</p>
+<p>Mais um dump mental, assim eu limpo o HD, alivio o LOAD, e libero a mente para rodar o processo <strong>criatividade</strong> com mais recursos :)</p>
+<ul>
+<li>MACOS Catalina 10.15.5</li>
+</ul>
+<h2 id="xcode">xcode</h2>
+<p>precisamos instalar esta dependência antes de instalar o brew</p>
+<pre><code>xcode-select --install 
+</code></pre>
+<h2 id="package-managers">package managers</h2>
+<p>Instalando o Homebrew</p>
+<pre tabindex="0"><code>/bin/bash -c &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)&quot;
+</code></pre><p>Habilitando o repo Cask</p>
+<pre tabindex="0"><code>brew tap caskroom/cask
+</code></pre><p>Instalando o MAS (mac app software)</p>
+<pre tabindex="0"><code>    brew install mas
+</code></pre><h2 id="mas-apps">mas apps</h2>
+<p>Xcode 11.5</p>
+<pre><code>mas install 497799835
+</code></pre>
+<p>CheatSheet 1.03</p>
+<pre><code>mas install 529456740
+</code></pre>
+<p>The Unarchiver 4.2.2</p>
+<pre><code>mas install 425424353 
+</code></pre>
+<p>Twitter 8.21</p>
+<pre><code>mas install 1482454543
+</code></pre>
+<p>Keynote 10.0</p>
+<pre><code>mas install 409183694 
+</code></pre>
+<p>Mactracker 7.9.2</p>
+<pre><code>mas install 430255202
+</code></pre>
+<p>Istat Mini 1.1</p>
+<pre><code>mas install 927292435 
+</code></pre>
+<p>MagicanRest 1.0.1</p>
+<pre><code>mas install 634255909
+</code></pre>
+<p>Pomodorable 1.0.2</p>
+<pre><code>mas install 503406673
+</code></pre>
+<p>Tweetbot 3.3.3</p>
+<pre><code>mas install 1384080005
+</code></pre>
+<p>Display Menu 2.2.3</p>
+<pre><code>mas install 549083868
+</code></pre>
+<p>Money 5.6.10</p>
+<pre><code>mas install 1185488696
+</code></pre>
+<p>SSH Tunnel Manager 2.1.4</p>
+<pre><code>mas install 424470626 
+</code></pre>
+<p>Disk Speed Test 3.2</p>
+<pre><code>mas install 425264550
+</code></pre>
+<p>Moom 3.2.17</p>
+<pre><code>mas install 419330170
+</code></pre>
+<p>SubnetCalc 1.5</p>
+<pre><code>mas install 412946682
+</code></pre>
+<p>Amphetamine 5.0.2</p>
+<pre><code>mas install 937984704
+</code></pre>
+<p>Speedtest 1.11</p>
+<pre><code>mas install 1153157709
+</code></pre>
+<p>Shazam 2.10.0</p>
+<pre><code>mas install 897118787
+</code></pre>
+<h2 id="brew">brew</h2>
+<h3 id="most-recent-versions-of-macos-tools">most recent versions of macos tools</h3>
+<pre tabindex="0"><code>brew install coreutils
+brew install vim
+brew install grep
+brew install openssh
+brew install screen
+brew install curl
+brew install wget
+brew install bash bash-completion2
+brew install zsh
+brew install screen
+brew install git git-lfs
+</code></pre><h4 id="terminal">terminal</h4>
+<pre><code>brew cask install iterm2
+</code></pre>
+<h4 id="1password-gerenciador-de-senhas">1password (gerenciador de senhas)</h4>
+<pre><code>brew cask install 1password
+</code></pre>
+<h4 id="little-snitch-firewall">little snitch (firewall)</h4>
+<pre><code>brew cask install litte-snitch
+</code></pre>
+<h4 id="next-cloud-storage-remoto">next cloud (storage remoto)</h4>
+<pre><code>brew cask install nextcloud
+</code></pre>
+<h4 id="browsers">browsers</h4>
+<pre><code>brew cask install firefox google-chrome vivaldi brave-browser
+</code></pre>
+<h4 id="torrent">torrent</h4>
+<pre><code>brew cask install tranmission
+</code></pre>
+<h4 id="remote-management">remote management</h4>
+<pre><code>brew install anydesk teamviewer
+</code></pre>
+<h4 id="vpn">vpn</h4>
+<pre><code>brew cask install forticlient viscosity
+</code></pre>
+<h4 id="gpg">gpg</h4>
+<pre><code> brew install gpg-suite
+</code></pre>
+<h4 id="k8s-kubernetes-tools">k8s (kubernetes tools)</h4>
+<pre><code>brew install rke kubectl kustomize helm
+
+brew cask install lens
+
+brew install derailed/k9s/k9s
+</code></pre>
+<h4 id="chat">chat</h4>
+<pre><code>brew install mattermost slack rocket-chat microsoft-teams discord
+</code></pre>
+<h4 id="im">im</h4>
+<pre><code>brew cask install keynote weechat whatsapp telegram telegram-desktop
+</code></pre>
+<h4 id="videconf">videconf</h4>
+<pre><code>brew install zoom jitsi joinme skype 
+</code></pre>
+<h4 id="docker">docker</h4>
+<pre><code>brew cask install docker
+
+brew install docker-compose
+</code></pre>
+<h4 id="editors">editors</h4>
+<pre><code>brew cask install libreoffice
+
+brew cask install visual-studio-code macdown
+</code></pre>
+<h4 id="documentations">documentations</h4>
+<pre><code>brew install dash
+</code></pre>
+<h4 id="virtualization">virtualization</h4>
+<pre><code>brew cask install virtualbox vagrant
+</code></pre>
+<h4 id="automation">automation</h4>
+<pre><code>brew install terraform packer ansible
+</code></pre>
+<h4 id="video-players">video players</h4>
+<pre><code>brew cask install vlc mpv
+</code></pre>
+<h4 id="terminal-utils">terminal utils</h4>
+<pre><code>brew install moreutils findutils
+
+brew install ripgrep the_silver_searcher ack fzf
+
+brew install tree
+
+brew install asciinema
+
+brew install tmux
+
+brew install links 
+
+brew install mtr
+
+brew install nmap
+
+brew install wget
+
+brew install watch
+
+brew install telnet
+
+brew install netcat
+
+brew install iperf
+
+brew instll ipcalc
+
+brew install geoip
+
+brew install htop
+
+brew install jq
+
+brew install ffmpeg imagemagick
+
+brew install unrar xz p7zip
+
+brew install gnupg
+
+brew install tcpdump tcptrace tcpflow tcping tcpreplay
+</code></pre>
+<h2 id="fonts">fonts</h2>
+<h3 id="fonts-from-brew">fonts from brew</h3>
+<pre><code>brew cask install font-ubuntu font-ubuntu-mono-derivative-powerline font-ubuntu-nerd-font font-ubuntumono-nerd-font font-fontawesome font-montserrat font-source-sans-pro font-roboto font-roboto-condensed font-roboto-mono font-roboto-slab font-roboto-mono-for-powerline font-robotomono-nerd-font font-open-sans font-open-sans-condensed font-open-sans font-open-sans-condensed
+</code></pre>
+<h3 id="fonts-from-web">fonts from web</h3>
+<p>the bold font</p>
+<pre><code>wget https://dl.dafont.com/dl/?f=the_bold_font
+unzip the_bold_font.zip
+mv theboldfont.ttf  $HOME/Library/Fonts
+</code></pre>
+<p>calibri font</p>
+<pre><code>wget https://www.downloadfonts.io/wp-content/uploads/2018/12/calibri-font-sv.zip
+unzip calibri-font-sv.zip
+cd calibri\ font\ sv/
+unzip Calibri\ Bold\ Italic.zip
+unzip Calibri\ Bold.zip
+unzip Calibri\ Italic.zip
+unzip Calibri\ Light.zip
+unzip Calibri\ Light\ Italic.zip
+unzip Calibri\ Regular.zip
+mv *.ttf $HOME/Library/Fonts
+</code></pre>
+<h3 id="powerline-fonts">powerline fonts</h3>
+<pre><code>git clone https://github.com/powerline/fonts
+cd fonts
+bash install.sh
+</code></pre>
+<h2 id="vim">vim</h2>
+<h3 id="vundle-vim">vundle vim</h3>
+<pre><code>git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+</code></pre>
+<h3 id="vimrc-minimal">vimrc minimal</h3>
+<p>Edite o arquivo</p>
+<pre><code>vim ~/.vimrc
+</code></pre>
+<p>Insira o conteúdo abaixo</p>
+<pre tabindex="0"><code>syntax on
+filetype off                  &quot; required
+filetype plugin on
+filetype indent on
+
+set nocompatible              &quot; be iMproved, required
+set autoread
+set encoding=utf8
+set ffs=unix,dos,mac
+set expandtab
+set smarttab
+set backspace=2
+set laststatus=2
+
+&quot; Vundle
+
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+Plugin 'VundleVim/Vundle.vim'
+
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'edkolev/promptline.vim'
+Plugin 'dracula/vim'
+
+Plugin 'bash-support.vim'
+Plugin 'elzr/vim-json'
+Plugin 'chase/vim-ansible-yaml'
+Plugin 'rodjek/vim-puppet'
+
+Plugin 'tpope/vim-surround'
+Plugin 'tpope/vim-fugitive'
+
+call vundle#end()            &quot; required
+
+colorscheme dracula
+
+&quot; Brief help
+&quot; :PluginList       - lists configured plugins
+&quot; :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
+&quot; :PluginSearch foo - searches for foo; append `!` to refresh local cache
+&quot; :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
+&quot;
+&quot; see :h vundle for more details or wiki for FAQ
+&quot; Put your non-Plugin stuff after this line
+</code></pre><p>abra o vim e digite</p>
+<pre><code>:PluginInstall
+</code></pre>
+<h2 id="promptline-shell-for-bash">promptline shell for bash</h2>
+<p>Depois de instalar o airline abra o vim e digite</p>
+<pre><code>:PromptlineSnapshot ~/.promptline.sh airline
+</code></pre>
+<p>E insira isso na inicialização do bash</p>
+<pre><code>echo source ~/.promptline.sh &gt; ~/.bash_profile
+</code></pre>
+<p>para testar digite</p>
+<pre><code>bash
+</code></pre>
+<h2 id="gitignore">gitignore</h2>
+<p>Crie o arquivo .gitignore (global)</p>
+<pre tabindex="0"><code>vim ~/.gitignore
+</code></pre><p>Adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code># General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+</code></pre><h2 id="gitconfig">gitconfig</h2>
+<p>Crie o arquivo .gitconfi</p>
+<pre tabindex="0"><code>vim ~/.gitconfig
+</code></pre><p>Adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code>[user]
+  name = Guto Carvalho
+  email = gutocarvalho@gmail.com
+[alias]
+  co = checkout
+  ci = commit
+  st = status
+  br = branch
+  d = diff
+  ds = diff --stat
+  dc = diff --cached
+  s = status -s
+  ls = log --pretty=format:&quot;%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]&quot; --decorate
+  ll = log --pretty=format:&quot;%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]&quot; --decorate --numstat
+  rao = remote add origin
+  ac = !git add . &amp;&amp; git commit -am
+  pushitgood = push -u origin --all
+  undo-commit = reset --soft HEAD~1
+[core]
+  editor = vim
+  whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
+  excludesfile = ~/.gitignore
+[color]
+  ui = auto
+[color &quot;branch&quot;]
+  current = yellow bold
+  local = green bold
+  remote = cyan bold
+[color &quot;diff&quot;]
+  meta = yellow bold
+  frag = magenta bold
+  old = red bold
+  new = green bold
+  whitespace = red reverse
+[color &quot;status&quot;]
+  added = green bold
+  changed = yellow bold
+  untracked = red bold
+[diff]
+  tool = vimdiff
+[filter &quot;lfs&quot;]
+  clean = git-lfs clean %f
+  smudge = git-lfs smudge %f
+  required = true
+#[http]
+#  sslVerify = false
+</code></pre><h2 id="editorconfig">editorconfig</h2>
+<p>Crie o arquivo .editorconfig</p>
+<pre tabindex="0"><code>vim ~/.editorconfig
+</code></pre><p>Adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code># editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+tab_width = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+</code></pre><h2 id="screenrc">screenrc</h2>
+<pre tabindex="0"><code>vim ~/.screenrc
+</code></pre><p>Adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code># GNU Screen - main configuration file
+# All other .screenrc files will source this file to inherit settings.
+# Author: Christian Wills - cwills.sys@gmail.com
+
+startup_message off
+
+# Allow bold colors - necessary for some reason
+attrcolor b &quot;.I&quot;
+
+# Tell screen how to set colors. AB = background, AF=foreground
+termcapinfo xterm 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
+
+# Enables use of shift-PgUp and shift-PgDn
+termcapinfo xterm|xterms|xs|rxvt ti@:te@
+
+# Erase background with current bg color
+defbce &quot;on&quot;
+
+# Enable 256 color term
+term xterm-256color
+
+# Cache 30000 lines for scroll back
+defscrollback 30000
+
+hardstatus alwayslastline
+# Very nice tabbed colored hardstatus line
+hardstatus string '%{= Kd} %{= Kd}%-w%{= Kr}[%{= KW}%n %t%{= Kr}]%{= Kd}%+w %-= %{KG} %H%{KW}|%{KY}%101`%{KW}|%D %M %d %Y%{= Kc} %C%A%{-}'
+
+# Hide hardstatus: ctrl-a f
+bind f eval &quot;hardstatus ignore&quot;
+
+# Show hardstatus: ctrl-a F
+bind F eval &quot;hardstatus alwayslastline&quot;
+</code></pre><h2 id="curlrc">curlrc</h2>
+<p>Crie o arquivo .curlrc</p>
+<pre tabindex="0"><code>vim ~/.curlrc
+</code></pre><p>Insira o conteúdo abaixo</p>
+<pre tabindex="0"><code>connect-timeout = 60
+insecure
+</code></pre><h2 id="wgetrc">wgetrc</h2>
+<p>Crie o arquivo .wgetrc</p>
+<pre tabindex="0"><code>vim ~/.wgetrc
+</code></pre><p>Insira o conteúdo abaixo</p>
+<pre tabindex="0"><code>timeout = 60
+check-certificate = off
+</code></pre><h2 id="oh-my-zsh">oh my zsh</h2>
+<p>instalando projeto</p>
+<pre tabindex="0"><code>sh -c &quot;$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)&quot;
+</code></pre><p>instalando plugins via brew</p>
+<pre><code>brew install zsh-syntax-highlighting zsh-autosuggestions
+</code></pre>
+<h3 id="zshrc-minimal">zshrc minimal</h3>
+<p>edite o arquivo</p>
+<pre><code>vim ~/.zshrc
+</code></pre>
+<p>Insira o conteúdo abaixo</p>
+<pre tabindex="0"><code>export ZSH=&quot;/Users/gutocarvalho/.oh-my-zsh&quot;
+ZSH_THEME=&quot;agnoster&quot;
+CASE_SENSITIVE=&quot;true&quot;
+ENABLE_CORRECTION=&quot;true&quot;
+HIST_STAMPS=&quot;mm/dd/yyyy&quot;
+plugins=(
+  osx
+  git
+  brew
+  docker
+  docker-compose
+  history
+  vagrant
+  zsh-syntax-highlighting
+  zsh-autosuggestions
+)
+source $ZSH/oh-my-zsh.sh
+export MANPATH=&quot;/usr/local/man:$MANPATH&quot;
+export LANG=en_US.UTF-8
+if [[ -n $SSH_CONNECTION ]]; then
+   export EDITOR='vim'
+ else export EDITOR='atom'
+fi
+export PATH=&quot;$PATH:$HOME/.rvm/bin&quot;
+export VAGRANT_HOME=&quot;~/Storage/vagrant.d&quot;
+export VAGRANT_FORCE_COLOR=true
+export PATH=&quot;/usr/local/sbin:$PATH&quot;
+</code></pre><h2 id="dracula-theme">dracula theme</h2>
+<p>Acesse o site do projeto <a href="https://draculatheme.com/">https://draculatheme.com/</a></p>
+<h3 id="dracula-iterm">dracula iterm</h3>
+<pre><code>git clone https://github.com/dracula/iterm.git
+</code></pre>
+<h3 id="dracula-macdown">dracula macdown</h3>
+<pre><code>git clone https://github.com/dracula/macdown.git
+</code></pre>
+<h3 id="dracula-vscode">dracula vscode</h3>
+<pre><code>instale via vscode extensions
+</code></pre>
+<h2 id="mac-tweaks">mac tweaks</h2>
+<h3 id="screen-ux-ui">screen, ux, ui</h3>
+<h4 id="diretório-de-screenshots">diretório de screenshots</h4>
+<pre><code>defaults write com.apple.screencapture location /Users/gutocarvalho/screenshots
+</code></pre>
+<h4 id="seta-png-para-screenshost">seta png para screenshost</h4>
+<pre><code>defaults write com.apple.screencapture type -string &quot;png&quot;
+</code></pre>
+<h4 id="desabilita-sombra-nos-screenshots">desabilita sombra nos screenshots</h4>
+<pre><code>defaults write com.apple.screencapture disable-shadow -bool true
+</code></pre>
+<h4 id="solicita-senha-no-protetor-de-tela-imediatamente">solicita senha no protetor de tela imediatamente</h4>
+<pre><code>defaults write com.apple.screensaver askForPassword -int 1
+defaults write com.apple.screensaver askForPasswordDelay -int 0
+</code></pre>
+<h4 id="desabilita-transparencias-no-macos">desabilita transparencias no macos</h4>
+<pre><code>defaults write com.apple.universalaccess reduceTransparency -bool true
+</code></pre>
+<h4 id="habilita-gesto-com-scroll-ˆ-para-dar-zoom">habilita gesto com scroll (ˆ) para dar zoom</h4>
+<pre><code>defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
+defaults write com.apple.universalaccess HIDScrollZoomModifierMask -int 262144
+defaults write com.apple.universalaccess closeViewZoomFollowsFocus -bool true
+</code></pre>
+<h4 id="desabilita-o-press-n-hold-em-favor-da-repetição-do-teclado">desabilita o &ldquo;press-n-hold&rdquo; em favor da repetição do teclado</h4>
+<pre><code>defaults write -g ApplePressAndHoldEnabled -bool false
+</code></pre>
+<h4 id="sempre-mosta-os-scrollbars">sempre mosta os scrollbars</h4>
+<pre><code>defaults write -g AppleShowScrollBars -string Always
+</code></pre>
+<h3 id="desliga-o-diálogo-r-u-sure-u-want-to-open-this-app">desliga o diálogo &ldquo;R U sure U want to open this app?”</h3>
+<pre><code>defaults write com.apple.LaunchServices LSQuarantine -bool false
+</code></pre>
+<h3 id="permite-apps-from-anyware">permite apps &ldquo;from anyware&rdquo;</h3>
+<pre><code>defaults write /Library/Preferences/com.apple.security GKAutoRearm -bool NO
+</code></pre>
+<h3 id="finder--desktop">finder &amp; desktop</h3>
+<h4 id="mostra-icones-adicionais-no-desktop">mostra icones adicionais no desktop</h4>
+<pre><code>defaults write com.apple.finder ShowExternalHardDrivesOnDesktop -bool true
+defaults write com.apple.finder ShowHardDrivesOnDesktop -bool true
+defaults write com.apple.finder ShowMountedServersOnDesktop -bool true
+defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool true
+</code></pre>
+<h4 id="mostrando-arquivos-ocultos-por-default-no-finder">mostrando arquivos ocultos por default no finder</h4>
+<pre><code>defaults write com.apple.finder AppleShowAllFiles -bool true
+</code></pre>
+<h4 id="mostrando-extensões-de-arquivos-no-finder">mostrando extensões de arquivos no finder</h4>
+<pre><code>defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+</code></pre>
+<h4 id="mostrando-status-bar-no-finder">mostrando status bar no finder</h4>
+<pre><code>defaults write com.apple.finder ShowStatusBar -bool true
+</code></pre>
+<h4 id="mostrando-path-bar-no-finder">mostrando path bar no finder</h4>
+<pre><code>defaults write com.apple.finder ShowPathbar -bool true
+</code></pre>
+<h4 id="mostra-path-posix-no-título-da-janela">mostra path POSIX no título da janela</h4>
+<pre><code>defaults write com.apple.finder _FXShowPosixPathInTitle -bool true
+</code></pre>
+<h4 id="mantém-pastas-no-topo-da-listagem-do-finder">mantém pastas no topo da listagem do finder</h4>
+<pre><code>defaults write com.apple.finder _FXSortFoldersFirst -bool true
+</code></pre>
+<h4 id="quando-fizer-buscas-foca-na-pasta-atual">quando fizer buscas, foca na pasta atual</h4>
+<pre><code>defaults write com.apple.finder FXDefaultSearchScope -string &quot;SCcf&quot;
+</code></pre>
+<h4 id="desabilita-o-warning-quando-for-limpar-o-lixo">desabilita o warning quando for limpar o lixo</h4>
+<pre><code>defaults write com.apple.finder WarnOnEmptyTrash -bool false
+</code></pre>
+<h4 id="desabilita-o-warning-quando-vai-mudar-a-extensão-de-arquivos">desabilita o warning quando vai mudar a extensão de arquivos</h4>
+<pre><code>defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
+</code></pre>
+<h4 id="desabilita-warning-quando-apaga-algo-do-icloud-drive">desabilita warning quando apaga algo do Icloud Drive</h4>
+<pre><code>defaults write com.apple.finder FXEnableRemoveFromICloudDriveWarning -bool false
+</code></pre>
+<h4 id="evita-criar-arquivos-ds_store-em-volumes-e-shares-em-rede">evita criar arquivos .DS_Store em volumes e shares em rede</h4>
+<pre><code>defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
+defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true
+</code></pre>
+<h4 id="abre-uma-janela-finder-quando-um-volume-é-montado">abre uma janela finder quando um volume é montado</h4>
+<pre><code>defaults write com.apple.frameworks.diskimages auto-open-ro-root -bool true
+defaults write com.apple.frameworks.diskimages auto-open-rw-root -bool true
+defaults write com.apple.finder OpenWindowForNewRemovableDisk -bool true
+</code></pre>
+<h4 id="usa-o-list-view-como-padrão-no-finder">usa o &lsquo;list view&rsquo; como padrão no finder</h4>
+<pre><code>defaults write com.apple.finder FXPreferredViewStyle -string &quot;Nlsv&quot;
+</code></pre>
+<h4 id="mostra-o-diretorio-library-no-finder">mostra o diretorio /Library no finder</h4>
+<pre><code>sudo chflags nohidden /Library
+</code></pre>
+<h4 id="mostra-o-diretório-volumes-no-finder">mostra o diretório /Volumes no finder</h4>
+<pre><code>sudo chflags nohidden /Volumes
+</code></pre>
+<h4 id="mostra-o-diretorio-library-no-finder-1">mostra o diretorio ~/Library no finder</h4>
+<pre><code>chflags nohidden ~/Library
+</code></pre>
+<h3 id="dock">Dock</h3>
+<h4 id="ativa-o-hide-do-dock">ativa o hide do dock</h4>
+<pre><code>defaults write com.apple.dock autohide -bool true
+</code></pre>
+<h3 id="misc">Misc</h3>
+<h4 id="muda-o-tempo-padrão-de-eventos-para-30-minutos-no-ical">muda o tempo padrão de eventos para 30 minutos no ical</h4>
+<pre><code>defaults write com.apple.iCal &quot;Default duration in minutes for new event&quot; 30
+</code></pre>
+<h4 id="mostra-ip-host-e-os-version-ao-clicar-em-clock-na-tela-de-login">mostra ip, host e os-version ao clicar em clock na tela de login</h4>
+<pre><code>sudo defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo HostName
+</code></pre>
+<h4 id="seta-apenas-utf8-no-terminal-padrão-do-mac">seta apenas UTF8 no terminal padrão do mac</h4>
+<pre><code>defaults write com.apple.terminal StringEncodings -array 4
+</code></pre>
+<h4 id="seta-timezone">seta timezone</h4>
+<pre><code>sudo systemsetup -settimezone &quot;America/Sao_Paulo&quot; &gt; /dev/null
+</code></pre>
+<h2 id="refs">refs</h2>
+<p>projetos</p>
+<ul>
+<li><a href="https://formulae.brew.sh/">https://formulae.brew.sh/</a></li>
+<li><a href="https://github.com/Homebrew/homebrew-cask">https://github.com/Homebrew/homebrew-cask</a></li>
+<li><a href="https://formulae.brew.sh/cask/">https://formulae.brew.sh/cask/</a></li>
+<li><a href="https://formulae.brew.sh/formula/mas">https://formulae.brew.sh/formula/mas</a></li>
+<li><a href="https://github.com/mas-cli/mas">https://github.com/mas-cli/mas</a></li>
+<li><a href="https://pawelgrzybek.com/change-macos-user-preferences-via-command-line/">https://pawelgrzybek.com/change-macos-user-preferences-via-command-line/</a></li>
+<li><a href="https://github.com/mathiasbynens/dotfiles/blob/master/.macos">https://github.com/mathiasbynens/dotfiles/blob/master/.macos</a></li>
+<li><a href="https://br-mac.org/index-117.html">https://br-mac.org/index-117.html</a></li>
+<li><a href="https://br-mac.org/2011/02/agenda-no-mac-mude-a-duracao-default-dos-compromissos-no-ical.html">https://br-mac.org/2011/02/agenda-no-mac-mude-a-duracao-default-dos-compromissos-no-ical.html</a></li>
+<li><a href="https://gomex.me/2020/01/02/o-que-instalar-em-um-mac-de-algu%C3%A9m-de-infra/">https://gomex.me/2020/01/02/o-que-instalar-em-um-mac-de-algu%C3%A9m-de-infra/</a></li>
+</ul>
+<hr>
+<p>E ainda vem mais&hellip;..[s]Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

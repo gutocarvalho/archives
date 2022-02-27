@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>osx configurando hostname</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>osx configurando hostname</h1>
+        <div>
+                <time>June 8, 2014</time>
+            </div>
+    </header><p>Muita gente acha que a única forma de trocar o hostname no OSX é através do System Preferences/Sharing/Computer Name, por experiência isso nem sempre funciona para o hostname, afinal isto é o &ldquo;Computer Name&rdquo;, o que não é a mesma coisa que &ldquo;Hostname&rdquo; para o OSX, pesquisando descobri que há uma forma mais fácil e eficaz de trocar o hostname através do console, acompanhe.</p>
+<h2 id="1-configurando">1. Configurando</h2>
+<pre><code>sudo scutil --set HostName hostname.local
+</code></pre>
+<p>Você deve trocar hostname pelo nome do seu computador e local pode ser trocado pelo nome do seu domínio caso esteja em um ambiente corporativo. Depois de basta digitar hostname para conferir se funcionou.</p>
+<pre><code>hostname 
+</code></pre>
+<p>Feche seu programa de terminal, abra novamente e confira o resultado, vai funcionar :)</p>
+<p>Fica a dica!</p>
+<h2 id="2-referências">2. Referências</h2>
+<ul>
+<li><a href="http://blog.psyrendust.com/2008/05/23/change-the-hostname-in-mac-os-x-osx/">http://blog.psyrendust.com/2008/05/23/change-the-hostname-in-mac-os-x-osx/</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

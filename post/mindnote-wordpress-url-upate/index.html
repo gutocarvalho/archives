@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>#MindNote wordpress url update</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>#MindNote wordpress url update</h1>
+        <div>
+                <time>May 11, 2020</time>
+            </div>
+    </header><p>Se você precisa alterar a URL do seu blog wordpress, ou você usa um plugin maroto para fazer o serviço sujo, ou você mesmo vai lá no banco e arruma :)</p>
+<p>Aqui um exemplo em que mudo <strong>gutocarvalho.net</strong> para <strong>archive.gutocarvalho.net</strong>.</p>
+<pre tabindex="0"><code>UPDATE wp_options SET option_value = replace(option_value, ‘http://gutocarvalho.net', 'http://archive.gutocarvalho.net’) WHERE option_name = ‘home’ OR option_name = ‘siteurl’;
+
+UPDATE wp_posts SET guid = replace(guid, ‘http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+UPDATE wp_posts SET post_content = replace(post_content, ‘http://gutocarvalho.net', 'http://archive.gutocarvalho.net’);
+
+UPDATE wp_postmeta SET meta_value = replace(meta_value,’http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+UPDATE wp_usermeta SET meta_value = replace(meta_value, ‘http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+UPDATE wp_comments SET comment_content = replace(comment_content , ‘http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+UPDATE wp_links SET link_url = replace(link_url, ‘http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+UPDATE wp_links SET link_image = replace(link_image, ‘http://gutocarvalho.net','http://archive.gutocarvalho.net’);
+
+</code></pre><p>Tá vendo? Nem é tão difícil :)</p>
+<p>[s]
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

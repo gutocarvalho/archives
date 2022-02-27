@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Entendendo o HSTS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Entendendo o HSTS</h1>
+        <div>
+                <time>November 29, 2012</time>
+            </div>
+    </header><h2 id="1-hsts">1. HSTS</h2>
+<p>No dia 19 de Novembro de 2012 a IETF publicou um novo padrão chamado HSTS via <a href="http://tools.ietf.org/html/rfc6797">RFC6797</a>.</p>
+<p>HSTS significa <strong>HTTP Strick Transport Security</strong>, essa tecnologia não é nova, ela já vem sendo desenvolvida desde 2010. O HSTS foi criado para permitir que sites possam se declarar acessíveis apenas de forma segura utilizando o protocolo HTTPS, isto ajuda a minimizar problemas que ocorrem nos sites mistos que oferecem tanto acesso HTTP quanto HTTPS. Neste tipo de site, normalmente ocorre um redirect para HTTPS no primeiro acesso do usuário.</p>
+<p>Sites mistos sofrem devido a falhas de implementação do HTTPS ou dos desenvolvedores, este tipo de coisa ocorre primeiro pois o HTTPS é protocolo antigo, já tem mais de 18 anos, e claro que não previu em sua criação a maioria dos cenários de internet que temos hoje. O outro problema são os desenvolvedores que nem sempre seguem as boas práticas de desenvolvimento e segurança.</p>
+<p>Devido ao uso misto de HTTP e HTTPS em alguns sites, atacantes podem explorar brechas de implementação e tentar então comprometer estes sites.</p>
+<h2 id="11-entendendo-o-problema">1.1 Entendendo o problema</h2>
+<p>Imagine que você digitou no navegador dominio.com.br, normalmente fazemos isto, não especificamos http ou https no início, com isto o navegador vai tentar primeiro acessar a parte insegura do site <a href="http://dominio.com.br">http://dominio.com.br</a>, e caso exista um redirect o servidor de aplicação vai lhe forcar a carregar a página de forma segura (HTTPS), porém você já fez um contato não seguro com o website.</p>
+<p>Atacantes podem se aproveitar desse tipo de situação e explorar falhas com métodos conhecidos como man-in-the-middle.</p>
+<h2 id="12-solução-proposta">1.2 Solução proposta</h2>
+<p>Para resolver isto, a IETF reuniu um grupo de especialistas com o objetivo de desenvolver um mecanismo que previna este tipo de problema. Dentre os membros deste seleto grupo podemos citar Jeff Hodge (PayPal), Collin Jackson (Carnegie Mellon University) e Adam Barth (Google).</p>
+<p>O objeto principal do projeto era desenvolver algum mecanismo que force que o site seja visitado apenas via HTTPS, convertendo então qualquer url <strong><a href="http://dominio.com.br/xxx">http://dominio.com.br/xxx</a></strong> para <strong>htps://dominio.com.br</strong>, fazendo isto sem nem mesmo se comunicar com o website, tudo ocorre no lado do cliente (navegador).</p>
+<p>O mecanismo foi criado e chamado de HSTS e o resultado do trabalho destas pessoas está publicado na <a href="http://tools.ietf.org/html/rfc6797">RFC6797</a>, portando podemos dizer que o conteúdo desta RFC é um consenso de toda a comunidade científica (IETF), interessados e colaboradores.</p>
+<p>Já temos grandes empresas como Google, Twitter e Paypal que disponibilizam a tecnologia HSTS em seus sites. Isso significa que se você tiver um navegador com suporte HSTS, ele vai saber se o site tem suporte ao HSTS, se tiver já vai tentar estabelecer uma conexão segura, ignorando as formas inseguras de acesso.</p>
+<h2 id="2-exemplos-de-uso-em-apache-httpd">2. Exemplos de uso em Apache HTTPD</h2>
+<h2 id="21-rhelcentos">2.1 RHEL/CENTOS</h2>
+<pre tabindex="0"><code> # carregando modulo headers
+
+LoadModule headers_module modules/mod_headers.so
+ 
+ # HTTPS-Host-Configuration
+
+&lt;VirtualHost 10.0.0.1:443&gt;
+      # Usando HTTP Strict Transport Security para forçar conexao segura
+      Header always set Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot;
+      # O restante da configuração segue abaixo
+      [...]
+&lt;/VirtualHost&gt;
+</code></pre><h2 id="22-debian">2.2 Debian</h2>
+<p>Primeiro devemos carregar o módulo do apache2</p>
+<pre><code># a2enmod headers
+</code></pre>
+<p>E depois a configuração no vhost</p>
+<pre tabindex="0"><code>&lt;VirtualHost 10.0.0.1:443&gt;
+      # Usando HTTP Strict Transport Security para forçar conexao segura
+      Header always set Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot;
+      # O restante da configuração segue abaixo
+      [...]
+&lt;/VirtualHost&gt;
+</code></pre><h2 id="3-exemplos-de-uso-em-nginx">3. Exemplos de uso em NGINX</h2>
+<p>No Nginx você deve especificar o HSTS na diretiva server que configura o acesso seguro.</p>
+<pre tabindex="0"><code>server {
+    listen 443 default_server ssl;
+    ssl_certificate /etc/nginx/ssl/example.com_chain.pem;
+    ssl_certificate_key /etc/nginx/ssl/example.com.key;
+    add_header Strict-Transport-Security max-age=31536000;
+}
+</code></pre><h2 id="4-outros-exemplos-de-uso">4. Outros exemplos de uso</h2>
+<p>Você pode ainda declarar HSTS no código de sua aplicação, na página HSTS da <a href="http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security">wikipedia</a> existem vários exemplos, recomendo.</p>
+<h2 id="5-entendendo-a-configuação">5. Entendendo a configuação</h2>
+<h2 id="51-apache">5.1 Apache</h2>
+<p>Com a linha abaixo ativamos o HSTS no VHOST do Apache</p>
+<pre><code>Header always set Strict-Transport-Security
+</code></pre>
+<p>Com o parâmetro abaixo definimos o tempo em que o navegador deve lembrar dessa configuração, no caso do exemplo são 365 dias.</p>
+<pre><code>max-age=31536000
+</code></pre>
+<p>E para definirmos que a configuração deve se estender aos subdomínios podemos utilizar a diretiva abaixo:</p>
+<pre><code>includeSubDomains
+</code></pre>
+<h2 id="52-nginx">5.2 NGINX</h2>
+<p>Para ativar o HSTS na diretiva server devemos usar:</p>
+<pre><code>add_header Strict-Transport-Security 
+</code></pre>
+<p>E para definirmos o tempo em que o navegador deve se lembrar disto, neste caso 365 dias.</p>
+<pre><code>max-age=31536000
+</code></pre>
+<h2 id="4conclusão">4.Conclusão</h2>
+<p>Essa tecnologia é aliada do usuário e aumenta consideravelmente a segurança em sua navegação, mas para funcionar seu navegador tem de ter suporte ao HSTS. O Firefox e Chrome já suportam HSTS e já avisaram que em suas próximas versões devem trazer uma lista de sistes HSTS pré-carregados.</p>
+<p>;)</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

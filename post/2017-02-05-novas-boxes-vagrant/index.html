@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Novas boxes vagrant publicadas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Novas boxes vagrant publicadas</h1>
+        <div>
+                <time>February 5, 2017</time>
+            </div>
+    </header><p>Publiquei novas boxes vagrant em meu repositório do atlas, são elas GitLab-CE, Puppetserver e PCP.</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho
+</code></pre>
+<p>Essas boxes foram criadas utilizando Packer 0.12.2, Virtualbox 5.14.1, Vagrant 1.9.0 e CentOS 7.3.1611.</p>
+<h3 id="box-gitlab-ce-v100">Box GitLab CE v1.0.0</h3>
+<p>Essa box é traz o GitLab CE instalado em um CentOS 7 para facilitar testes do GitLab.</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho/boxes/centos7x64-gitlab-ce/versions/1.0.0
+</code></pre>
+<p>Versões:</p>
+<ul>
+<li>CentOS 7.3.1611</li>
+<li>Puppet Agent 1.9.0</li>
+<li>GitLab CE 8.16.4</li>
+</ul>
+<p>Para instalar a box digite o comando abaixo no terminal</p>
+<pre><code>vagrant box add gutocarvalho/centos7x64-gitlab-ce
+</code></pre>
+<p>Crie um diretório para o projeto</p>
+<pre><code>mkdir gitlab-ce; cd gitlab-ce
+</code></pre>
+<p>Crie um arquivo Vagrantfile no diretorio com o conteúdo abaixo</p>
+<pre tabindex="0"><code> # -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.hostname = &quot;gitlab.hacklab&quot;
+  config.vm.box = &quot;gutocarvalho/centos7x64-gitlab-ce&quot;
+  config.vm.network &quot;private_network&quot;, ip: &quot;192.168.250.45&quot;
+  config.vm.provider &quot;virtualbox&quot; do |virtualbox|
+    virtualbox.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;2&quot; ]
+    virtualbox.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;2048&quot; ]
+  end
+end
+</code></pre><p>Suba a vm</p>
+<pre><code>vagrant up
+</code></pre>
+<p>Depois que a VM subir acesse o endereço e siga as instruções.</p>
+<pre><code>http://192.168.250.45 
+</code></pre>
+<p>Info sobre o projeto</p>
+<pre><code>https://gitlab.com/gutocarvalho/packer-centos-gitlab-ce
+</code></pre>
+<h3 id="box-puppetserver-v200">Box PuppetServer v2.0.0</h3>
+<p>Essa box é traz o Puppet Server 2.7 instalado em um CentOS 7 para facilitar testes do Puppet e Puppetserver.</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho/boxes/centos7x64-puppetserver/versions/2.0.0
+</code></pre>
+<p>Versões:</p>
+<ul>
+<li>CentOS 7.3.1611</li>
+<li>Puppet Server 2.7.2</li>
+<li>Puppet Agent 1.9.0</li>
+</ul>
+<p>Para instalar a box digite o comando abaixo no terminal</p>
+<pre><code>vagrant box add gutocarvalho/centos7x64-puppetserver
+</code></pre>
+<p>Crie um diretório para o projeto</p>
+<pre><code>mkdir puppetserver; cd puppetserver
+</code></pre>
+<p>Crie um arquivo Vagrantfile no diretorio com o conteúdo abaixo</p>
+<pre tabindex="0"><code># -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.hostname = &quot;puppetserver.hacklab&quot;
+  config.vm.box = &quot;gutocarvalho/centos7x64-puppetserver&quot;
+  config.vm.network &quot;private_network&quot;, ip: &quot;192.168.250.46&quot;
+  config.vm.provider &quot;virtualbox&quot; do |virtualbox|
+    virtualbox.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;2&quot; ]
+    virtualbox.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;4096&quot; ]
+  end
+end
+</code></pre><p>Info sobre o projeto</p>
+<pre><code>https://gitlab.com/gutocarvalho/packer-centos7-puppetserver
+</code></pre>
+<h3 id="box-pcp-v300">Box PCP v3.0.0</h3>
+<p>Essa box contém o projeto PCP que traz uma implementação completa do Puppet 4 com todos os serviços integrados.</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho/boxes/centos7x64-pcp/versions/3.0.0
+</code></pre>
+<p>Versões:</p>
+<ul>
+<li>CentOS 7.3.1611</li>
+<li>Puppet Server 2.7.2</li>
+<li>Puppet Agent 1.9.0</li>
+<li>Mcollective 2.10.0</li>
+<li>Hiera 3.3.0</li>
+<li>Facter 3.6.0</li>
+<li>PuppetDB 4.2.4</li>
+<li>PostgreSQL 9.5.5</li>
+<li>Puppet Explorer 2.0.0</li>
+<li>Puppet Board 0.2.0</li>
+<li>ActiveMQ 5.14.0</li>
+<li>R10k 2.5.2</li>
+</ul>
+<p>Para instalar a box digite o comando abaixo no terminal</p>
+<pre><code>vagrant box add gutocarvalho/centos7x64-pcp
+</code></pre>
+<p>Crie um diretório para o projeto</p>
+<pre><code>mkdir pcp; cd pcp
+</code></pre>
+<p>Crie um arquivo Vagrantfile no diretorio com o conteúdo abaixo</p>
+<pre tabindex="0"><code># -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+
+  if Vagrant.has_plugin?(&quot;vagrant-hosts&quot;)
+    config.vm.provision :hosts do |provisioner|
+      provisioner.add_localhost_hostnames = false
+      provisioner.autoconfigure = true
+      provisioner.sync_hosts = true
+      provisioner.add_host '192.168.250.35', ['puppet']
+      provisioner.add_host '192.168.250.35', ['puppetdb']
+    end
+  end
+
+  config.vm.box = &quot;gutocarvalho/centos7x64-pcp&quot;
+
+  # puppet server + puppet agent
+  config.vm.define &quot;puppetserver&quot; do |puppetserver|
+    puppetserver.vm.hostname = &quot;puppet-pcpm.hacklab&quot;
+    puppetserver.vm.network :private_network, ip: &quot;192.168.250.35&quot;
+    puppetserver.hostsupdater.aliases = [&quot;puppetboard.hacklab&quot;, &quot;puppetexplorer.hacklab&quot;]
+    puppetserver.vm.provider &quot;virtualbox&quot; do |v|
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;2&quot; ]
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;6144&quot; ]
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--name&quot;, &quot;puppet-pcpm.hacklab&quot; ]
+    end
+  end
+
+end
+</code></pre><p>Instale os seguintes plugins</p>
+<pre><code>vagrant plugin install vagrant-hosts
+vagrant plugin install vagrant-hostsupdater
+</code></pre>
+<p>Inicie o projeto</p>
+<pre><code>vagrant up
+</code></pre>
+<p>Acesse a vm</p>
+<pre><code>vagrant ssh
+</code></pre>
+<p>Info sobre o projeto</p>
+<pre><code>https://gitlab.com/gutocarvalho/packer-centos-pcp
+https://gitlab.com/puppet-br/pcp
+https://gitlab.com/puppet-br/pcp-controlrepo
+</code></pre>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

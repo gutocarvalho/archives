@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Primeiro post</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Primeiro post</h1>
+        <div>
+                <time>September 26, 2012</time>
+            </div>
+    </header><p>Este é meu primeiro post no Octopress, estou de mudança do Wordpress para cá, em breve vou trazer os posts mais interessantes.</p>
+<h3 id="1-por-que-estou-de-mudança">1. Por que estou de mudança?</h3>
+<p>Eu queria algo mais simples para blogar, principalmente algo mais rápido.</p>
+<h3 id="2-minha-história-com-o-wp">2. Minha história com o WP</h3>
+<p>O Wordpress me atendeu por muitos e muitos anos, construí diversos projetos nele, porém nos últimos tempos eu tenho tido uma sensação de que a cada versão ele fica mais lento e mais vulnerável a medida que surgem novas funcionalidades.</p>
+<p>Além disto, não consigo enxergar a necessidade de ter um banco de dados relacional para armazenar posts de um blog.</p>
+<p>Tive recentes experiências com ferramentas sem banco que me provaram que é possível ter qualidade sem ter que usar algum banco SQL.</p>
+<p>A experiência que tive com o DOKUWIKI foi realmente esclarecedora, esta ferramenta funciona de forma maravilhosa, armazena tudo em arquivos, é rápido e simples de usar, tem centenas de plugins, foi escrita em PHP e fazer backup é uma maravilha, basta compactar um diretório e acabou o drama.</p>
+<p>Perseguindo essa ideia de simplificar, dei uma olhada no Flatpress, Pixie, PivotX, gpEasy e GetSimple, em sua maioria são CMS que não usam banco de dados, começava então uma longa pesquisa para substituir o WP.</p>
+<h3 id="3-mas-afinal-o-que-vinha-me-desagradando-no-wp">3. Mas afinal o que vinha me desagradando no WP?</h3>
+<p>Eventualmente quando eu ministrava alguma palestra ou quando meu blog era mencionado em algum outro blog grande, o Wordpress claramente não escalava - a.k.a - sentava bonito.</p>
+<p>Nos últimos tempos, percebi que havia diminuído o fluxo de minhas postagens, em parte devido a insatisfação com a ferramenta de blog, só o tempo que eu demorava para logar, criar um novo post e começar a escrever me desanimava profundamente, não tinha vontade de prosseguir e acaba fechando o navegador.</p>
+<p>Além disto, havia a necessidade de realizar regularmente desagradáveis manutenções, era backup de banco, backup do WP, atualizações de segurança constantes no core do WP, atualizações de plugin - quase diárias, tudo isso já estava me cansando, as vezes eu logava para blogar e quando percebia já estava fuçando e atualizando plugins e o própio WP.</p>
+<p>A combinação plugins + banco é uma âncora, para melhorar algo que já é lento, precisa-se usar mais plugins de cache ou colocar sistemas como varnish ou nginx na frente do WP fazendo o cacheamento pesado pra que ele escale.</p>
+<p>O editor rico (WYSIWYG) me deixava louco as vezes, copiar e colar algo era penoso e isso gerava muito retrabalho.</p>
+<h3 id="4-o-que-eu-queria">4. O que eu queria?</h3>
+<p>Eu <strong>não</strong> queria uma ferramenta que usasse banco de dados relacional.</p>
+<p>Eu queria que a ferramenta gerasse HTML Puro.</p>
+<p>Eu queria escrever meus posts usando Markdown.</p>
+<p>Eu queria algo que pudesse controlar via GIT.</p>
+<p>Eu queria algo em Ruby, Python ou Perl - usei muito PHP, era hora de experimentar outras coisas.</p>
+<p>Eu queria sair do mainstream e ver as novidades recentes.</p>
+<h3 id="5-octopress">5. Octopress</h3>
+<p>Após muita pesquisa ainda não me via satisfeito, achei muitas ferramentas interessantes, porém a maioria havia sido feita usando PHP, e como disse, queria algo que não fosse PHP, eu queria algo mais simples e eficiente.</p>
+<p>Nessa linha de pesquisa, encontrei a engine Jekill, o framework Octopress (ruby) e um outro framework inspirado neste chamado Hyde (python), me identifiquei mais com o Octopress, testei, gostei e resolvi mudar.</p>
+<h3 id="6-posts-antigos">6. Posts antigos</h3>
+<p>Se vou migar os posts antigos? Provavelmente, ainda estou testando isso, existe um script chamado exitwp que migra os posts exportados do wordpress em formato XML para o formato Markdown, assim que eu tiver mais tempo termino esse teste.</p>
+<h3 id="7-o-octopress-me-atende">7. O Octopress me atende?</h3>
+<p>No meu caso sim, para boa fatia dos blogueiros que usam WP, provavelmente não.</p>
+<p>O conceito dele é bem diferente, para você ter uma ideia eu uso o MOU para escrever os posts (editor markdown) em meu OSX, uso o git para versionar meus arquivos, e posso via git ou rsync, publicar meus posts e páginas.</p>
+<p>A principal vantagem é que eu tenho o blog localmente no meu notebook, com isso posso trabalhar nele e empurrar para meu provedor quando houver conectividade.</p>
+<h3 id="7-o-que-espero-obter-usando-o-octopress">7. O que espero obter usando o Octopress?</h3>
+<p>Agilidade na publicação de meus posts.</p>
+<p>Agilidade na formatação dos meus posts (markdown).</p>
+<p>Conseguir aumentar a frequência de posts.</p>
+<p>Oferecer um site mais rápido para visitantes.</p>
+<p>Usar quase a mesma sintaxe que uso no dokuwiki.</p>
+<p>Blogar diretamente do meu note.</p>
+<h3 id="8-já-foi-o-tempo-do-wordpress">8. Já foi o tempo do Wordpress?</h3>
+<p>Na minha opinião, o Wordpress é uma ótima ferramenta, mas hoje temos uma gama de tecnologias surgindo, coisas muito interessantes, mais rápidas, mais eficientes, novas abordagens para gerenciar conteúdo e armazenar informações, soluções que merecem nossa atenção, portanto, acho que é hora de inovar, o wordpress é sempre uma alternativa, mas eu sou da turma que gosta de novas experiências, logo, na minha opinião o tempo do WP já passou e em meus novos projetos certamente vou escolher outro tipo de ferramenta.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

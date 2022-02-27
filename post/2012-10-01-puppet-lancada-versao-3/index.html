@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Lançada versão 3.0</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Lançada versão 3.0</h1>
+        <div>
+                <time>October 1, 2012</time>
+            </div>
+    </header><p>Foi lançado no dia 28/Set/12 a versão <a href="http://docs.puppetlabs.com/puppet/3/reference/release_notes.html">3.0</a> do Puppet</p>
+<h2 id="instruções-para-instalação">Instruções para instalação</h2>
+<p>Você pode fazer o download do código fonte em<br>
+<a href="http://downloads.puppetlabs.com/puppet/puppet-3.0.0.tar.gz">http://downloads.puppetlabs.com/puppet/puppet-3.0.0.tar.gz</a></p>
+<p>Instruções para instalar via repositórios puppetlabs (yum/apt)<br>
+<a href="http://docs.puppetlabs.com/guides/puppetlabs_package_repositories.html">http://docs.puppetlabs.com/guides/puppetlabs_package_repositories.html</a></p>
+<p>Você poder fazer o download da gem no rubygem<br>
+<a href="https://rubygems.org/downloads/puppet-3.0.0.gem">https://rubygems.org/downloads/puppet-3.0.0.gem</a><br>
+ou se preferir pode instalar usando o comando: <code>gem install puppet</code></p>
+<p>Você pode fazer o download do pacote para OSX:<br>
+<a href="http://downloads.puppetlabs.com/mac/puppet-3.0.0.dmg">http://downloads.puppetlabs.com/mac/puppet-3.0.0.dmg</a></p>
+<p>Você pode fazer o download do pacote para Windows:<br>
+<a href="http://downloads.puppetlabs.com/windows/puppet-3.0.0.msi">http://downloads.puppetlabs.com/windows/puppet-3.0.0.msi</a></p>
+<p>Se você usa <code>ensure =&gt; latest</code> para o pacote do puppet, a partir do dia 01 de Outubro ele já estará nos repositórios oficiais e será então instalado automaticamente.</p>
+<h2 id="novidades">Novidades</h2>
+<ul>
+<li>Performance Improvements - substantial improvements to performance,
+particularly around catalog compilation. Agent now uses JSON for
+catalog cache, which can be dramatically faster for large catalogs
+(#16058, #2892)</li>
+<li>Data Bindings - hiera will be automatically consulted for values of
+parameterized classes so you don&rsquo;t need the parser functions. (#11608)</li>
+<li>Improved OS/Platform Support - Full Ruby 1.9 support; vastly
+improved Windows package support; yumrepo now supports ssl options
+(#3324); better upstart support; better Solaris zone, package and
+service support;</li>
+<li>Loading Plugins from Rubygems - you can now install and use puppet
+extension code (faces, types, providers) via rubygems. (#7788)</li>
+<li>Server Auto-Discovery - Puppet agents can use SRV records in DNS to
+find CA, master, report, and file servers (#3669)</li>
+<li>Semantic Versioning - With 3.0.0, Puppet Labs makes a commitment to
+follow the Semantic Versioning guidelines outlined on semver.org.
+Public, documented APIs won&rsquo;t break until 4.0; minor-version 3.x
+releases will add new features while retaining compatibility, and
+tiny-version 3.0.x releases will be bugfix-only.</li>
+</ul>
+<h2 id="mudanças-em-dslconfig">Mudanças em DSL/Config</h2>
+<ul>
+<li>Variable Scoping - Dynamic scoping has been removed.
+<a href="http://docs.puppetlabs.com/guides/scope_and_puppet.html">http://docs.puppetlabs.com/guides/scope_and_puppet.html</a></li>
+<li>Auth.conf differentiates between names and IPs - There&rsquo;s a new
+<code>allow_ip</code> keyword in auth.conf if you want to permit IP addresses.
+(PR991)</li>
+<li><code>unless</code> is available as a synonym for <code>if !</code> (#7762)</li>
+<li>Pluginsync now defaults to true - Yep, it&rsquo;s true. (#5521)</li>
+<li>Updated <code>config.ru</code> syntax &ndash; When running the master under Rack,
+make sure you update your config.ru to follow the example from
+ext/rack/files/config.ru in the source distribution. (#15337)</li>
+</ul>
+<h2 id="changelog">Changelog</h2>
+<p>Para saber mais informações sobre o lançamento, acesse a mensagem de divulgação na lista <a href="https://groups.google.com/group/puppet-announce/browse_thread/thread/96a993057f570edc">puppet-announce</a>.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

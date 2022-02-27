@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Gerenciador de IPs/Racks/Redes Racktables</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Gerenciador de IPs/Racks/Redes Racktables</h1>
+        <div>
+                <time>January 7, 2015</time>
+            </div>
+    </header><p>Em algum momento da administração de infraestrutura e redes é necessário criar, manter e atualizar dados relativos aos racks, dispositivos, links, servidores, redes e endereços ips utilizados, essa documentação tende a se tornar complexa e difícil de manter, principalmente quando poucos membros da equipe tem o hábito de documentar e registrar as mudanças aplicadas no ambiente.</p>
+<p>Esse tipo de documentação começa de forma isolada e descentralizada em pequenos documentos e planilhas que normalmente carecem de dados atualizados e que não são versionados.</p>
+<p>Além da falta de atualização, isso nem sempre é compartilhado da forma mais adequada entre os membros da equipe, e o que geralmente ocorre é que vários arquivos diferentes com informações distintas são gerados. O problema começa a aparecer quando se tenta consolidar tudo isso em um único documento, tarefa que não é fácil ou agradável, e por isto normalmente não é realizada, com isso, perde-se o rastreamento de mudanças e o cliente acaba ficando com sua documentação desatualizada e ineficiente.</p>
+<p>Ambiente sem documentação é ambiente de alto risco, uma vez que um incidente ocorre, ou quando há um agendamento para alguma manutenção ou mudança importante, será necessário investir muito mais tempo para entender, mapear, rastrear, resolver o problema ou executar a mudança prevista, se houvesse algum tipo de documentação fidedigna, isto seria um ação direta e pontual.</p>
+<p>Existem iniciativas e ferramentas para inserir esse tipo de informação, mas são ferramentas isoladas que tratam de pontos específicos de infraestrutura, temos ferramentas para mapear racks, temos ferramentas para mapear ips, algumas equipes preferem colocar tais dados em algum tipo de WIKI, mas não há uma integração entre elas, logo, novamente o rastreamento se perde e o cliente fica com uma informação sem uma ligação lógica, portanto, pouco útil.</p>
+<p>É bem difícil encontrar uma ferramenta que permita tratar da infraestrutura como um todo, há alguns anos, depois de muita pesquisa e troca de informações com outros colegas de área, encontrei a ferramenta RackTables - Dica do @IvoTonev - que supre boa parte das necessidades de documentação de um datacenter.</p>
+<p>O Racktables é uma ferramenta robusta que permite documentar todo o seu parque de servidores, racks, appliances, redes, links, containers, ips e nats de seu ambiente.</p>
+<p>Com o Racktables é possível cadastrar redes, criar, mapaear e reservar endereços ips para servidores, é possível mapear NATs e PATs IPv4 e ter uma visão ampla de todas as redes do cliente.</p>
+<p>Com o Racktables é possível gerenciar o espaço de racks através de mapeamento gráfico de ambiente, e com isso saber exatamente quantos U&rsquo;s estão livres em cada rack, ou mesmo saber em qual posição de um rack está instalado um determinado appliance.</p>
+<p>Com o Racktables é possível cadastrar todos seus appliances e servidores e inserir informações importantes como TAGs e SNs, o que facilita a abertura de chamados com fornecedores, inventoria e auditoria dos equipamentos.</p>
+<p>O Racktables é uma ferramenta Web, a ferramenta foi escrita em PHP e seu banco de dados é o MYSQL. Isto o torna muito simples para ser implantado em ambientes Unix, BSD, OSX, Linux ou Windows.</p>
+<p>O Racktables é uma ferramenta opensource, não há necessidade de adquirir licenças para seu uso, basta fazer o download, instalar e utilizar.</p>
+<p>Tenho utilizado o Racktables em alguns clientes em Brasília, recomendo a ferramenta.</p>
+<p>Recomenda-se o uso do Racktables através de conexão segura HTTPs e seu acesso deve ser restrito à sua intranet.</p>
+<p>Conheça mais sobre o projeto =&gt; <a href="http://racktables.org/">http://racktables.org/</a></p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Octopress com lista de categorias</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Octopress com lista de categorias</h1>
+        <div>
+                <time>January 25, 2013</time>
+            </div>
+    </header><p>O Octopress não vem com um plugin para fazer a lista de categorias de forma nativa, pesquisando encontrei várias soluções a que mais gostei foi a dotnetguy, acompanhe o que eu fiz.</p>
+<h3 id="instalando">Instalando</h3>
+<p>Primeiro criei um arquivo chamado category_list_tab.rb no diretório plugins do octopress</p>
+<pre><code>vim category_list_tab.rb
+</code></pre>
+<p>Coloque o conteúdo abaixo no arquivo</p>
+<pre tabindex="0"><code>module Jekyll
+  class CategoryListTag &lt; Liquid::Tag
+    def render(context)
+      html = &quot;&quot;
+      categories = context.registers[:site].categories.keys
+      categories.sort.each do |category|
+        posts_in_category = context.registers[:site].categories[category].size
+        category_dir = context.registers[:site].config['category_dir']
+        category_url = File.join(category_dir, category.gsub(/_|\P{Word}/, '-').gsub(/-{2,}/, '-').downcase)
+        html &lt;&lt; &quot;&lt;li class='category'&gt;&lt;a href='/#{category_url}/'&gt;#{category} (#{posts_in_category})&lt;/a&gt;&lt;/li&gt;\n&quot;
+      end
+      html
+    end
+  end
+end
+
+Liquid::Template.register_tag('category_list', Jekyll::CategoryListTag)
+</code></pre><p>Depois crie o arquivo category_list.html em source/_includes/custom/asides</p>
+<pre><code>vim sources/_includes/custom/asides/category_list.html
+</code></pre>
+<p>Insira o conteúdo abaixo</p>
+<p>{% include_code category_list.html %}</p>
+<p>E para finalizar edite o arquivo _config.yml e insira uma referência para o category_list</p>
+<pre><code>asides/category_list.html
+</code></pre>
+<p>Veja como ficou no meu arquivo</p>
+<pre><code>default_asides: [custom/asides/about.html, asides/twitter.html, asides/recent_posts.html, custom/asides/category_list.html, asides/github.html,  asides/delicious.html, asides/pinboard.html, asides/googleplus.html]
+</code></pre>
+<p>Agora basta acessar o blog e verificar se a lista de categorias apareceu.</p>
+<h3 id="referências">Referências</h3>
+<pre><code>http://www.dotnetguy.co.uk/post/2012/06/25/octopress-category-list-plugin/
+</code></pre>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

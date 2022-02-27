@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando Zabbix 2.0.x Server, Proxy, Frontend, JMX e Agent em Debian</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando Zabbix 2.0.x Server, Proxy, Frontend, JMX e Agent em Debian</h1>
+        <div>
+                <time>January 14, 2013</time>
+            </div>
+    </header><p>Neste post vou mostrar uma das muitas formas de instalar o Zabbix 2.0.6 em modo Server, Agent, Proxy e JMX Gateway.</p>
+<h2 id="1-entendendo-alguns-conceitos-básicos">1. Entendendo alguns conceitos básicos</h2>
+<h3 id="11-zabbix">1.1 Zabbix</h3>
+<p>O Zabbix é uma suite de monitoramento open-source extretamente eficiente, flexível e poderosa, e um dos seus principais diferenciais é utilizar mínimos recursos dos hosts para fazer o monitoramento.</p>
+<p>O Zabbix Atualmente se encontra na versão 2.0.6.</p>
+<p>O Zabbix é uma solução composta por Zabbix Server, Zabbix Agent, Zabbix Proxy e a partir da versão 2.0.x oferece monitoramento de aplicações java via JMX Gateway.</p>
+<h3 id="12-zabbix-server">1.2 Zabbix Server</h3>
+<p>O Zabbix Server é o &lsquo;sistema nervoso&rsquo; da suite de monitoramento Zabbix, é ele que coleta os dados, é ele que calcula e executa as triggers, é ele que envia notificações aos usuários. É o componente central da suite de monitoramento, é a ele que o Zabbix Agent e Zabbix Proxy se reportam e enviam dados para processamento, análise e arquivamento.</p>
+<p>Todas as configurações e informações estatísticas, todos os dados operacionais são armazenados no Zabbix Server.</p>
+<p>O Zabbix Server é composto pelo server, frontend PHP e backend SQL que pode ser o PostgreSQL, MySQL ou SQLite.</p>
+<h3 id="13-zabbix-agent">1.3 Zabbix Agent</h3>
+<p>O Agent é quem monitora os hosts, é ele que extrai os dados e envia para o Zabbix Server processar (modo ativo) ou disponibiliza para o Zabbix Server quando ele o cosulta (modo passivo).</p>
+<p>O Agent pode funcionar de forma passiva ou ativa.</p>
+<p>Na forma passiva, o servidor Zabbix Server solicita dados ao Agente que verifica, extrai e devolve os dados para o Server processar.</p>
+<p>Na forma ativa, o agente verifica com o sevidor a lista de itens que precisa checar, a partir daí ele extrai e envia periódicamente para o servidor.</p>
+<p>A forma mais comum de uso do agente é o modo passivo.</p>
+<h3 id="14-zabbix-proxy">1.4 Zabbix Proxy</h3>
+<p>O Zabbix Proxy pode coletar informações de um ou mais hosts e enviá-las para o Zabbix Server processar.</p>
+<p>O Zabbix Proxy é uma solução que foi desenhada para dividir a carga do Zabbix Server, uma vez que o proxy pode coletar os dados de forma direta, logo pode-se ter vários proxys coletando dados de vários ambientes e enviando para o Zabbix Server processar.</p>
+<p>A coleta de dados é um procedimento que consome muitos recursos do servidor, passar isso para o proxy pode ser uma boa ideia para diminuir a carga no master.</p>
+<p>Ele também pode ser muito útil para redes muito segmentadas ou para coletar dados em pontos remotos da rede onde a conexão não é muito boa, assim ele centraliza todos os dados e envia de uma vez só para o Zabbix Server processar.</p>
+<h3 id="15-zabbix-get">1.5 Zabbix GET</h3>
+<p>O Zabbix GET é um comando utilizado para consultar informações em agentes Zabbix, é como o Zabbix Server se comunica com os agentes, contudo ele pode ser instalado separadamente do server para fazer testes e consultas em agentes diretamente.</p>
+<pre><code>zabbix_get -s ip-do-host-monitorado -p 10050 -k agent.version
+</code></pre>
+<h3 id="16-zabbi-sender">1.6 Zabbi SENDER</h3>
+<p>O Zabbix SENDER é um comando utilizado para enviar informações ao Zabbix Server diretamente, sem uso de agente. No Zabbix server você precisa criar itens
+chamados Zabbix TRAP para receber e processar informações enviadas via SENDER. Normalmente o SENDER está associado a scripts que geram determinadas métricas e usam depois o SENDER para enviar estes dados coletados ao Zabbix Server.</p>
+<pre><code>zabbix_sender -z zabbix -s &quot;Apache Conexoes Estabelecidas&quot; -k httpd.established.connections -o 178
+</code></pre>
+<h4 id="141-cenários-de-zabbix-proxy">1.4.1 Cenários de Zabbix Proxy</h4>
+<p>Imagine que o servidor zabbix precise consultar informações em cerca de 1000 agentes e depois, precisa processar os dados recebidos de todo eles, certamente esta tarefa irá consumir boa parte da memória e processamento disponíveis, e fará isto tanto na coleta quanto no processamento. Agora imagine 4 Proxys conectados ao Server, coletando, armazenando e enviando dados ao zabbix server de forma ordenada, e neste caso, cada proxy poderia coletar dados de cerca de 250, diminuindo a carga de consulta aos agentes, esse cenário certamente ofereceria uma melhor performance para toda a suite Zabbix.</p>
+<h3 id="15-zabbix-jmx-gateway">1.5 Zabbix JMX Gateway</h3>
+<p>O Zabbix JMX Gateway é um daemon escrito em JAVA que consegue monitorar JMX Counters de aplicações JAVA. Quando o Zabbix Server quer saber alguma informação de um ambiente JMX, ele pergunta ao JMX GATEWAY que por sua vez se conecta via API de gerenciamento JMX na aplicação, assim ele extrai o dado e devolve para o Zabbix Server processá-lo.</p>
+<p>Este recurso só está disponível a partir do Zabbix 2.0.x.</p>
+<p>Na versão 1.8.x era necessário usar aplicações externas como o ZAPCAT ou TWEEDLE para fazer tal monitoramento.</p>
+<h2 id="2-mão-na-massa">2. Mão na Massa</h2>
+<h3 id="21-ambiente">2.1 Ambiente</h3>
+<p>Para este projeto eu criei quatro VMs no virtualbox com duas interfaces de rede em cada.</p>
+<p>A primeira interface NAT para baixar pacotes, a segunda interface em modo HostOnly ou Internal usando IP&rsquo;s da faixa 192.168.56.xx</p>
+<p>O sistema operacional escolhido foi o Debian Wheezy - 64 bits.</p>
+<h4 id="211-orientações">2.1.1 Orientações</h4>
+<p>Se possível, deixe uma partição maior para /opt, é lá que o zabbix e seus arquivos ficarão após a compilação.</p>
+<h4 id="212-disposição-das-vms-utilizadas">2.1.2 Disposição das VM&rsquo;s utilizadas</h4>
+<pre tabindex="0"><code>VM1 - IP 192.168.56.80 zabbix server/jmx/agent            - 512 MB RAM - 1 processador
+VM2 - IP 192.168.56.81 zabbix database/agent              - 512 MB RAM - 1 processador
+VM3 - IP 192.168.56.82 zabbix frontend/agent              - 128 MB RAM - 1 processador
+VM4 - IP 192.168.56.83 zabbix proxy/database/agent        - 128 MB RAM - 1 processador
+</code></pre><p>Prepare este ambiente antes de prosseguir.</p>
+<p>Fixe o IP nas interfaces para evitar problemas ao reiniciar as VMs.</p>
+<h3 id="22-zabbix-server">2.2. Zabbix Server</h3>
+<p>Acesse a VM reservada para o Zabbix Server (192.168.56.80).</p>
+<p>A configuração de repositório APT é a padrão.</p>
+<h4 id="221-pacotes">2.2.1 Pacotes</h4>
+<p>instale ferramentas de compilação</p>
+<pre><code>aptitude install build-essential
+</code></pre>
+<p>instale pacotes dev do postgresql</p>
+<pre><code>aptitude install postgresql-server-dev-9.1
+</code></pre>
+<p>instale pacotes dev da libcurl</p>
+<pre><code>aptitude install libcurl3-gnutls-dev
+</code></pre>
+<p>instale pacotes dev para jabber</p>
+<pre><code>aptitude install libiksemel-dev
+</code></pre>
+<p>instale pacote dev para odbc</p>
+<pre><code>aptitude install unixodbc-dev
+</code></pre>
+<p>instale pacote dev para snmp</p>
+<pre><code>aptitude install libsnmp-dev
+</code></pre>
+<p>instale pacote dev para libssh</p>
+<pre><code>aptitude install libssh2-1-dev
+</code></pre>
+<p>instale pacote dev para openipmi</p>
+<pre><code>aptitude install libopenipmi-dev
+</code></pre>
+<p>instale pacote java jdk</p>
+<pre><code>aptitude install openjdk-6-jdk
+</code></pre>
+<p>instale o fping</p>
+<pre><code>aptitude install fping
+</code></pre>
+<p>juntando tudo</p>
+<pre><code>aptitude install build-essential postgresql-server-dev-9.1 libcurl3-gnutls-dev libiksemel-dev libjabberd2-dev unixodbc-dev libsnmp-dev libssh2-1-dev libopenipmi-dev openjdk-6-jdk fping
+</code></pre>
+<h4 id="222-usuário-e-grupo">2.2.2 Usuário e Grupo</h4>
+<p>crie o grupo zabbix</p>
+<pre><code>groupadd zabbix
+</code></pre>
+<p>crie o usuário zabbix</p>
+<pre><code>useradd -g zabbix zabbix
+</code></pre>
+<h4 id="223-compilando">2.2.3 Compilando</h4>
+<p>faça download dos sources do zabbix</p>
+<pre><code>wget http://ufpr.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/2.0.6/zabbix-2.0.6.tar.gz
+</code></pre>
+<p>descompacte o tarball</p>
+<pre><code>tar zxvf zabbix-2.0.6.tar.gz
+</code></pre>
+<p>acesse o diretório</p>
+<pre><code>cd zabbix-2.0.6
+</code></pre>
+<p>configure a compilação</p>
+<pre tabindex="0"><code>./configure --prefix=/opt/zabbix --enable-server --enable-agent --enable-java --enable-ipv6 --with-ldap --with-ssh2 --with-net-snmp --with-jabber --with-postgresql --with-libcurl --with-unixodbc --with-openipmi
+</code></pre><p>compile o zabbix</p>
+<pre><code>make
+</code></pre>
+<p>instale os arquivos compilados</p>
+<pre><code>make install
+</code></pre>
+<p>crie um diretório para os scripts de init</p>
+<pre><code>mkdir /opt/zabbix/init
+</code></pre>
+<p>ajuste as permissões</p>
+<pre><code>chown -R zabbix. /opt/zabbix
+</code></pre>
+<p>copie os scripts de init default para o diretório criado</p>
+<pre><code>cp /root/zabbix-2.0.6/misc/init.d/debian/zabbix-agent /opt/zabbix/init
+cp /root/zabbix-2.0.6/misc/init.d/debian/zabbix-server /opt/zabbix/init
+</code></pre>
+<p>corrija o path dentro dos scripts para /opt/zabbix</p>
+<pre><code>sed -i 's/\/usr\/local\/sbin/\/opt\/zabbix\/sbin/' /opt/zabbix/init/zabbix-*
+</code></pre>
+<p>crie o script de init para o jmx gateway em /opt/zabbix/init/zabbix-java</p>
+<pre tabindex="0"><code>#!/bin/sh
+NAME=zabbix-java
+DAEMON=/opt/zabbix/sbin/zabbix_java/startup.sh
+DOWN=/opt/zabbix/sbin/zabbix_java/shutdown.sh
+DESC=&quot;Zabbix Java Gateway daemon&quot;
+PID=/opt/zabbix/run/zabbix_java.pid
+
+test -f $DAEMON || exit 0
+set -e
+
+case &quot;$1&quot; in
+  start)
+        echo &quot;Starting $DESC&quot;
+        $DAEMON
+        ;;
+  stop)
+        echo &quot;Stopping $DESC&quot;
+        $DOWN
+        ;;
+  *)
+        echo &quot;Usage: $NAME {start|stop}&quot;
+        exit 1
+        ;;
+esac
+</code></pre><p>ajuste a permissão do arquivo</p>
+<pre><code>chmod 755 /opt/zabbix/init/zabbix-java
+</code></pre>
+<p>após ajustar os scripts, copie para /etc/init.d/</p>
+<pre><code>cp /opt/zabbix/init/* /etc/init.d
+</code></pre>
+<p>crie os diretórios run e log</p>
+<pre><code>mkdir /opt/zabbix/run/
+mkdir /opt/zabbix/log/
+</code></pre>
+<p>ajuste as permissões do diretório</p>
+<pre><code>chown zabbix. /opt/zabbix/log -R
+chown zabbix. /opt/zabbix/run -R
+</code></pre>
+<p>crie links simbólicos para facilitar a administração</p>
+<pre><code>ln -s /opt/zabbix/log /var/log/zabbix
+ln -s /opt/zabbix/etc /etc/zabbix
+</code></pre>
+<p>apague os arquivos desnecessários</p>
+<pre><code>cd /opt/zabbix/etc
+rm -rf zabbix_agent.conf zabbix_agent.conf.d
+</code></pre>
+<h4 id="224-configurando">2.2.4 Configurando</h4>
+<h5 id="2241-configurando-server">2.2.4.1 Configurando server</h5>
+<p>modifique as seguintes linhas no arquivo /opt/zabbix/etc/zabbix_server.conf</p>
+<pre tabindex="0"><code>    PidFile=/opt/zabbix/run/zabbix_server.pid
+    LogFile=/opt/zabbix/log/zabbix_server.log
+    LogFileSize=10
+
+    DBHost=192.168.56.81
+    DBName=zabbixdb
+    DBUser=zabbixuser
+    DBPassword=zabbixpassword
+    DBPort=5432
+
+    StartPollers=8
+    StartPollersUnreachable=8
+    StartTrappers=8
+    StartPingers=4
+    StartDiscoverers=2
+    StartHTTPPollers=2
+
+    JavaGateway=127.0.0.1
+    JavaGatewayPort=10052
+    StartJavaPollers=5
+
+    HousekeepingFrequency=24
+    MaxHousekeeperDelete=10000
+
+    CacheSize=32M
+
+    StartDBSyncers=5
+
+    HistoryCacheSize=32M
+    TrendCacheSize=32M
+    HistoryTextCacheSize=64M
+</code></pre><h5 id="2242-configurando-zabbix-agent">2.2.4.2 Configurando zabbix agent</h5>
+<p>modifique as seguintes linhas no arquivo /opt/zabbix/etc/zabbix_agentd.conf</p>
+<pre><code>PidFile=/opt/zabbix/run/zabbix_agentd.pid
+LogFile=/opt/zabbix/log/zabbix_agentd.log
+LogFileSize=10
+Server=127.0.0.1
+DebugLevel=3
+StartAgents=4
+Hostname=nomedamaquina
+</code></pre>
+<h4 id="225-configurando-jmx-gateway">2.2.5. Configurando jmx gateway</h4>
+<p>Com o JMX rodando, só precisamos configurar a monitoração no HOST via FRONTEND.</p>
+<h4 id="226-zabbix-database">2.2.6. Zabbix Database</h4>
+<p>Acesse a VM reservada para o Zabbix Database (192.168.56.81).</p>
+<p>O ideal é ficar em uma VM separada, e de preferência em um outro HYPERVISOR para não ter muita concorrência de I/O com as VM&rsquo;s já criadas.</p>
+<p>Abaixo segue o processo de instalação e configuração do PostgreSQL como backend do Zabbix.</p>
+<p>instale os pacotes do postgresql</p>
+<pre><code>aptitude install postgresql-9.1 postgresql-client-9.1
+</code></pre>
+<p>ajuste o postgresql.conf alterando listen_address para o valor abaixo</p>
+<pre><code>listen_addresses = '*'
+</code></pre>
+<p>ajuste o pg_hba.conf adiciona a linha abaixo ao final do arquivo</p>
+<pre><code>host    zabbixdb       zabbixuser       192.168.56.80/32        md5
+</code></pre>
+<p>reinicie o postgresql</p>
+<pre><code>/etc/init.d/postgresql restart
+</code></pre>
+<p>acesse o banco via psql</p>
+<pre><code>su postgres
+psql
+</code></pre>
+<p>crie o usuário zabbixuser</p>
+<pre><code>postgres=# create user zabbixuser with password 'zabbixpassword';
+CREATE ROLE
+</code></pre>
+<p>crie o banco zabbixdb</p>
+<pre><code>postgres=# create database zabbixdb;
+CREATE DATABASE
+</code></pre>
+<p>defina permissão para o usuário acessar o banco</p>
+<pre><code>postgres=# grant all privileges on database zabbixdb to zabbixuser;
+GRANT
+</code></pre>
+<p>altere o owner do banco zabbixdb para zabbixuser</p>
+<pre><code>postgres=# alter database zabbixdb owner to zabbixuser;
+ALTER DATABASE
+</code></pre>
+<p>teste a conexão com o banco</p>
+<pre><code>psql -U zabbixuser -h 127.0.0.1 zabbixdb
+
+psql (9.1.9)
+conexao SSL (cifra: DHE-RSA-AES256-SHA, bits: 256)
+Digite &quot;help&quot; para ajuda.
+zabbix=&gt; \q
+</code></pre>
+<p>se a conexão for bem sucedida vá para o próximo passo, do contrário revise os passos anteriores.</p>
+<h5 id="2261-instalação-limpa---sem-migração">2.2.6.1 Instalação limpa - sem migração.</h5>
+<p>Se não é seu caso, passe para o procedimento 1.4.2, se for seu caso siga os passos abaixo:</p>
+<p>acesse o diretório database nos sources do zabbix no seu servidor zabbix server (192.168.56.80)</p>
+<pre><code>cd /root/zabbix-2.0.6/database/postgresql
+</code></pre>
+<p>instale o postgresql-client</p>
+<pre><code>aptitude install postgresql-client-9.1
+</code></pre>
+<p>rode os scripts</p>
+<pre><code>psql -U zabbixuser -h 192.168.56.81 -W zabbixdb &lt; schema.sql
+psql -U zabbixuser -h 192.168.56.81 -W zabbixdb &lt; images.sql
+psql -U zabbixuser -h 192.168.56.81 -W zabbixdb &lt; data.sql
+</code></pre>
+<h5 id="2262-migração-de-base-do-zabbix-18x-para-zabbix-20x">2.2.6.2 Migração de base do zabbix 1.8.x para zabbix 2.0.x</h5>
+<p>faça o dump da base de produção</p>
+<pre><code>pg_dump -U zabbixuser -h ip-de-producao zabbixdb &gt; /tmp/zabbix-2013-01-07.sql
+</code></pre>
+<p>faça o restore da base no banco criado</p>
+<pre><code>psql -U zabbixuser -h 192.168.56.81 -f /tmp/zabbix-2013-01-07.sql zabbixdb
+</code></pre>
+<p>acesse o diretório de upgrades</p>
+<pre><code>cd /root/zabbix-2.0.6/upgrades/dbpatches/2.0/postgresql
+</code></pre>
+<p>rode o patch para atualizar a estrutura do banco</p>
+<pre><code>pgsql -U zabbixuser -h 192.168.56.81 zabbixdb &lt; patch.sql
+</code></pre>
+<p>insira as novas imagens de mapas</p>
+<pre><code>psql -U zabbixuser -h 192.168.56.81 -W zabbixdb &lt; images.sql
+</code></pre>
+<h4 id="227-serviços-zabbix">2.2.7 Serviços Zabbix</h4>
+<p>inicie o server</p>
+<pre><code>/etc/init.d/zabbix-server start
+</code></pre>
+<p>inicie o agent</p>
+<pre><code>/etc/init.d/zabbix-agent start
+</code></pre>
+<p>inicie o jmx gateway</p>
+<pre><code>/etc/init.d/zabbix-java start
+</code></pre>
+<p>verifique as portas</p>
+<pre><code>netstat -ntpl|grep 1005
+</code></pre>
+<p>observe a saída do netstat</p>
+<pre tabindex="0"><code>tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      5030/zabbix_agentd
+tcp        0      0 0.0.0.0:10051           0.0.0.0:*               LISTEN      4972/zabbix_server
+tcp6       0      0 :::10050                :::*                    LISTEN      5030/zabbix_agentd
+tcp6       0      0 :::10051                :::*                    LISTEN      4972/zabbix_server
+tcp6       0      0 :::10052                :::*                    LISTEN      5040/java    
+   
+</code></pre><p>ative a inicialização dos serviços no boot</p>
+<pre><code>insserv zabbix-agent
+insserv zabbix-server
+insserv zabbix-java
+</code></pre>
+<h4 id="228-frontend-zabbix">2.2.8 Frontend Zabbix</h4>
+<p>Acesse a VM 192.168.56.82</p>
+<p>instale os pacote do apache e php5</p>
+<pre><code>aptitude install apache2-mpm-prefork php5 php5-pgsql php5-gd
+</code></pre>
+<p>crie o diretório /var/www/zabbix</p>
+<pre><code>mkdir /var/www/zabbix
+</code></pre>
+<p>acesse o diretório</p>
+<pre><code>cd /var/www/zabbix
+</code></pre>
+<p>copie os arquivos do frontend a partir do source que está no servidor zabbix</p>
+<pre><code>scp -r root@192.168.56.80:/root/zabbix-2.0.6/frontends/php/* .
+</code></pre>
+<p>corrija as permissões dos arquivos</p>
+<pre><code>chown www-data. /var/www/zabbix -R
+</code></pre>
+<p>ajustes os seguintes parâmetros do arquivo /etc/php5/apache2/php.ini</p>
+<pre><code>memory_limit = 128M
+post_max_size = 16M
+upload_max_filesize = 16M
+max_execution_time = 300
+max_input_time = 300
+date.timezone = America/Sao_Paulo
+</code></pre>
+<p>o memory_limit deve ser ajustado de acordo com a memória disponível, após os ajustes reinicie o apache2</p>
+<pre><code>/etc/init.d/apache2 restart
+</code></pre>
+<p>adicione a seguinte linha ao pg_hba.conf do servidor de banco de dados (192.168.56.81)</p>
+<pre><code>host    zabbixdb       zabbixuser       192.168.56.82/32        md5
+</code></pre>
+<p>reinicie o banco de dados (192.168.56.81)</p>
+<pre><code>/etc/init.d/postgres restart
+</code></pre>
+<h5 id="2281-acesso-ao-frontend">2.2.8.1 Acesso ao frontend</h5>
+<p>O frontend foi acessado pelo endereço abaixo</p>
+<pre><code>http://192.168.56.80/zabbix
+</code></pre>
+<p>Siga os passos da configuração (next-next-finish), preencha os dados conforme abaixo:</p>
+<pre tabindex="0"><code>Database type	PostgreSQL
+Database server	192.168.56.81
+Database port	5432
+Database name	zabbixdb
+Database user	zabbixuser
+Database password	zabbixpassword
+
+Zabbix server	192.168.56.80
+Zabbix server port	10051
+Zabbix server name	zabbixserver
+</code></pre><p>Depois de configurar é possível acessar o dashboard web com o usuário Admin e senha zabbix.</p>
+<h3 id="23-zabbix-proxy">2.3. Zabbix Proxy</h3>
+<p>Acesse a VM destinada ao proxy (192.168.56.83).</p>
+<h4 id="231-pacotes">2.3.1 pacotes</h4>
+<p>instale os pacotes necessários para compilação</p>
+<pre><code>aptitude install build-essentials libcurl3-gnutls-dev unixodbc-dev libsnmp-dev libssh2-1-dev libopenipmi-dev sun-java6-jdk fping libsqlite3-dev sqlite3
+</code></pre>
+<h4 id="232-compilação">2.3.2 compilação</h4>
+<p>entre no diretório root</p>
+<pre><code>cd /root
+</code></pre>
+<p>copie os sources do zabbix server</p>
+<pre><code>scp -r root@192.168.56.80:/root/zabbix-2.0.6.tar.gz .
+</code></pre>
+<p>descompacte</p>
+<pre><code>tar zxvf zabbix-2.0.6.tar.gz
+</code></pre>
+<p>entre no diretório</p>
+<pre><code>cd zabbix-2.0.6
+</code></pre>
+<p>configure os parâmetros de compilação</p>
+<pre><code>./configure --prefix=/opt/zabbix --enable-proxy --enable-agent --enable-java --enable-ipv6 --with-ssh2 --with-ldap --with-net-snmp --with-libcurl --with-unixodbc --with-openipmi --with-sqlite3
+</code></pre>
+<p>faça a compilação</p>
+<pre><code>make
+</code></pre>
+<p>instale os binários compilados</p>
+<pre><code>make install	
+</code></pre>
+<h4 id="233-usuário-e-grupo">2.3.3 Usuário e grupo</h4>
+<p>crie o grupo zabbix</p>
+<pre><code>groupadd zabbix
+</code></pre>
+<p>crie o usuário zabbix</p>
+<pre><code>useradd -g zabbix zabbix
+</code></pre>
+<h4 id="234-configurações">2.3.4 Configurações</h4>
+<p>ajuste as configurações do arquivo /opt/zabbix/etc/zabbix_proxy.conf</p>
+<pre><code>Server=192.168.56.80
+Hostname=zabbixproxy
+LogFile=/opt/zabbix/log/zabbix_proxy.log
+DBName=/opt/zabbix/sqlite/zabbixprx.db
+PidFile=/opt/zabbix/run/zabbix_proxy.pid
+DebugLevel=3
+ProxyOfflineBuffer=3
+StartPollers=8
+StartPollersUnreachable=8
+StartTrappers=8
+StartPingers=4
+StartDiscoverers=2
+StartHTTPPollers=2
+JavaGateway=127.0.0.1
+JavaGatewayPort=10052
+StartJavaPollers=2   
+</code></pre>
+<p>ajuste as configurações do arquivo /opt/zabbix/etc/zabbix_agentd.conf</p>
+<pre><code>PidFile=/opt/zabbix/run/zabbix_agentd.pid
+LogFile=/opt/zabbix/log/zabbix_agentd.log
+Server=ip-do-servidor-zabbix
+DebugLevel=3
+StartAgents=4
+Hostname=nomedamaquina  
+</code></pre>
+<p>crie os diretórios run, log, init e sqlite</p>
+<pre><code>mkdir /opt/zabbix/{run,log,init,sqlite}
+</code></pre>
+<p>ajuste as permissões dos diretórios criados</p>
+<pre><code>chown zabbix.zabbix /opt/zabbix/{run,log,init,sqlite}
+</code></pre>
+<p>crie os links simbólicos para /var/log/zabbix e /etc/zabbix/</p>
+<pre><code>ln -s /opt/zabbix/log /var/log/zabbix
+ln -s /opt/zabbix/log /var/log/zabbix
+</code></pre>
+<p>apague os arquivos desnecessários</p>
+<pre><code>cd /opt/zabbix/etc
+rm -rf zabbix_agent.conf zabbix_agent.conf.d
+</code></pre>
+<p>crie um arquivo init para o proxy</p>
+<pre><code>cp /root/zabbix-2.0.6/misc/init.d/debian/zabbix-server /opt/zabbix/init/zabbix-proxy
+</code></pre>
+<p>altere as seguintes linhas do script init zabbix-proxy</p>
+<pre><code>NAME=zabbix_proxy
+DAEMON=/opt/zabbix/sbin/${NAME}
+DESC=&quot;Zabbix proxy daemon&quot;
+</code></pre>
+<p>copie o arquivo init do agent</p>
+<pre><code>cp /root/zabbix-2.0.6/misc/init.d/debian/zabbix-agent /opt/zabbix/init/
+</code></pre>
+<p>ajuste o path dentro dos arquivos</p>
+<pre><code>sed -i 's/\/usr\/local\/sbin/\/opt\/zabbix\/sbin/' /opt/zabbix/init/zabbix-*
+</code></pre>
+<p>copie os arquivos init para /etc/init.d/</p>
+<pre><code>cp /opt/zabbix/init/zabbix-* /etc/init.d/
+</code></pre>
+<p>ative os serviços zabbix no boot</p>
+<pre><code>insserv -d zabbix-proxy
+insserv -d zabbix-agent    
+</code></pre>
+<h4 id="235-serviços">2.3.5 Serviços</h4>
+<p>execute os serviços</p>
+<pre><code>/etc/init.d/zabbix-proxy start
+/etc/init.d/zabbix-agent start
+</code></pre>
+<p>verifique as portas</p>
+<pre><code>netstat -ntpl|grep 1005
+</code></pre>
+<p>observe a saída</p>
+<pre tabindex="0"><code>tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      1852/zabbix_agentd
+tcp        0      0 0.0.0.0:10051           0.0.0.0:*               LISTEN      1385/zabbix_proxy
+tcp6       0      0 :::10050                :::*                    LISTEN      1852/zabbix_agentd
+tcp6       0      0 :::10051                :::*                    LISTEN      1385/zabbix_proxy
+</code></pre><h3 id="24-zabbix-agente">2.4 Zabbix Agente</h3>
+<p>Agora vamos instalar o agente nas VMs FrontEnd (192.168.56.82) e Database (192.168.56.81)</p>
+<h4 id="241-instalando-agente-na-database">2.4.1 Instalando agente na Database</h4>
+<p>Vamos utilizar o frontend para compilar o agente e gerar um tarball para usarmos no Database, ela será nossa máquina referência em relação ao agente.</p>
+<h5 id="2411-pacotes">2.4.1.1 pacotes</h5>
+<p>instale os pacotes necessários para compilação e funcionamento do agente</p>
+<pre><code>aptitude install build-essential libcurl4-gnutls-dev libssh2-1-dev libldap-2.4-2 
+</code></pre>
+<h5 id="2412-compilação">2.4.1.2 compilação</h5>
+<p>entre no diretório root</p>
+<pre><code>cd /root
+</code></pre>
+<p>copie os sources do zabbix server</p>
+<pre><code>scp -r root@192.168.56.80:/root/zabbix-2.0.6.tar.gz .
+</code></pre>
+<p>descompacte</p>
+<pre><code>tar zxvf zabbix-2.0.6.tar.gz
+</code></pre>
+<p>entre no diretório</p>
+<pre><code>cd zabbix-2.0.6
+</code></pre>
+<p>copie o tarball do server e descompacte, após descompactar configure</p>
+<pre><code>./configure --prefix=/opt/zabbix --enable-agent --enable-ipv6 --with-ldap --with-ssh2 --with-libcurl
+</code></pre>
+<p>compile</p>
+<pre><code>make
+</code></pre>
+<p>instale</p>
+<pre><code>make install
+</code></pre>
+<h5 id="2413-usuário-e-grupo">2.4.1.3 Usuário e grupo</h5>
+<p>crie o usuário e grupo zabbix</p>
+<pre><code>groupadd zabbix
+useradd -g zabbix zabbix
+</code></pre>
+<h5 id="2414-configurações">2.4.1.4 Configurações</h5>
+<h6 id="24141-enviando-dados-para-servidor-zabbix-server">2.4.1.4.1 Enviando dados para servidor zabbix server</h6>
+<p>crie os diretórios run, init e log no /opt/zabbix e ajuste as permissões</p>
+<pre><code>mkdir /opt/zabbix/{run,log,init}
+chown zabbix.zabbix /opt/zabbix/{run,log,init}
+</code></pre>
+<p>crie os links simbólicos para /var/log/zabbix e /etc/zabbix</p>
+<pre><code>ln -s /opt/zabbix/log /var/log/zabbix
+ln -s /opt/zabbix/etc /etc/zabbix
+</code></pre>
+<p>apague os arquivos desnecessários</p>
+<pre><code>cd /opt/zabbix/etc
+rm -rf zabbix_agent.conf zabbix_agent.conf.d
+</code></pre>
+<p>copie os arquivos default de init</p>
+<pre><code>cp /root/zabbix-2.0.6/misc/init.d/debian/zabbix-agent /opt/zabbix/init
+</code></pre>
+<p>altere o path no arquivo /etc/init.d/zabbix-agent</p>
+<pre><code>sed -i 's/\/usr\/local\/sbin/\/opt\/zabbix\/sbin/' /opt/zabbix/init/zabbix-agent
+</code></pre>
+<p>copie o arquivo para o diretório /etc/init.d/</p>
+<pre><code>cp /opt/zabbix/init/* /etc/init.d
+</code></pre>
+<p>ajuste as linhas abaixo no arquivo /opt/zabbix/etc/zabbix_agentd.conf <br>
+PidFile=/opt/zabbix/run/zabbix_agentd.pid
+LogFile=/opt/zabbix/log/zabbix_agentd.log
+Server=192.168.56.80
+DebugLevel=3
+StartAgents=4
+Hostname=nomedamaquina</p>
+<p>ative o zabbix-agent no boot</p>
+<pre><code>insserv -d zabbix-agent
+</code></pre>
+<h6 id="24142-enviando-dados-para-servidor-zabbix-proxy">2.4.1.4.2 Enviando dados para servidor zabbix proxy</h6>
+<p>Os procedimentos são os mesmos do item 9.3.1, com exceção da seguinte linha que precisa modificada no arquivo /opt/zabbix/etc/zabbix_agentd.conf</p>
+<pre><code>Server=192.168.56.83
+</code></pre>
+<h5 id="2415-serviço">2.4.1.5 Serviço</h5>
+<p>inicie o agente</p>
+<pre><code>/etc/init.d/zabbix-agent start
+</code></pre>
+<p>verifique se está rodando</p>
+<pre><code>netstat -ntpl|grep 1005
+</code></pre>
+<p>observe a saída</p>
+<pre tabindex="0"><code>tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      3335/zabbix_agentd
+tcp6       0      0 :::10050                :::*                    LISTEN      3335/zabbix_agentd
+</code></pre><h5 id="2416-gerando-tarball">2.4.1.6 Gerando tarball</h5>
+<p>Acesse o diretório opt</p>
+<pre><code>cd /opt
+</code></pre>
+<p>Compacte o diretório</p>
+<pre><code>tar jcvf zabbix-2.0.6-vV-AAAA-MM-DD.tar.bz2 zabbix
+</code></pre>
+<p>Exemplo</p>
+<pre><code>tar jcvf zabbix-2.0.6-v1-2013-05-17.tar.bz2 zabbix    
+</code></pre>
+<p>Agora o targall está pronto para ser utilizado na database.</p>
+<h4 id="242-instalando-agente-no-frontend">2.4.2 Instalando agente no frontend</h4>
+<p>copie o tarball da database</p>
+<pre><code>cd /opt
+cp -r root@192.168.56.81:/opt/zabbix-2.0.6-v1-2013-05-17.tar.bz2 .
+</code></pre>
+<p>descompacte</p>
+<pre><code>tar jxvf zabbix-2.0.6-v1-2013-05-17.tar.bz2
+</code></pre>
+<p>entre no diretório</p>
+<pre><code>cd zabbix-2.0.6
+</code></pre>
+<p>ajuste o arquivo zabbix_agentd.conf</p>
+<pre tabindex="0"><code>PidFile=/opt/zabbix/run/zabbix_agentd.pid
+LogFile=/opt/zabbix/log/zabbix_agentd.log
+Server=192.168.56.80
+DebugLevel=3
+StartAgents=4
+Hostname=zabbixfrontend
+</code></pre><p>crie os links simbólicos para /var/log/zabbix e /etc/zabbix</p>
+<pre><code>ln -s /opt/zabbix/log /var/log/zabbix
+ln -s /opt/zabbix/etc /etc/zabbix
+</code></pre>
+<p>copie o arquivo para o diretório /etc/init.d/</p>
+<pre><code>cp /opt/zabbix/init/* /etc/init.d
+</code></pre>
+<p>ative o zabbix-agent no boot</p>
+<pre><code>insserv -d zabbix-agent
+</code></pre>
+<p>crie o usuário e grupo zabbix</p>
+<pre><code>groupadd zabbix
+useradd -g zabbix zabbix
+</code></pre>
+<p>inicie o agente</p>
+<pre><code>/etc/init.d/zabbix-agent start
+</code></pre>
+<p>verifique se está rodando</p>
+<pre><code>netstat -ntpl|grep 1005
+</code></pre>
+<p>observe a saída</p>
+<pre tabindex="0"><code>tcp        0      0 0.0.0.0:10050           0.0.0.0:*               LISTEN      3335/zabbix_agentd
+tcp6       0      0 :::10050                :::*                    LISTEN      3335/zabbix_agentd
+</code></pre><p>pronto.</p>
+<h3 id="25-zabbix-frontend--proxy">2.5. Zabbix Frontend &amp; Proxy</h3>
+<p>No Frontend adicione o proxy em Administration/DM e associe a máquina 81 (database) e 82 (frontend) ao proxy, adicione o proxy com o mesmo nome da diretiva Hostname em zabbix_proxy.conf.</p>
+<p>Você também pode criar o proxy em Administration/DM e depois associar o HOST ao PROXY pelas configurações do HOST se preferir.</p>
+<h2 id="3-amarrando-as-pontas">3. Amarrando as pontas</h2>
+<p>Neste post foi possível aprender a instalar o Zabbix 2.0.6 separando os serviços em várias VMs. Abordei também como migrar a base do 1.8.x para 2.0.x através de alguns passos rápidos e já deixamos o JMX Gateway instalado e rodando.</p>
+<p>Nos próximos posts pretendo abordar o processo de criação de templates SNMP para monitorar Switchs, Roteadores e Appliances.</p>
+<p>Outra coisa interessante que devo mostrar é a monitoração de aplicações JAVA usando o Zabbix JMX Gateway.</p>
+<p>Parece que devo continuar na trilha do Zabbix por mais uns dias aqui em BSB, confesso que estou aprendendo muita coisa nova, isto tem sido muito divertido, portanto, nada melhor do que compartilhar o que eu venho aprendendo aqui neste blog para ficar ainda melhor.</p>
+<h2 id="4-referências">4. Referências</h2>
+<p>Durante meus estudos passei por muitos links, segue a lista abaixo:</p>
+<h3 id="41-zabbixorg">4.1 Zabbix.org</h3>
+<p>Configurações Server/Proxy/Agent/java</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_server">https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_server</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_proxy">https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_proxy</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_agent">https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_agent</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_java">https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_java</a></li>
+</ul>
+<p>Conceitos</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/definitions">https://www.zabbix.com/documentation/2.0/manual/concepts/definitions</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/server">https://www.zabbix.com/documentation/2.0/manual/concepts/server</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/agent">https://www.zabbix.com/documentation/2.0/manual/concepts/agent</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/proxy">https://www.zabbix.com/documentation/2.0/manual/concepts/proxy</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/java">https://www.zabbix.com/documentation/2.0/manual/concepts/java</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/sender">https://www.zabbix.com/documentation/2.0/manual/concepts/sender</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/concepts/get">https://www.zabbix.com/documentation/2.0/manual/concepts/get</a></li>
+</ul>
+<p>Bancos</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/install/db_scripts">https://www.zabbix.com/documentation/2.0/manual/appendix/install/db_scripts</a></li>
+</ul>
+<p>Templates</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/templates/template">https://www.zabbix.com/documentation/2.0/manual/config/templates/template</a></li>
+</ul>
+<p>Triggers</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/triggers/trigger">https://www.zabbix.com/documentation/2.0/manual/config/triggers/trigger</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/triggers/expression">https://www.zabbix.com/documentation/2.0/manual/config/triggers/expression</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/triggers/severity">https://www.zabbix.com/documentation/2.0/manual/config/triggers/severity</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/triggers/dependencies">https://www.zabbix.com/documentation/2.0/manual/config/triggers/dependencies</a></li>
+</ul>
+<p>Usuários/Grupos/Permissões</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/users_and_usergroups/permissions">https://www.zabbix.com/documentation/2.0/manual/config/users_and_usergroups/permissions</a></li>
+</ul>
+<p>Interface Web</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/installation/install#installing_zabbix_web_interface">https://www.zabbix.com/documentation/2.0/manual/installation/install#installing_zabbix_web_interface</a></li>
+</ul>
+<p>Gráficos, Mapas, Telas</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/visualisation/maps">https://www.zabbix.com/documentation/2.0/manual/config/visualisation/maps</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/visualisation/graphs">https://www.zabbix.com/documentation/2.0/manual/config/visualisation/graphs</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/visualisation/screens">https://www.zabbix.com/documentation/2.0/manual/config/visualisation/screens</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/visualisation/slides">https://www.zabbix.com/documentation/2.0/manual/config/visualisation/slides</a></li>
+</ul>
+<p>Monitoração Distribuída</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/distributed_monitoring/proxies">https://www.zabbix.com/documentation/2.0/manual/distributed_monitoring/proxies</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/distributed_monitoring/nodes">https://www.zabbix.com/documentation/2.0/manual/distributed_monitoring/nodes</a></li>
+</ul>
+<p>JMX Gateway</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/config/items/itemtypes/jmx_monitoring">https://www.zabbix.com/documentation/2.0/manual/config/items/itemtypes/jmx_monitoring</a></li>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_java">https://www.zabbix.com/documentation/2.0/manual/appendix/config/zabbix_java</a></li>
+</ul>
+<p>Tuning</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/performance_tuning">https://www.zabbix.com/documentation/2.0/manual/appendix/performance_tuning</a></li>
+</ul>
+<p>API</p>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/2.0/manual/appendix/api/api">https://www.zabbix.com/documentation/2.0/manual/appendix/api/api</a></li>
+</ul>
+<h3 id="42-zabbixbrasil">4.2 ZabbixBrasil</h3>
+<p>O material desses caras é muito fera.</p>
+<ul>
+<li><a href="http://zabbixbrasil.org/files/criando_um_template_zabbix.pdf">http://zabbixbrasil.org/files/criando_um_template_zabbix.pdf</a></li>
+<li><a href="http://zabbixbrasil.org/wiki/tiki-index.php?page=Usando+Zabbix+para+Monitorar+Clientes+SNMP+v1+e+v2c">http://zabbixbrasil.org/wiki/tiki-index.php?page=Usando+Zabbix+para+Monitorar+Clientes+SNMP+v1+e+v2c</a></li>
+<li><a href="http://zabbixbrasil.org/?page_id=7">http://zabbixbrasil.org/?page_id=7</a></li>
+</ul>
+<p>Para quem deseja monitorar GlassFish com JMX do Zabbix:</p>
+<ul>
+<li><a href="http://zabbixbrasil.org/files/Monitorando_Glassfish2.1_com-Zabbix_2.0.pdf">http://zabbixbrasil.org/files/Monitorando_Glassfish2.1_com-Zabbix_2.0.pdf</a></li>
+</ul>
+<h3 id="43-outros">4.3 Outros</h3>
+<p>Peformance do Zabbix</p>
+<ul>
+<li><a href="http://blog.zabbix.com/monitoring-how-busy-zabbix-processes-are/">http://blog.zabbix.com/monitoring-how-busy-zabbix-processes-are/</a></li>
+<li><a href="http://openingyourmind.wordpress.com/2012/12/19/melhor-performance-com-o-zabbix-trapper/">http://openingyourmind.wordpress.com/2012/12/19/melhor-performance-com-o-zabbix-trapper/</a></li>
+</ul>
+<p>SNMP e Afins</p>
+<ul>
+<li><a href="http://www.hjort.co/2010/09/monitorando-servicos-com-snmp-e-zabbix.html">http://www.hjort.co/2010/09/monitorando-servicos-com-snmp-e-zabbix.html</a></li>
+<li><a href="http://pierky.wordpress.com/2012/04/24/zabbix-a-lightweight-dynamic-template-for-snmp-routers/">http://pierky.wordpress.com/2012/04/24/zabbix-a-lightweight-dynamic-template-for-snmp-routers/</a></li>
+<li><a href="http://linuxtechres.blogspot.com.br/2012/05/setup-snmp-and-snmptrap-monitoring.html">http://linuxtechres.blogspot.com.br/2012/05/setup-snmp-and-snmptrap-monitoring.html</a></li>
+<li><a href="http://www.oidview.com/mibs/1916/md-1916-1.html">http://www.oidview.com/mibs/1916/md-1916-1.html</a></li>
+<li><a href="http://www.iana.org/assignments/enterprise-numbers">http://www.iana.org/assignments/enterprise-numbers</a></li>
+</ul>
+<p>Para quem deseja monitorar JBOSS com JMX do Zabbix:</p>
+<ul>
+<li><a href="http://janssenlima.blogspot.com/2012/07/monitorando-servidor-jboss-no-zabbix.html">http://janssenlima.blogspot.com/2012/07/monitorando-servidor-jboss-no-zabbix.html</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

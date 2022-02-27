@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>apache ntlm_auth permission denied</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>apache ntlm_auth permission denied</h1>
+        <div>
+                <time>July 24, 2014</time>
+            </div>
+    </header><p>Há alguns posts eu mostrei uma configuração de SELINUX para permitir a conexão em rede do <a href="http://gutocarvalho.net/octopress/2014/07/01/apache-modproxy-permission-denied/">apache</a> quando este está utilizando proxy AJP com SELINUX ligado, hoje vou mostrar uma dica similar.</p>
+<p>Em um recém instalado CentOS 6.x eu estava trabalhando com a autenticação NTLM com WINBIND e recebi o seguinte erro nos logs do apache httpd.</p>
+<pre><code>[Thu Jul 24 13:09:13 2014] [error] [client 10.10.2.55] (13)Permission denied: couldn't spawn child ntlm helper process: /usr/bin/ntlm_auth
+[Thu Jul 24 13:09:13 2014] [error] [client 10.10.2.55] (13)Permission denied: couldn't spawn child ntlm helper process: /usr/bin/ntlm_auth
+</code></pre>
+<p>Ao consultar o log audit do selinux também encontrava uma restrição.</p>
+<pre tabindex="0"><code>type=AVC msg=audit(1406218179.251:2302): avc:  denied  { read open } for  pid=24206 comm=&quot;httpd&quot; name=&quot;ntlm_auth&quot; dev=dm-0 ino=16475 scontext=unconfined_u:system_r:httpd_t:s0 tcontext=system_u:object_r:winbind_helper_exec_t:s0 tclass=file
+type=SYSCALL msg=audit(1406218179.251:2302): arch=c000003e syscall=59 success=yes exit=0 a0=7f81190eceb8 a1=7f81190ecea0 a2=7fffc633ddb0 a3=7fffc633daf0 items=0 ppid=23043 pid=24206 auid=511 uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=316 comm=&quot;ntlm_auth&quot; exe=&quot;/usr/bin/ntlm_auth&quot; subj=unconfined_u:system_r:httpd_t:s0 key=(null)
+</code></pre><p>Para contornar o problema de forma definitiva é necessário informar ao selinux que esse tipo de autenticação está permitida no sistema.</p>
+<pre><code>setsebool -P allow_httpd_mod_auth_ntlm_winbind 1
+</code></pre>
+<p>Com isso, sua autenticação irá funcionar.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

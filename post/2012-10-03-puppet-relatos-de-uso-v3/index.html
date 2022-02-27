@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Relatos de uso V3</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Relatos de uso V3</h1>
+        <div>
+                <time>October 3, 2012</time>
+            </div>
+    </header><p>Os usuários de puppet estão concentrando as informações relativas a dificuldades encontradas no upgrade para a versão 3.0. Se você identificou algum problema de fucionamento em seu ambiente após a atualização, por gentileza informe nesta <a href="http://projects.puppetlabs.com/projects/puppet/wiki/Telly_Upgrade_Issues">wiki</a>.</p>
+<p>Hoje ministrei um workshop de puppet já usando a v3, percebi - pelo menos no debian - que o ralsh não vem mais no pacote do puppet.</p>
+<p>Na introdução de puppet no workshop eu usava o RAL para demonstrar a abstração no uso de recuros.</p>
+<p>RALSH significava <code>ral shell</code>.</p>
+<h3 id="exemplos-de-uso-do-ralsh-até-a-versão-27">Exemplos de uso do RALSH até a versão 2.7</h3>
+<p>testando resource type <strong>user</strong></p>
+<pre><code># ralsh user guto ensure=present
+</code></pre>
+<p>testando resource type <strong>package</strong></p>
+<pre><code># ralsh package htop ensure=installed
+</code></pre>
+<p>testando resource type <strong>service</strong></p>
+<pre><code># ralsh service ssh ensure=running
+</code></pre>
+<h3 id="adaptando-para-a-versão-30">Adaptando para a versão 3.0</h3>
+<p>testando resource type <strong>user</strong></p>
+<pre><code># puppet resource user guto ensure=present
+</code></pre>
+<p>testando resource type <strong>package</strong></p>
+<pre><code># puppet resource package htop ensure=installed
+</code></pre>
+<p>testando resource type <strong>service</strong></p>
+<pre><code># puppet resource service ssh ensure=running
+</code></pre>
+<p>Até o momento eu só peguei isso, ainda estou confirmado no changelog se esta mudança foi devidamente informada.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

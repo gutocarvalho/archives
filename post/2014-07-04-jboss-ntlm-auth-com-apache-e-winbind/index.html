@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>JBOSS NTLM auth com apache e winbind</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>JBOSS NTLM auth com apache e winbind</h1>
+        <div>
+                <time>July 4, 2014</time>
+            </div>
+    </header><p>Recentemente comecei um projeto em um cliente novo em Brasília, este cliente tinha alguns ambientes legados que utilizam autenticação NTLM no JBOSS usando o APACHE + MOD_WINBIND + SAMBA + WINBIND + KERBEROS.</p>
+<p>É uma configuração que eu não escolheria devido a sua complexidade, mas é o que o cliente tem, e é o que funciona para ele hoje, portanto, criei uma VM limpa e testei o conceito, aproveitando para documentar já que não existia documentação.</p>
+<p>Eu particularmente utilizaria algo mais simples como APACHE + MOD_KERBEROS + KERBEROS, e espero poder cobrir isso em um post em breve assim que migrarmos esse modelo antigo de autenticação.</p>
+<p>A VM em que testei roda o CentOS 6.5, 64 bits, criei a VM utilizando vagrant e virtualbox com uma box da puppetlabs.</p>
+<p>O JBOSS utilizado para este teste é o 4.0.5.GA.</p>
+<h3 id="1-instalação">1. instalação</h3>
+<h4 id="11-installsamba">1.1 install::samba</h4>
+<p>instale o samba e suas dependências</p>
+<pre><code>yum install samba samba-client samba-winbind samba-winbind-krb5-locator
+</code></pre>
+<h4 id="12-installkerberos">1.2 install::kerberos</h4>
+<p>instale o kerberos</p>
+<pre><code> yum install krb5-libs krb5-workstation
+</code></pre>
+<h4 id="13-installapache">1.3 install::apache</h4>
+<p>instale o apache para utilizarmos como reverse proxy e camada de autenticação</p>
+<pre><code> yum install httpd httpd-devel
+</code></pre>
+<h4 id="14-installmod_ntlm">1.4. install::mod_ntlm</h4>
+<p>nao use o pacote da distribuição, ele por alguma razão não funcionou nos meus testes, tive que usar o módulo do git.samba.org mesmo.</p>
+<h5 id="fazendo-download">fazendo download</h5>
+<p>voce pode fazer o download do módulo já compilado se desejar</p>
+<pre><code>cd /tmp
+wget http://gutocarvalho.net/misc/jboss4/mod_auth_ntlm_winbind.so
+</code></pre>
+<p>acerte a permissão</p>
+<pre><code>chmod 755 mod_auth_ntlm_winbind.so 
+</code></pre>
+<p>copie o binário para o destino</p>
+<pre><code>cp mod_auth_ntlm_winbind.so  /usr/lib64/httpd/modules
+</code></pre>
+<h5 id="compilando">compilando</h5>
+<p>caso não queria usar o binário, compile a partir do fonte, para isto acesse o diretório temporário</p>
+<pre><code>cd /tmp
+</code></pre>
+<p>crie um diretório chamado</p>
+<pre><code>mkdir ntlm
+</code></pre>
+<p>entre no diretório ntlm</p>
+<pre><code>cd ntlm
+</code></pre>
+<p>pegue o modulo no repositório svn</p>
+<pre><code> git clone git://git.samba.org/jerry/mod_auth_ntlm_winbind.git 
+</code></pre>
+<p>compile o módulo</p>
+<pre><code> gcc mod_auth_ntlm_winbind.c
+</code></pre>
+<p>instale o módulo</p>
+<pre><code>apxs2 -DAPACHE2 -c -i mod_auth_ntlm_winbind.c
+</code></pre>
+<p>o arquivo do módulo será instalado em</p>
+<pre><code> /usr/lib64/httpd/modules/mod_auth_ntlm_winbind.so
+</code></pre>
+<h4 id="15-installjava">1.5 install::java</h4>
+<p>instale o java, ele é dependência para o funcionamento do JBOSS</p>
+<pre><code>yum install java-1.6.0-openjdk
+</code></pre>
+<h4 id="16-installjboss">1.6 install::jboss</h4>
+<p>entre no diretório opt</p>
+<pre><code>cd /opt
+</code></pre>
+<p>faça download do jboss4</p>
+<pre><code>wget http://gutocarvalho.net/misc/jboss4/jboss-4.0.5.GA.zip
+</code></pre>
+<p>descompacte o jboss</p>
+<pre><code>tar zxvf jboss-4.0.5.GA.zip
+</code></pre>
+<p>crie o grupo jboss</p>
+<pre><code>groupadd jboss
+</code></pre>
+<p>crie o usuário jboss</p>
+<pre><code>useradd -s /bin/bash -g jboss jboss
+</code></pre>
+<p>ajuste a permissão</p>
+<pre><code>chown -R jboss.jboss /opt/jboss-4.0.5.GA
+</code></pre>
+<p>crie um link simbólico</p>
+<pre><code>ln -s /opt/jboss /opt/jboss-4.0.5.GA
+</code></pre>
+<h3 id="2-configuração">2. configuração</h3>
+<h4 id="21-configsamba">2.1 config::samba</h4>
+<p>entre no diretório do samba</p>
+<pre><code> cd /etc/samba
+</code></pre>
+<p>edite o arquivo</p>
+<pre><code> vim /etc/samba/smb.conf
+</code></pre>
+<p>adicione o código abaixo</p>
+<pre tabindex="0"><code>[global]
+workgroup = XXXXX
+realm = XXXXX.GOV.BR
+preferred master = no
+security = ADS
+encrypt passwords = yes
+winbind separator = \\
+idmap uid = 10000-20000
+idmap gid = 10000-20000
+ 
+[homes]
+valid users = %S
+</code></pre><h4 id="22-configkerberos">2.2 config::kerberos</h4>
+<p>entre no diretório /etc</p>
+<pre><code>cd /etc/
+</code></pre>
+<p>edite o arquivo krb5.conf</p>
+<pre><code>vim /etc/krb5.conf
+</code></pre>
+<p>adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code>[logging]
+default = FILE:/var/log/krb5libs.log
+kdc = FILE:/var/log/krb5kdc.log
+admin_server = FILE:/var/log/kadmind.log
+ 
+[libdefaults]
+default_realm = XXX.GOV.BR
+ 
+# dns_lookup_realm = true
+# dns_lookup_kdc = false
+[realms]
+XXX.GOV.BR = {
+  kdc = yyy.xxx.gov.br
+        }
+ 
+[domain_realms]
+        .xxx.gov.br = XXX.GOV.BR
+</code></pre><h4 id="23-configapache">2.3 config::apache</h4>
+<p>acesse o diretório /etc/httpd/conf.d/</p>
+<pre><code>cd /etc/httpd/conf.d/
+</code></pre>
+<p>edite o arquivo aplicacao.conf</p>
+<pre><code>vim /etc/httpd/conf.d/aplicacao.conf
+</code></pre>
+<p>adicione o conteúdo abaixo</p>
+<pre tabindex="0"><code>LoadModule auth_ntlm_winbind_module modules/mod_auth_ntlm_winbind.so
+
+        ProxyPass /app   ajp://10.10.2.106:8009/app
+       
+        &lt;Location /app&gt;
+                AuthName &quot;XXX&quot;
+                NTLMAuth on
+                NTLMAuthHelper &quot;/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp&quot;
+                NTLMBasicAuthoritative on
+                AuthType NTLM
+                Require valid-user
+                NegotiateAuth on
+                NegotiateAuthHelper &quot;/usr/bin/ntlm_auth --helper-protocol=gss-spnego&quot;
+                AuthType Negotiate
+        &lt;/Location&gt;
+
+        ErrorLog /var/log/httpd/jboss4-error.log
+        ServerSignature Off
+
+&lt;/VirtualHost&gt;
+
+ 
+</code></pre><h4 id="24-configjboss">2.4 config::jboss</h4>
+<p>acesse o diretório do jbossweb</p>
+<pre><code> cd /opt/jboss/server/default/deploy/jbossweb-tomcat55.sar
+</code></pre>
+<p>edite o arquivo server.xml</p>
+<pre><code>vim server.xml
+</code></pre>
+<p>altere as configurações de AJP para que a autenticação NTLM funcione, mude de</p>
+<pre tabindex="0"><code>&lt;!-- A AJP 1.3 Connector on port 8009 --&gt;
+      &lt;Connector port=&quot;8009&quot; address=&quot;${jboss.bind.address}&quot;
+         emptySessionPath=&quot;true&quot; enableLookups=&quot;false&quot; redirectPort=&quot;8443&quot;
+         protocol=&quot;AJP/1.3&quot;/&gt;
+</code></pre><p>para</p>
+<pre tabindex="0"><code>&lt;!-- A AJP 1.3 Connector on port 8009 --&gt;
+      &lt;Connector port=&quot;8009&quot; address=&quot;${jboss.bind.address}&quot;
+         emptySessionPath=&quot;true&quot; enableLookups=&quot;false&quot; tomcatAuthentication=&quot;false&quot; redirectPort=&quot;8443&quot;
+         protocol=&quot;AJP/1.3&quot;/&gt;
+</code></pre><p>Crie o arquivo de init do jboss em /etc/init.d, esse arquivo foi retirado do módulo puppet-example42-jboss, ajuste a linha 31 com o ip correto da sua máquima.</p>
+<pre tabindex="0"><code>#!/bin/sh
+# File Managed by Puppet
+
+# jboss        Startup script for JBoss Instance default
+#
+# chkconfig: - 85 15
+# description: Jboss is an Application Server
+
+### BEGIN INIT INFO
+# Provides:          jboss
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop jboss service
+### END INIT INFO
+
+# define where jboss is - this is the directory containing directories log, bin, conf etc
+JBOSS_HOME=${JBOSS_HOME:-&quot;/opt/jboss&quot;}
+
+# define the user under which jboss will run, or use 'RUNASIS' to run as the current user
+JBOSS_USER=${JBOSS_USER:-&quot;jboss&quot;}
+
+# make sure java is in your path
+JAVAPTH=${JAVAPTH:-&quot;/usr/local/jdk/bin&quot;}
+
+# configuration to use, usually one of 'minimal', 'default', 'all'
+JBOSS_CONF=${JBOSS_CONF:-&quot;default&quot;}
+
+# if JBOSS_HOST specified, use -b to bind jboss services to that address
+JBOSS_BIND_ADDR=${JBOSS_HOST:-&quot;-b 10.10.2.73&quot;}
+
+# define the classpath for the shutdown class
+JBOSSCP=${JBOSSCP:-&quot;$JBOSS_HOME/bin/shutdown.jar:$JBOSS_HOME/client/jnet.jar&quot;}
+
+# define the script to use to start jboss
+JBOSSSH=${JBOSSSH:-&quot;$JBOSS_HOME/bin/run.sh -c $JBOSS_CONF $JBOSS_BIND_ADDR&quot;}
+
+# Lock and Pid files
+LOCKFILE=/var/lock/jboss
+PIDFILE=/var/run/jboss.pid
+
+if [ &quot;$JBOSS_USER&quot; = &quot;RUNASIS&quot; ]; then
+  SUBIT=&quot;&quot;
+else
+  SUBIT=&quot;su - $JBOSS_USER -c &quot;
+fi
+
+if [ -n &quot;$JBOSS_CONSOLE&quot; -a ! -d &quot;$JBOSS_CONSOLE&quot; ]; then
+  # ensure the file exists
+  touch $JBOSS_CONSOLE
+  if [ ! -z &quot;$SUBIT&quot; ]; then
+    chown $JBOSS_USER $JBOSS_CONSOLE
+  fi
+fi
+
+if [ -n &quot;$JBOSS_CONSOLE&quot; -a ! -f &quot;$JBOSS_CONSOLE&quot; ]; then
+  echo &quot;WARNING: location for saving console log invalid: $JBOSS_CONSOLE&quot;
+  echo &quot;WARNING: ignoring it and using /dev/null&quot;
+  JBOSS_CONSOLE=&quot;/dev/null&quot;
+fi
+
+#define what will be done with the console log
+JBOSS_CONSOLE=${JBOSS_CONSOLE:-&quot;/dev/null&quot;}
+
+# Jboss Start command
+# Custom, per instance, run.conf configured via Puppet
+JBOSS_CMD_START=&quot;cd $JBOSS_HOME/bin; $JBOSSSH&quot;
+
+
+if [ -z &quot;`echo $PATH | grep $JAVAPTH`&quot; ]; then
+  export PATH=$PATH:$JAVAPTH
+fi
+
+if [ ! -d &quot;$JBOSS_HOME&quot; ]; then
+  echo JBOSS_HOME does not exist as a valid directory : $JBOSS_HOME
+  exit 1
+fi
+
+
+status () {
+  pslist=$( ps -ef | fgrep run.sh | fgrep java | fgrep $JBOSS_USER | fgrep default | awk '{print $2}' | tr '\n' ' ' | sed -e s/\ $// )
+  if [ -n &quot;$pslist&quot; ]; then
+    echo &quot;jboss (pid $pslist) is running result: 0&quot;
+    return 0
+  fi
+  if [ -f $PIDFILE ]; then
+    echo &quot;jboss dead but pid file exists result: 1&quot;
+    return 1
+  fi
+  if [ -f $LOCKFILE ]; then
+    echo &quot;jboss dead but subsys locked result: 2&quot;
+    return 2
+  fi
+  echo &quot;jboss is stopped result: 3&quot;
+  return 3
+}
+
+start () {
+  if [ -f $LOCKFILE ]; then
+    status
+    exit
+  fi
+  cd $JBOSS_HOME/bin
+  echo JBOSS_CMD_START = $JBOSS_CMD_START
+  if [ -z &quot;$SUBIT&quot; ]; then
+    eval $JBOSS_CMD_START &gt;${JBOSS_CONSOLE} 2&gt;&amp;1 &amp;
+    if [ &quot;$?&quot; -eq 0 ]; then
+      touch $LOCKFILE
+    fi
+  else
+    $SUBIT &quot;$JBOSS_CMD_START &gt;${JBOSS_CONSOLE} 2&gt;&amp;1 &amp;&quot;
+    if [ &quot;$?&quot; -eq 0 ]; then
+      touch $LOCKFILE
+    fi
+  fi
+}
+
+stop () {
+  [ &quot;$1&quot; -eq &quot;$1&quot; ] 2&gt; /dev/null &amp;&amp; timeout=$1 || timeout=0
+  pslist=$( ps -ef | fgrep run.sh | fgrep java | fgrep $JBOSS_USER | fgrep default | awk '{print $2}' | tr '\n' ' ' | sed -e s/\ $// )
+  if [ ! -z &quot;$pslist&quot; ]; then
+    kill $pslist
+    seconds=0
+    while [ &quot;$(ps -A -o pid= | grep -q $pslist ; echo $?)&quot; = &quot;0&quot; ]; do
+      echo &quot;JBoss still running...&quot;
+      sleep 1
+      seconds=$(expr $seconds + 1)
+      if [ $seconds -ge $timeout ] &amp;&amp; [ $timeout -gt 0 ]
+       then
+        kill -9 $pslist
+        break
+      fi
+    done
+    rm -f $LOCKFILE
+    echo &quot;JBoss stopped!&quot;
+  fi
+}
+
+case &quot;$1&quot; in
+start)
+    start
+    ;;
+stop)
+    stop $2
+    ;;
+restart)
+    stop $2
+    start
+    ;;
+status)
+    status
+    ;;
+*)
+    echo &quot;usage: $0 (start|stop [timeout in seconds]|restart [timeout in seconds]|status|help)&quot;
+esac
+
+</code></pre><h3 id="3-pós-configuração">3. pós configuração</h3>
+<h4 id="31-posconfigsamba">3.1 posconfig::samba</h4>
+<p>ative o samba no boot</p>
+<pre><code>chkconfg smb on
+</code></pre>
+<p>reinicie o samba</p>
+<pre><code> service smb restart
+</code></pre>
+<p>coloque a maquina no domínio</p>
+<pre><code> net ads join -U usuário
+</code></pre>
+<p>obtenha um ticket kerberos</p>
+<pre><code> kinit usuario.sobrenome
+</code></pre>
+<p>edite /etc/nsswitch.conf e modifique</p>
+<pre><code>passwd: compat
+group: compat
+</code></pre>
+<p>para</p>
+<pre><code>passwd: compat winbind
+group: compat winbind    
+</code></pre>
+<h4 id="32-posconfigapache">3.2 posconfig::apache</h4>
+<p>ative a autenticação ntlm no selinux (caso ele esteja ativado)</p>
+<pre><code>setsebool -P allow_httpd_mod_auth_ntlm_winbind on
+</code></pre>
+<p>ative o boleando para permitir o funcionamento do proxy no apache</p>
+<pre><code>setsebool -P httpd_can_network_connect 1
+</code></pre>
+<p>adicione o apache ao grupo do winbind</p>
+<pre><code> gpasswd -a apache wbpriv
+</code></pre>
+<p>ative o httpd no boot</p>
+<pre><code> chkconfig httpd on
+</code></pre>
+<p>reinicie o httpd</p>
+<pre><code> service httpd restart
+</code></pre>
+<h4 id="33-posconfigjboss">3.3 posconfig::jboss</h4>
+<p>ajuste a permissão do script de inicialização do jboss</p>
+<pre><code>chmod 755 /etc/init.d/jboss
+</code></pre>
+<p>ative o jboss no boot</p>
+<pre><code>chkconfig jboss on
+</code></pre>
+<p>inicie o jboss</p>
+<pre><code>/etc/init.d/jboss start
+</code></pre>
+<h3 id="4-testes">4. testes</h3>
+<h4 id="41-testesntlm_auth">4.1 testes::ntlm_auth</h4>
+<p>teste a autenticação localmente para garantir que está funcionando.</p>
+<pre><code>/usr/bin/ntlm_auth --username usuario --domain=XXX
+</code></pre>
+<h4 id="52-testesjboss">5.2 testes::jboss</h4>
+<p>Faça o deploy de uma aplicação como por exemplo o ntlmtest e verifique se  a autenticação NTLM está funcionando.</p>
+<p>Esse último passo é bastante particular da sua aplicação, o apache só vai permtir que usuários válidos acessem o /app, contudo, como sua aplicação vai utilizar as credenciais é contigo e com sua app ;)</p>
+<h3 id="6-referências">6. referências</h3>
+<p>Oficiais</p>
+<ul>
+<li><a href="http://httpd.apache.org/docs/">http://httpd.apache.org/docs/</a></li>
+<li><a href="http://jbossas.jboss.org/docs">http://jbossas.jboss.org/docs</a></li>
+<li><a href="http://www.samba.org/samba/docs/man/Samba3-HOWTO/">http://www.samba.org/samba/docs/man/Samba3-HOWTO/</a></li>
+<li><a href="http://web.mit.edu/kerberos/">http://web.mit.edu/kerberos/</a></li>
+</ul>
+<p>Oficiais específicos</p>
+<ul>
+<li><a href="http://web.mit.edu/kerberos/krb5-latest/doc/admin/conf_files/krb5_conf.html">http://web.mit.edu/kerberos/krb5-latest/doc/admin/conf_files/krb5_conf.html</a></li>
+<li><a href="https://www.samba.org/samba/docs/man/Samba-HOWTO-Collection/winbind.html">https://www.samba.org/samba/docs/man/Samba-HOWTO-Collection/winbind.html</a></li>
+<li><a href="http://www.tldp.org/HOWTO/html_single/Kerberos-Infrastructure-HOWTO/">http://www.tldp.org/HOWTO/html_single/Kerberos-Infrastructure-HOWTO/</a></li>
+</ul>
+<p>Outros</p>
+<ul>
+<li><a href="http://bloke.org/linux/ntlm-authentication-active-directory-on-apache-linux/">http://bloke.org/linux/ntlm-authentication-active-directory-on-apache-linux/</a></li>
+<li><a href="http://adldap.sourceforge.net/wiki/doku.php?id=mod_auth_ntlm_winbind">http://adldap.sourceforge.net/wiki/doku.php?id=mod_auth_ntlm_winbind</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

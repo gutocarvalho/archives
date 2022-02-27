@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>ActiveMQ e Mcollective com SSL</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ActiveMQ e Mcollective com SSL</h1>
+        <div>
+                <time>September 9, 2015</time>
+            </div>
+    </header><h2 id="1-melhorando-a-segurança-do-mcollective">1. Melhorando a Segurança do Mcollective</h2>
+<h3 id="11-activemq--mcollective">1.1 ActiveMQ &amp; Mcollective</h3>
+<p>Por padrão, quando instalamos o Mcollective utilizamos um tipo de conexão simples e sem criptografia entre o Mcollective e o ActiveMQ. Todos os hacklabs já publicados aqui neste blog ensinam como fazer esse procedimento simples e direto ao ponto, porém, nem sempre o simples é seguro, justamente por isto vamos agora aprofundar nossos estudos no aspecto segurança.</p>
+<h3 id="12-consumindo-mensagens-na-fila">1.2 Consumindo mensagens na fila</h3>
+<p>No caso do Mcollective ele se conecta na porta 61613 TCP do ActiveMQ para consumir a fila Mcollective. No arquivo de configuração server.cfg do Mcollective colocamos as credenciais para acesso a fila específica, isso tudo trafega na rede sem criptografia - incluindo as credenciais de autenticação da fila.</p>
+<h3 id="13-injetando-mensagens-na-fila">1.3 Injetando mensagens na fila</h3>
+<p>Outro detalhe importante é a injeção de mensagens na fila mcollective do ActiveMQ. Esse procedimento é realizado pelo mcollective client. Em sua na configuração mais simples, o plugin de controle utilizado como security provider é o PSK, este, por sua vez, confere se uma mensagem injetada na fila foi assinada com a mesma PSK presente no arquivo de configuração server.cfg, caso a assinatura seja igual, o mcollective server consome a fila e aplica a mensagem encontrada.</p>
+<p>O problema de tudo isso é que se copiarmos o arquivo server.cfg para client.cfg isso nos permite utilizar o comando mco para injetar mensagens na fila, e como a PSK será igual, o mcollective server vai confiar e exectar o comando presente na mensagem. Com isso todo o node mcollective server é virtualmente um cliente em potencial que poderia injetar mensagens na fila mcollective do ActiveMQ. Esse tipo de controle é fraco e perigoso.</p>
+<h3 id="14-melhorando-a-segurança">1.4 Melhorando a segurança</h3>
+<p>Aqui vamos demonstrar como ativar SSL no ActiveMQ e no Mcollective para garantir a integridade e privacidade dos dados que estarão passando entre esses serviços.</p>
+<p>Outra melhoria será o uso de certificados para os clientes, com isso mesmo que algo seja injetado na fila, isto terá que ter vindo com assinatura de um certificado de alguém devidamente autorizado, do contrário o mco server simplesmente ignora a mensagem.</p>
+<p>Esse hacklab é uma continuação de:</p>
+<ol>
+<li><a href="http://gutocarvalho.net/octopress/2015/08/21/activemq-e-mcollective-no-puppet-4/">http://gutocarvalho.net/octopress/2015/08/21/activemq-e-mcollective-no-puppet-4/</a></li>
+<li><a href="http://gutocarvalho.net/octopress/2015/08/18/instalando-puppet-4-agent-and-master/">http://gutocarvalho.net/octopress/2015/08/18/instalando-puppet-4-agent-and-master/</a></li>
+</ol>
+<p>Ter executado estes labs anteriormente é pré-requisito, vou vai usar as mesmas VMs.</p>
+<h2 id="2-activemq-ativando-ssl">2. ActiveMQ ativando SSL</h2>
+<p>O ActiveMQ roda em JVM e para realizarmos a configuração de SSL/TLS em uma aplicação rodando em JVM precisamos configurar um Truststore e um Keystore.</p>
+<h3 id="21-identificando-certificados">2.1. Identificando certificados</h3>
+<p>crie o diretorio abaixo para trabalharmos</p>
+<pre><code>mkdir /root/certs
+mkdir /root/certs/activemq
+mkdir /root/certs/activemq/private
+</code></pre>
+<p>acesse o diretório</p>
+<pre><code>cd /root/certs/activemq
+</code></pre>
+<p>utilize o puppetmaster CA para criar uma chave para o serviço do ActivemQ.</p>
+<pre><code>/opt/puppetlabs/puppet/bin/puppet cert generate activemq-service
+</code></pre>
+<p>saída</p>
+<pre tabindex="0"><code>Notice: activemq-server has a waiting certificate request
+Notice: Signed certificate request for activemq-service
+Notice: Removing file Puppet::SSL::CertificateRequest activemq-service at '/etc/puppetlabs/puppet/ssl/ca/requests/activemq-service'
+Notice: Removing file Puppet::SSL::CertificateRequest activemq-service at '/etc/puppetlabs/puppet/ssl/certificate_requests/activemq-service.pem'
+</code></pre><p>copie os arquivos para o diretorio de trabalho</p>
+<pre><code>cp /etc/puppetlabs/puppet/ssl/certs/activemq-service.pem /root/certs/activemq
+cp /etc/puppetlabs/puppet/ssl/private_keys/activemq-service.pem /root/certs/activemq/private
+</code></pre>
+<h3 id="22-criando-trustkey-para-activemq">2.2. Criando trustkey para ActiveMQ</h3>
+<p>crie a trustkey usando a CA do Puppet (defina uma senha forte)</p>
+<pre><code>keytool -import -alias &quot;PuppetCA&quot; -file /etc/puppetlabs/puppet/ssl/certs/ca.pem -keystore truststore.jks
+enter password and confirmed [yes]
+</code></pre>
+<p>verifique sua truststore</p>
+<pre><code>keytool -list -keystore truststore.jks
+</code></pre>
+<h3 id="23-criando-keystore-para-activemq">2.3 Criando keystore para ActiveMQ</h3>
+<p>concatene a chave publica e privada para criar a keystore</p>
+<pre><code>cat /root/certs/activemq/activemq-service.pem /root/certs/activemq/private/activemq-service.pem &gt; /root/certs/activemq/activemq-temp.pem
+</code></pre>
+<p>converta o arquivo concatenado para o formato pkcs12 (as duas senhas solicitadas devem ser as mesmas export/source)</p>
+<pre><code>openssl pkcs12 -export -in activemq-temp.pem -out activemq.p12 -name activemq
+</code></pre>
+<p>crie a keystore (repita a senha da keystore)</p>
+<pre><code>keytool -importkeystore -destkeystore keystore.jks -srckeystore activemq.p12 -srcstoretype PKCS12 -alias activemq
+</code></pre>
+<p>verifique a keystore</p>
+<pre><code>keytool -list -keystore keystore.jks
+</code></pre>
+<h3 id="24-ajustando-o-activemq-xml">2.4 Ajustando o ActiveMQ XML</h3>
+<p>Localize o trecho abaixo no arquivo /etc/activemq.xml</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;transportConnectors&gt;</span>
+  <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;openwire&#34;</span> <span class="na">uri=</span><span class="s">&#34;tcp://0.0.0.0:61616&#34;</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;stomp+nio&#34;</span> <span class="na">uri=</span><span class="s">&#34;stomp://0.0.0.0:61613&#34;</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/transportConnectors&gt;</span>
+</code></pre></div><p>adicione o conector ssl</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;transportConnectors&gt;</span>
+  <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;openwire&#34;</span> <span class="na">uri=</span><span class="s">&#34;tcp://0.0.0.0:61616&#34;</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;stomp+nio&#34;</span> <span class="na">uri=</span><span class="s">&#34;stomp://0.0.0.0:61613&#34;</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;stomp+nio+ssl&#34;</span> <span class="na">uri=</span><span class="s">&#34;stomp+nio+ssl://0.0.0.0:61614?needClientAuth=true&#34;</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/transportConnectors&gt;</span>
+</code></pre></div><p>adicione o bloco de configuração para carregar os certificados logo abaixo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;sslContext&gt;</span>
+  <span class="nt">&lt;sslContext</span>
+    <span class="na">keyStore=</span><span class="s">&#34;/etc/activemq/ssl/keystore.jks&#34;</span> <span class="na">keyStorePassword=</span><span class="s">&#34;suasenha&#34;</span> 
+    <span class="na">trustStore=</span><span class="s">&#34;/etc/activemq/ssl/truststore.jks&#34;</span> <span class="na">trustStorePassword=</span><span class="s">&#34;suasenha&#34;</span> 
+  <span class="nt">/&gt;</span>
+<span class="nt">&lt;/sslContext&gt;</span>
+</code></pre></div><p>copie os arquivos gerados para o path do sslContext</p>
+<pre><code>mkdir /etc/activemq/ssl
+cp /root/certs/activemq/truststore.jks /etc/activemq/ssl
+cp /root/certs/activemq/keystore.jks /etc/activemq/ssl
+</code></pre>
+<p>reinicie seu activemq e verifique se a porta 61614 subiu</p>
+<pre><code>netstat -ntpl|grep 61614
+</code></pre>
+<p>saída</p>
+<pre><code>tcp6       0      0 :::61614  :::*   LISTEN      42682/java
+</code></pre>
+<p>se a porta 61614 está em modo listen a configuração ocorreu com sucesso.</p>
+<h2 id="3-mcollective-server">3. Mcollective Server</h2>
+<p>Precisamos fazer dois ajustes no mcollective server, o primeiro no conector do ActiveMQ, nele vamos habilitar o uso de SSL. O segundo ajuste será na parte do security provider que será utilizado para identificar mensagens que o Mcollective Server deve confiar.</p>
+<p>A relação de confiança depende do CA, todos os certiticados devem ser gerados a partir do mesmo CA, estamos usando a infraestrutura PKI do Puppet por ser comum a todos os nodes.</p>
+<h3 id="31-activemq-plugin-ssl">3.1 ActiveMQ Plugin SSL</h3>
+<p>ajuste as configurações para o mcollective se conectar ao activemq de forma segura, aqui você pode apontar para os certificados puppet da própria máquina, veja o exemplo abaixo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="na">plugin.activemq.pool.1.ssl</span> <span class="o">=</span> <span class="s">true</span>
+<span class="na">plugin.activemq.pool.1.ssl.ca</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/puppet/ssl/ca/ca_crt.pem</span>
+<span class="na">plugin.activemq.pool.1.ssl.key</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/puppet/ssl/private_keys/&lt;nome_do_seu_host&gt;.pem</span>
+<span class="na">plugin.activemq.pool.1.ssl.cert</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/puppet/ssl/certs/&lt;nome_do_seu_host&gt;.pem</span>
+</code></pre></div><p>reinicie o mcollective</p>
+<pre><code>systemctl restart mcollective
+</code></pre>
+<p>verifique se houve uma mensagem on_connected no log do mcollective</p>
+<pre><code>tail -10 /var/log/mcollective.log |grep on_connected
+</code></pre>
+<p>caso veja uma linha similar a esta abaixo</p>
+<pre><code>[2015-09-09T12:42:58.586917 #16357]  INFO -- : activemq.rb:119:in `on_connected' Connected to stomp+ssl://mcollective@activemq.hacklab:61614
+</code></pre>
+<p>sua conexão com o ActiveMQ via SSL ocorreu com sucesso</p>
+<h3 id="32-security-provider-ssl">3.2 Security Provider SSL</h3>
+<p>Agora vamos ajustar a relação de confiança para consumir mensagens devidamente assinadas na fila mcollective do ActiveMQ. Desabilite o método psk anteriormente configurado</p>
+<pre><code>#securityprovider = psk
+#plugin.psk = hacklab
+</code></pre>
+<p>gere um par de chaves para usarmos em todos os nodes rodando o mcollective server, essa chave será utilizada para comunicação entre o client e server, ela vai estabelecer a relação de confiança e garantir que as mensagens injetadas na fila são fidedignas e confiáveis.</p>
+<pre><code>/opt/puppetlabs/puppet/bin/puppet cert generate mcollective-service
+</code></pre>
+<p>saída</p>
+<pre tabindex="0"><code>Notice: activemq-server has a waiting certificate request
+Notice: Signed certificate request for mco-service
+Notice: Removing file Puppet::SSL::CertificateRequest mco-service at '/etc/puppetlabs/puppet/ssl/ca/requests/mco-service'
+Notice: Removing file Puppet::SSL::CertificateRequest mco-service at '/etc/puppetlabs/puppet/ssl/certificate_requests/mco-service.pem'
+</code></pre><p>copie os arquivos gerados para o diretório ssl</p>
+<pre><code>mkdir /etc/puppetlabs/mcollective/ssl 
+cp /etc/puppetlabs/puppet/ssl/certs/mco-service.pem /etc/puppetlabs/mcollective/ssl/server.crt
+cp /etc/puppetlabs/puppet/ssl/private_keys/mco-service.pem /etc/puppetlabs/mcollective/ssl/server.key
+</code></pre>
+<p>adicione o novo método de segurança</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="na">securityprovider</span> <span class="o">=</span> <span class="s">ssl</span>
+<span class="na">plugin.ssl_server_private</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/mcollective/ssl/server.key</span>
+<span class="na">plugin.ssl_server_public</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/mcollective/ssl/server.cert</span>
+<span class="na">plugin.ssl_client_cert_dir</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/mcollective/ssl/clients/</span>
+</code></pre></div><p>todos os seus nodes mcollective devem possuir essas chaves no diretório ssl, distribua a chave via puppet</p>
+<h3 id="33-certificado-do-cliente">3.3 Certificado do cliente</h3>
+<p>Agora que temos o serviço ActiveMQ e Mcollective devidamente ajustados e configurados para uso de criptografia, precisamos então criar chaves e configurar o mcollective client para que esse consiga injetar mensagens confiáveis na fila do ActiveMQ - mensagens devidamente assinadas.</p>
+<h4 id="331-gerando-certificado-para-uso-no-cliente">3.3.1 Gerando certificado para uso no cliente</h4>
+<p>gere um certificado para uso do mco client</p>
+<pre><code>/opt/puppetlabs/puppet/bin/puppet cert generate gutocarvalho
+</code></pre>
+<p>saída</p>
+<pre tabindex="0"><code>Notice: gutocarvalho has a waiting certificate request
+Notice: Signed certificate request for gutocarvalho
+Notice: Removing file Puppet::SSL::CertificateRequest gutocarvalho at '/etc/puppetlabs/puppet/ssl/ca/requests/gutocarvalho.pem'
+Notice: Removing file Puppet::SSL::CertificateRequest gutocarvalho at '/etc/puppetlabs/puppet/ssl/certificate_requests/gutocarvalho.pem'
+</code></pre><p>certificado gerado!</p>
+<h4 id="332-instalando-certificado-no-mco-server">3.3.2 Instalando certificado no mco server</h4>
+<p>crie um diretório para os certificados dos clientes</p>
+<pre><code>mkdir /etc/puppetlabs/mcollective/ssl/clients
+</code></pre>
+<p>copie a chave publica gerada para o diretorio clients em todos o nodes mcollective - use o puppet para isto</p>
+<pre><code>cp /etc/puppetlabs/puppet/ssl/certs/gutocarvalho.pem /etc/puppetlabs/mcollective/ssl/clients
+</code></pre>
+<p>reinicie o mcollective server</p>
+<pre><code>systemctl restart mcollective
+</code></pre>
+<p>com isso seu ambiente está pronto para ser orquestrado por aquele que possuir a chave privada do certificado gutocarvalho.pem</p>
+<h2 id="4-mcollective-client">4. Mcollective Client</h2>
+<p>O cliente mcollective pode ser configurado de duas formas, a primeira criando um arquivo client.cfg no diretório /etc/puppetlabs/mcollective ou utilizando variáveis de ambiente</p>
+<h3 id="41-configurando-cliente">4.1 Configurando Cliente</h3>
+<h4 id="412-arquivo-clientcfg">4.1.2 Arquivo client.cfg</h4>
+<p>A forma mais simples de configurar o client é copiar o arquivo server.cfg para client.cfg no mesmo diretório e fazer pequenos ajustes no parte do security provider.</p>
+<pre tabindex="0"><code>securityprovider = ssl
+plugin.ssl_server_public = /etc/puppetlabs/mcollective/ssl/server.crt
+plugin.ssl_client_private = /etc/puppetlabs/puppet/ssl/private_keys/gutocarvalho.pem
+plugin.ssl_client_public = /etc/puppetlabs/puppet/ssl/certs/gutocarvalho.pem
+</code></pre><p>No caso do client.cfg precisamos apontar qual a chave publica e privada do cliente e qual o certificado publico do servidor, só isso muda no arquivo todo, depois você pode orquestrar</p>
+<pre><code>/opt/puppetlabs/bin/mco ping
+</code></pre>
+<p>saída</p>
+<pre><code>activemq.hacklab                         time=96.14 ms
+mco.hacklab                              time=128.27 ms
+</code></pre>
+<p>se houve retorno similar, as configurações foram realizadas com sucesso.</p>
+<h4 id="413-variáveis-de-ambiente">4.1.3 variáveis de ambiente</h4>
+<p>É possível ter várias chaves para clientes no diretório /etc/puppetlabs/mcollective/clients , mas não é possível configurar várias chaves no client.cfg. Neste caso podemos recorrer a variáveis de ambiente para carregar chaves diferenciadas.</p>
+<pre><code> export MCOLLECTIVE_SSL_PRIVATE=/home/gutocarvalho/.mc/gutocarvalho-private.pem
+ export MCOLLECTIVE_SSL_PUBLIC=/home/gutocarvalho/.mc/gutocarvalho-public.pem
+</code></pre>
+<p>E depois retome a orquestração.</p>
+<h4 id="414-chave-de-cliente-compartilhada">4.1.4 chave de cliente compartilhada</h4>
+<p>Você pode ter uma chave de cliente compartilhada em todos os nodes e usar apenas essa chave para orquestrar, só fica difícil identificar quem foi que executou a orquestração, se quiser auditoria completa, cada sysadmin deve ter sua chave pública lá e usar sua chave privada para orquestrar, assim fica tudo rastreável.</p>
+<h2 id="5-amarrando-as-pontas">5. Amarrando as pontas</h2>
+<p>Este hacklab trouxe uma abordagem para aumentar a segurança do serviço ActiveMQ e do serviço de orquestração Mcollective, após executá-lo toda a comunicação passa a ser criptografada e a orquestraçao só ocorre com chaves de clientes autorizadas.</p>
+<p>Há muita coisa ainda para estudar no Mcollective, aguardem novos posts.</p>
+<h2 id="6-referências">6. Referências</h2>
+<ul>
+<li><a href="https://docs.puppetlabs.com/mcollective/">https://docs.puppetlabs.com/mcollective/</a></li>
+<li><a href="https://docs.puppetlabs.com/mcollective/reference/integration/activemq_ssl.html">https://docs.puppetlabs.com/mcollective/reference/integration/activemq_ssl.html</a></li>
+<li><a href="https://docs.puppetlabs.com/mcollective/deploy/middleware/activemq_keystores.html">https://docs.puppetlabs.com/mcollective/deploy/middleware/activemq_keystores.html</a></li>
+<li><a href="https://docs.puppetlabs.com/mcollective/reference/plugins/connector_activemq.html">https://docs.puppetlabs.com/mcollective/reference/plugins/connector_activemq.html</a></li>
+<li><a href="https://docs.puppetlabs.com/mcollective/reference/plugins/security_ssl.html">https://docs.puppetlabs.com/mcollective/reference/plugins/security_ssl.html</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

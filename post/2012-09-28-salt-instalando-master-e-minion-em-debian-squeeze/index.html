@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Salt Instalando master e minion em debian squeeze</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Salt Instalando master e minion em debian squeeze</h1>
+        <div>
+                <time>September 28, 2012</time>
+            </div>
+    </header><p>Vou abordar como instalar rapidamente o salt-master e o salt-minion em debian squeeze, em seguida vou mostrar como executar comandos remotamente.</p>
+<h3 id="instalando-salt-master-em-debian-squeeze">Instalando salt-master em debian squeeze</h3>
+<p>Habilite o repositório backports e atualize os índices</p>
+<pre><code>root@saltmaster:~# aptitude update
+</code></pre>
+<p>Instale o salt-master</p>
+<pre><code>root@saltmaster:~# aptitude install salt-master
+</code></pre>
+<p>Veja o seu endereço IPv4</p>
+<pre tabindex="0"><code>root@puppetmaster:~# ifconfig
+eth0      Link encap:Ethernet  HWaddr 00:0c:29:12:bb:0f  
+          inet addr:192.168.17.130  Bcast:192.168.17.255  Mask:255.255.255.0
+          inet6 addr: fe80::20c:29ff:fe12:bb0f/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:38987 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:20024 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:28844823 (27.5 MiB)  TX bytes:2181661 (2.0 MiB)
+</code></pre><p>Edite o aquivo /etc/salt/master e vá até a linha abaixo</p>
+<pre><code>#interface 0.0.0.0
+</code></pre>
+<p>Modifique a linha descomentando e inserindo o IP de sua interface</p>
+<pre><code>interface: 192.168.17.130
+</code></pre>
+<p>Reinicie o salt master</p>
+<pre><code>root@saltmaster:~# /etc/init.d/salt-master restart
+</code></pre>
+<p>Ótimo, master pronto e instalado, agora vamos para o minion.</p>
+<h3 id="instalando-salt-minion-em-debian-squeeze">Instalando salt-minion em debian squeeze</h3>
+<p>No minion que será gerenciado pelo salt-master, habilite o repositório backports e instale o pacote através do comando abaixo.</p>
+<pre><code>root@saltminion:~# aptitude install salt-minion
+</code></pre>
+<p>Após instalar edite o arquivo /etc/salt/minion vá aré a linha abaixo</p>
+<pre><code>#master: salt
+</code></pre>
+<p>Modifique a linha descomentando e inserindo o IP do master</p>
+<pre><code>master: 192.168.17.130
+</code></pre>
+<p>Reinicie o salt</p>
+<pre><code>root@saltminion:~# /etc/init.d/salt-minion restart
+</code></pre>
+<h3 id="autorizando-o-minion-a-usar-o-master">Autorizando o minion a usar o master</h3>
+<p>Agora vá ao salt master e digite</p>
+<pre><code>root@saltmaster:~# salt-key -L
+Unaccepted Keys:
+saltminion.hacklab
+Accepted Keys:
+Rejected:
+</code></pre>
+<p>Veja que o minion saltminion precisa ser autorizado, use o comando abaixo para autorizar o uso do salt-master.</p>
+<pre><code>root@saltmaster:~# salt-key -a saltminion.hacklab
+Key for salminion.hacklab accepted.
+</code></pre>
+<h3 id="executando-comandos-remotamente-a-partir-do-master">Executando comandos remotamente a partir do master</h3>
+<p>Vamos pedir para o salt testar se os minions estão ligados</p>
+<pre><code>root@saltmaster:~# salt '*' test.ping
+ saltminion.hacklab: True
+</code></pre>
+<p>Veja que usamos * para orientar o teste em todos os minions</p>
+<pre><code>Para executar em minions de um domínio use: '*.dominio'
+Para executar em um minion específico use: 'minion.dominio'
+</code></pre>
+<p>Vamos executar o comando uname em todos os nodes</p>
+<pre><code>root@saltmaster:~# salt '*' cmd.run 'uname -a'
+saltminion.hacklab: Linux saltminion.hacklab 2.6.32-5-amd64 #1 SMP Sat May 5     01:12:59 UTC 2012 x86_64 GNU/Linux
+</code></pre>
+<p>Executando comando free</p>
+<pre><code>root@saltmaster:~# salt '*' cmd.run 'free'
+saltminion.hacklab:              total       used       free     shared    buffers     cached
+saltminion.hacklab: Mem:        114048     110828       3220          0       1500      62180
+saltminion.hacklab: -/+ buffers/cache:      47148      66900
+saltminion.hacklab: Swap:       217080       9608     207472
+</code></pre>
+<p>Executando comando vmstat</p>
+<pre><code>root@saltmaster:~# salt '*' cmd.run 'vmstat'
+saltminion.hacklab: procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+saltminion.hacklab:  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+saltminion.hacklab:  0  0   9608   3288   1500  62192    1    1    11     5    9    8  0  0 100  0
+</code></pre>
+<p>Executando código em python</p>
+<pre><code>root@saltmaster:~#salt '*' cmd.exec_code python 'import sys; print sys.version'
+{'saltminion.hacklab': '2.6.6 (r266:84292, Dec 26 2010, 22:31:48) \n[GCC 4.4.5]'}
+</code></pre>
+<p>Executando código em bash</p>
+<pre><code>root@saltmaster:~# salt '*' cmd.exec_code bash 'if [ -e /etc/resolv.conf ];then echo true;else echo false;fi'
+{'saltminion.hacklab': 'true'}
+</code></pre>
+<p>Veja que seu funcionamento é bastante simples e eficiente, eu gostei particularmente dos recursos <strong>cmd.exec_code</strong> e <strong>cmd.run</strong>.</p>
+<p>Sigo estudando e compartilhando o que for aprendendo.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

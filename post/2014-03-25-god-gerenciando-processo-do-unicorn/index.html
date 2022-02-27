@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>God gerenciando processo do Unicorn</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>God gerenciando processo do Unicorn</h1>
+        <div>
+                <time>March 25, 2014</time>
+            </div>
+    </header><h2 id="necessidade">Necessidade</h2>
+<p>Lembrando do poeta Juvenal e suas sátiras, temos a famosa frase:</p>
+<pre><code>Quis custodiet ipsos custodes?
+</code></pre>
+<p>Que traduzindo para pt_BR seria algo como:</p>
+<pre><code>Quem guardará os guardiões?
+</code></pre>
+<p>Ou em outra interpretação livre:</p>
+<pre><code>Quem vigiará os vigilantes?
+</code></pre>
+<p>Isto se aplica a nossos cenários com o Puppetmaster. O UNICORN é o webserver do Puppet, o puppet é o nosso gerenciador de configurações, é ele que cuida de todo o nosso ambiente e infraestrutura. Através do Puppet podemos inclusive gerenciar serviços, mantendo estes habilitados e rodando, contudo, quem vai gerenciar o serviço do próprio Puppet?</p>
+<p>É aqui que entra o God, será através dele que vamos garantir que o processo do UNICORN esteja sempre rodando, e por consequência, o próprio serviço do Puppet.</p>
+<h2 id="sobre-o-god">Sobre o GOD</h2>
+<p>O <a href="http://godrb.com/">GOD</a> é um framework de monitoramento todo escrito em Ruby, o seu criador propõe que o gerenciamento de processos e tarefas deve ser um procedimento simples, principalmente quando estamos fazendo o deploy de nossa aplicação, e isto o motivou a criar o GOD. Seu objetivo é torná-lo uma alternativa simples e robusta para monitoramento de aplicações.</p>
+<p>É possível além de manipular e monitorar processos e tarefas, enviar notificações para diversos serviços detre eles e-mail, jabber, twitter e outros.</p>
+<p>O God consegue monitorar processos e tarefas simples, e você pode criar grupos de processos ou tarefas para monitorar. Todas as configurações e tratamento de de condições são feitos em ruby.</p>
+<h2 id="instalação-do-god">Instalação do God</h2>
+<p>Instale o god</p>
+<pre><code>gem install god
+</code></pre>
+<p>Crie o diretório para o god</p>
+<pre><code>mkdir /etc/god
+</code></pre>
+<p>Crie os arquivos de log e ajuste suas permissões</p>
+<pre><code>touch /var/log/unicorn_puppetmaster.log
+touch /var/log/unicorn_stderr.log
+chown puppet:puppet /var/log/unicorn_*.log
+</code></pre>
+<h2 id="configuração-do-god">Configuração do God</h2>
+<p>Crie o arquivo <strong>/etc/god/puppetmaster.god</strong> com o conteúdo abaixo</p>
+<pre tabindex="0"><code>God.watch do |w|
+  w.name = &quot;puppetmaster&quot;
+  w.interval = 30.seconds
+  w.pid_file = &quot;/var/run/puppet/puppetmaster_unicorn.pid&quot;
+  w.log = &quot;/var/log/unicorn_puppetmaster.log&quot;
+  w.dir = &quot;/etc/puppet&quot;
+
+  w.start = &quot;ulimit -v 750000 &amp;&amp; exec /usr/bin/unicorn -c /etc/puppet/unicorn.conf -D&quot;
+  w.stop = &quot;kill -QUIT `cat #{w.pid_file}`&quot;
+  w.restart = &quot;kill -USR2 `cat #{w.pid_file}`&quot;
+
+  w.start_grace = 10.seconds
+  w.restart_grace = 10.seconds
+
+  w.uid = &quot;puppet&quot;
+  w.gid = &quot;puppet&quot;
+
+  w.behavior(:clean_pid_file)
+
+  # determine the state on startup
+  w.transition(:init, { true =&gt; :up, false =&gt; :start }) do |on|
+    on.condition(:process_running) do |c|
+      c.running = true
+    end
+  end
+
+  # determine when process has finished starting
+  w.transition([:start, :restart], :up) do |on|
+    on.condition(:process_running) do |c|
+      c.running = true
+    end
+
+    # failsafe
+    on.condition(:tries) do |c|
+      c.times = 5
+      c.transition = :start
+    end
+  end
+
+  # start if process is not running
+  w.transition(:up, :start) do |on|
+    on.condition(:process_exits)
+  end
+
+  w.start_if do |start|
+    start.condition(:process_running) do |c|
+      c.interval = 5.seconds
+      c.running = false
+    end
+  end
+end
+</code></pre><p>Crie o arquivo /<strong>etc/init/god.conf</strong> com o conteúdo abaixo:</p>
+<pre tabindex="0"><code>start on stopped rc RUNLEVEL=[2345]
+
+stop on starting rc RUNLEVEL=[!2345]
+
+env HOME=/etc/puppet
+
+console output
+respawn
+respawn limit 10 120
+exec /usr/bin/god --log-level info -D -c '/etc/god/*.god'
+</code></pre><p>Inicie o god</p>
+<pre><code>start god
+god start/running, process 1976
+</code></pre>
+<p>Verifique o status dos serviços mantidos pelo god</p>
+<pre><code>god status
+puppetmaster: init
+</code></pre>
+<p>Aguarde e verifique novamente se o serviço subiu (up)</p>
+<pre><code>god status
+puppetmaster: up
+</code></pre>
+<p>Quando aparecer UP, significará que o serviço subiu, você pode checar diretamente</p>
+<pre><code>ps aux|grep unicorn
+</code></pre>
+<p>Acompanhe a saída do comando</p>
+<pre tabindex="0"><code>puppet    1398  0.2  4.8 140252 48676 ?        S    18:22   0:01 unicorn master -c /etc/puppet/unicorn.conf -D
+puppet    1404  0.0  4.5 140216 46484 ?        S    18:22   0:00 unicorn worker[0] -c /etc/puppet/unicorn.conf -D
+puppet    1405  0.0  4.5 140220 46484 ?        S    18:22   0:00 unicorn worker[1] -c /etc/puppet/unicorn.conf -D
+puppet    1406  0.0  4.5 140224 46484 ?        S    18:22   0:00 unicorn worker[2] -c /etc/puppet/unicorn.conf -D
+puppet    1407  0.0  4.5 140228 46488 ?        S    18:22   0:00 unicorn worker[3] -c /etc/puppet/unicorn.conf -D
+puppet    1408  0.0  4.5 140232 46488 ?        S    18:22   0:00 unicorn worker[4] -c /etc/puppet/unicorn.conf -D
+puppet    1409  0.0  4.5 140236 46488 ?        S    18:22   0:00 unicorn worker[5] -c /etc/puppet/unicorn.conf -D
+puppet    1410  0.0  4.5 140240 46492 ?        S    18:22   0:00 unicorn worker[6] -c /etc/puppet/unicorn.conf -D
+puppet    1411  0.0  4.5 140244 46492 ?        S    18:22   0:00 unicorn worker[7] -c /etc/puppet/unicorn.conf -D
+</code></pre><p>O unicorn está rodando, agora para testar se o god está funcionando na inicialização, reinicie o seu servidor e verifique se o serviço vai carregar automaticamente.</p>
+<pre><code>reboot
+</code></pre>
+<h2 id="manipulando-o-god">Manipulando o God</h2>
+<p>Para carregar um novo serviço</p>
+<pre><code>god load servico
+</code></pre>
+<p>Para iniciar um serviço</p>
+<pre><code>god start servico
+</code></pre>
+<p>Para parar um serviço</p>
+<pre><code>god stop servico
+</code></pre>
+<p>Para reiniciar um serviço</p>
+<pre><code>god restart servico
+</code></pre>
+<p>Para verificar o status dos serviços mantidos pelo god</p>
+<pre><code>god status
+</code></pre>
+<p>Para verificar o status de um serviço específico</p>
+<pre><code>god status servico
+</code></pre>
+<p>Para ver outros comandos do God</p>
+<pre><code>god --help
+</code></pre>
+<h2 id="amarrando-as-pontas">Amarrando as pontas</h2>
+<p>Com o GOD vamos ter a garantia de que alguém estará protegendo e monitorando o processo de nosso puppemaster, e caso o processo falhe, caso  o processo caia, o GOD irá iniciá-lo novamente. Isto traz maior disponibilidade para nosso ambiente e maior controle dos processos. Vale a pena investir nele.</p>
+<p>Com o GOD, não há necessiade de criar um script INIT para o serviço já que será ele que vai cuidar do processo, no tutorial acima, criamos apenas um init no upstart para o GOD, o resto é com ele.</p>
+<h2 id="referências">Referências</h2>
+<ul>
+<li><a href="http://godrb.com/">http://godrb.com/</a></li>
+<li><a href="http://trateotu.proxy.nl/centos-6-5-puppet-v3-nginx-unicorn-and-god/">http://trateotu.proxy.nl/centos-6-5-puppet-v3-nginx-unicorn-and-god/</a></li>
+<li><a href="http://wiki.unixh4cks.com/index.php/Puppetmaster_:_Nginx_%2B_Unicorn">http://wiki.unixh4cks.com/index.php/Puppetmaster_:_Nginx_%2B_Unicorn</a></li>
+<li><a href="http://projects.puppetlabs.com/projects/1/wiki/using_unicorn">http://projects.puppetlabs.com/projects/1/wiki/using_unicorn</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet, separando dados do código com extlookup e hiera</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet, separando dados do código com extlookup e hiera</h1>
+        <div>
+                <time>January 25, 2014</time>
+            </div>
+    </header><h2 id="1-separando-dados-de-código">1. Separando dados de código</h2>
+<p>Durante a implantação do Puppet nós vamos migrando todos aqueles
+procedimentos manuais, artesanais, sejam checklists, sejam tutoriais,
+fazendo isto de forma gradativa e progressiva, no entanto, ao escrever
+novo código, para deixá-lo flexível, é necessário utilizar variáveis,
+constantes, fatos e parâmetros personalizados em classes e definições.</p>
+<p>Para entender este conceito de forma mais fácil, procure lembrar se você já precisou escrever uma classe genérica, ou mesmo uma base class para aplicar em vários nodes, porém em um node, ou um grupo de nodes, algumas pequenas mudanças deveriam ser levadas em conta. Quando temos esse tipo de cenário nós normalmente usamos e abusamos de tratamentos condicionais, expressões, cases e seletores em busca de um código mais flexível e inteligente, com isto, nosso código acaba se tornando uma mescla de dados (variáveis, constantes, fatos, parâmetros e atributos) com código, veja esse exemplo simples:</p>
+<pre tabindex="0"><code>$dnsserver    = '8.8.8.8'
+$searchdomain = 'hacklab'
+ 
+file { '/etc/resolv.conf':
+  ensure  =&gt; present
+  content =&gt; &quot;search ${searchdomain}\n nameserver ${dnsserver}\n&quot;,
+}
+</code></pre><p>Observe que os dados e o código estão no mesmo arquivo que chamamos de manifest, e se desejamos alterar por exemplo o endereço <strong>8.8.8.8</strong> ou o domínio de pesquisa <strong>hacklab</strong> precisaremos editar o manifest que também possui o código, e isto pode gerar algum tipo de problema caso a edição não seja cuidadosa e altere a sintaxe do manifest.</p>
+<p>Pensando nisto, a Puppetlabs criou algumas ferramentas para separar dados de código, facilitando a edição e preservando os manifests de nossos módulos.</p>
+<h2 id="2-o-pioneiro-extlookup">2. O pioneiro: Extlookup</h2>
+<p>O primeiro recurso criado para resolver este problema foi o extlookup, com ele é possível especificar um local externo para buscar dados.</p>
+<p>O exemplo abaixo foi retirado do site do R.I.Piennar (<a href="http://www.devco.net">http://www.devco.net</a>) o criador do extlookup.</p>
+<pre tabindex="0"><code>class snmp::config {
+
+   if $fqdn == &quot;www.mesintogravida.com.br&quot; {
+      $contactname = 'webmaster'
+      $contactemail = 'webmaster@mesintogravida.com.br'
+   }
+ 
+   elsif $domain == &quot;mesintogravida.com.br&quot; {
+      $contactname = 'contato'
+      $contactemail = 'contato@mesintogravida.com.br'
+   }
+   else {
+      $contactname = 'Jessica Macedo'
+      $contactemail = 'jessica@mesintogravida.com.br'
+   }
+}
+</code></pre><p>Observe que para cada tratamento algum valor é associado a uma variável, tudo dentro do código, veja que são as mesmas variáveis repetidas diversas vezes, não há reutilização de código, temos escrever mais e ainda corremos o risco de alterar os dados e causar um problema de sintaxe no código, basta esquecer de fechar uma aspa para gerar um erro em diversos nodes.</p>
+<p>No exemplo acima, primeiro é verificado o FQDN, se for <a href="http://www.mesintogravida.com.br">www.mesintogravida.com.br</a> valores específicos são associados as duas variáveis abaixo, caso o FQDN não seja o esperado, é verificado então se o domínio é mesintogravida.com.br, se for, outros valores serão associados as variáveis, caso o domínio não seja hacklab, um valor comum será associado aquelas variáveis no último tratamento.</p>
+<p>Usando o conceito do extlookup, faríamos apenas a seguinte definição dentro de nosso manifest (removendo todo o tratamento condicional if elsif else).</p>
+<pre><code>$contactname = extlookup(&quot;contactname&quot;)
+$contactemail = extlookup(&quot;contactemail&quot;)
+</code></pre>
+<p>Bem simples e elegante, contudo, em nosso site.pp precisamos determinar como o extlookup vai funcionar, o primeiro passo é determinar a precedência de pesquisa , faremos isto da seguinte forma:</p>
+<pre><code>$extlookup_precedence = [&quot;%{fqdn}&quot;, &quot;domain/%{domain}&quot;, &quot;common&quot;]
+</code></pre>
+<p>E depois será necessário definir o local onde estão os arquivos com os dados:</p>
+<pre><code>$extlookup_datadir = /etc/puppet/manifests/extdata
+</code></pre>
+<p>No caso do extlookup o formato para armazenar os dados é o CSV, dentro do diretório <strong>/etc/puppet/manifests/extdata</strong> serão criados arquivos CSV como os exemplos abaixo:</p>
+<p>Arquivo <strong>/etc/puppet/manifests/extdata/hosts/www.mesintogravida.com.br.csv</strong></p>
+<pre><code>contactemail,webmaster@mesintogravida.com.br
+contactname,webmaster
+</code></pre>
+<p>Arquivo <strong>/etc/puppet/manifests/extdata/domain/mesintogravida.com.br.csv</strong></p>
+<pre><code>contactemail,contato@mesintogravida.com.br
+contactname,contato
+</code></pre>
+<p>Arquivo <strong>/etc/puppet/manifests/extdata/common.csv</strong></p>
+<pre><code>contactemail,jessica@mesintogravida.com.br
+contactname,jessica
+</code></pre>
+<p>Com a pesquisa seguindo a precedência definida no site.pp, economizamos 15 linhas em nosso manifest e não precisamos fazer o tratamento condicional.</p>
+<h3 id="21-entendendo-pesquisa-extlookup">2.1 Entendendo pesquisa extlookup</h3>
+<p>Entenda a forma de pesquisa que será feita pelo extlookup conforme configurações feitas no site.pp</p>
+<h4 id="211-fqdn">2.1.1 FQDN</h4>
+<p>Primeiro a ordem de pesquisa verifica se existe um arquivo dentro de <strong>/etc/puppet/manifests/extdata/hosts</strong> com o nome <strong><a href="http://www.mesintogravida.com.br.csv">www.mesintogravida.com.br.csv</a></strong>, se existir e ele vai ler e atribuir os valores presentes no arquivo para as variáveis.</p>
+<h4 id="212-domain">2.1.2 DOMAIN</h4>
+<p>Caso ele não encontre um arquivo com o nome completo do host (fqdn), ele vai procurar por um arquivo com o nome do domínio dentro de <strong>/etc/puppet/manifests/extdata/domain</strong> com o nome <strong>mesintogravida.com.br.csv</strong>, se existir, ele vai ler o arquivo e atribuir o valor presente no arquivo para as variáveis.</p>
+<h4 id="213-common">2.1.3 COMMON</h4>
+<p>Caso ele não encontre um arquivo com o nome do domínio, ele lerá por último o arquivo <strong>/etc/puppet/manifests/extdata/common/common.csv</strong>, que pela lógica terá as configurações comuns para nodes que não tenham tratamentos diferenciados.</p>
+<h3 id="22-vantagens-no-uso-do-extlookup">2.2 Vantagens no uso do extlookup</h3>
+<p>Observe que retiramos os dados de dentro do código, agora só é preciso editar arquivos CSV (comma separeted values) para mudar o comportamento de um manifest, isto facilita a administração, torna nossos manifests mais flexíveis e simples de manipular.</p>
+<p>Nós também diminuímos o risco de falhas decorrentes de mudanças de dados em nossos manifests e além disto, otimizamos o código de nosso módulo, no exemplo mostrado nós economizamos cerca de 15 linhas.</p>
+<h3 id="22-limitações-do-extlookup">2.2 Limitações do extlookup</h3>
+<p>Infelizmente o extlookup só consegue ler dados de arquivos CSV (comma separeted values), cada linha no CSV traz algum tipo de informação separada por virgulas, isso para alguns cenários engessa e limita as possibilidades de tratamento.</p>
+<p>Com o tempo os admins foram querendo mais recursos e mais facilidades de uso, suporte a outros tipos de armazenamento e o extlookup precisou evoluir. É importante falar que ele foi um passo importante antes da criação de seu sucessor chamado HIERA.</p>
+<p>Antes de entrarmos no hiera é importante dizer que o extlookup continua disponível e funcionando no Puppet 3.x.x.</p>
+<h2 id="3-o-sucessor-hiera">3. O sucessor: Hiera</h2>
+<p>O Hiera é uma ferramenta que faz lookup (busca) por dados de configuração de seus manifests, ele foi criado pelo R.I.Piennar (que também crio ou o extlookup) para tornar o puppet mais eficiente e permitir que você defina dados relacionados a um node sem precisar repetir código.</p>
+<p>Podemos dizer que o HIERA é uma evolução do extlookup, porém ele foi escrito do zero, logo é um evolução inspirada no extlookup, mas com código completamente novo.</p>
+<h3 id="31-mas-porque-o-hiera">3.1 Mas porque o Hiera?</h3>
+<p>O Hiera torna o puppet melhor ao permitir separar os dados do código, ele retira essencialmente os dados de dentro de uma manifest e armazena externamente. É através do HIERA que você irá consultar estes dados conforme sua necessidade - tal como o extlookup fazia.</p>
+<p>O Hiera facilita:</p>
+<ul>
+<li>
+<p>A configuração de seus nodes: Podemos ter configurações com dados default ou então vários níveis de overrides nestes dados.</p>
+</li>
+<li>
+<p>A reutilização de módulos: Você não precisa editar código, precisa apenas colocar os dados no hiera.</p>
+</li>
+<li>
+<p>A publicação do seu módulo: Você não precisa mais ficar limpando vários pedaços do seu módulo para publicá-lo no forge ou github, os dados estão fora do manifest, tornado essa tarefa bem mais simples.</p>
+</li>
+<li>
+<p>A elaboração e um código sem repetição!</p>
+</li>
+</ul>
+<p>Com o Hiera você pode:</p>
+<ul>
+<li>
+<p>Escrever dados comuns para a maioria dos seus nodes</p>
+</li>
+<li>
+<p>Sobrescrever dados para nodes específicos</p>
+</li>
+<li>
+<p>Definir a hierarquia de pesquisa de dados</p>
+</li>
+</ul>
+<h3 id="32-hiera-datasources">3.2 Hiera datasources</h3>
+<p>No momento o HIERA suporta nativamente os datasources YAML e JSON.</p>
+<p>Exemplo de datasource YAML</p>
+<pre tabindex="0"><code>---
+# array
+apache-packages:
+    - apache2
+    - apache2-common
+    - apache2-utils
+
+# string
+apache-service: apache2
+
+# interpolated facter variable 
+hosts_entry: sandbox.%{fqdn}
+
+# hash
+sshd_settings: 
+    root_allowed: &quot;no&quot;
+    password_allowed: &quot;yes&quot;
+
+# alternate hash notation
+sshd_settings: {root_allowed: &quot;no&quot;, password_allowed: &quot;yes&quot;}
+
+# to return &quot;true&quot; or &quot;false&quot;
+sshd_settings: {root_allowed: no, password_allowed: yes}
+</code></pre><p>Exemplo de datasource JSON</p>
+<pre tabindex="0"><code>{   
+    &quot;apache-packages&quot; : [
+    &quot;apache2&quot;,
+    &quot;apache2-common&quot;,
+    &quot;apache2-utils&quot;
+    ],
+
+    &quot;hosts_entry&quot; :  &quot;sandbox.%{fqdn}&quot;,
+
+    &quot;sshd_settings&quot; : {
+                        &quot;root_allowed&quot; : &quot;no&quot;, 
+                        &quot;password_allowed&quot; : &quot;no&quot;
+                      }
+}
+</code></pre><p>O Hiera não suporta o datasource CSV.</p>
+<h3 id="321-outros-tipos-de-datasource">3.2.1 Outros tipos de datasource</h3>
+<p>Você certamente vai encontrar projetos no github que permitem que o hiera use outros tipos de backend, eu particularmente recomendo os projetos do desenvolvedor Craig Dunn, ele criou 3 plugins que permitem que o HIERA use backends GPG, HTTP e MYSQL.</p>
+<p>Visite os projetos:</p>
+<pre><code>https://github.com/crayfishx/hiera-gpg
+https://github.com/crayfishx/hiera-http
+https://github.com/crayfishx/hiera-mysql
+</code></pre>
+<h2 id="5-instalando-hiera">5. Instalando Hiera</h2>
+<p>Para instalar o Hiera habilite os repositórios puppetlabs no Debian ou CentOS.</p>
+<pre><code>apt.puppetlabs.com (se for debian)
+yum.puppetlabs.com (se for centos/rhel)
+</code></pre>
+<p>Para instalar no Debian</p>
+<pre><code>aptitude install hiera
+</code></pre>
+<p>Para instalar no CentOS</p>
+<pre><code>yum install hiera
+</code></pre>
+<p>Se preferir instale usando o RAL (tanto faz o OS).</p>
+<pre><code>puppet resource package hiera ensure=present
+</code></pre>
+<p>Se você estiver utilizando o Puppet 3 ele já deve estar instalado em seu ambiente. Aqui no meu ambiente estou usando CentOS 6.5 - 64 Bits e Puppet 3.4.2.</p>
+<h2 id="5-configurando-hiera">5. Configurando Hiera</h2>
+<p>A primeira coisa a se fazer é criar o arquivo <strong>/etc/puppet/hiera.yaml</strong> e definir a hierarquia de pesquisa, o backend e o local onde ele deverá procurar os arquivos, veja o modelo abaixo:</p>
+<pre tabindex="0"><code>---
+:hierarchy:
+   - host/%{fqdn}
+   - host/%{hostname}
+   - os/%{osfamily}
+   - domain/%{domain}
+   - common
+:backends:
+   - yaml
+:yaml:
+   :datadir: /etc/puppet/hieradata 
+</code></pre><p>Observe que na configuração do arquivo, estamos definindo a seguinte precedência de pesquisa:</p>
+<ol>
+<li>HOST/FQDN</li>
+<li>HOST/HOSTNAME</li>
+<li>OS/OSFAMILY</li>
+<li>DOMAIN/DOMAIN</li>
+<li>COMMON</li>
+</ol>
+<p>E definimos também que o backend é o YAML e que os arquivos YAML ficarão no diretório /etc/puppet/hieradata, crie o diretório se ele não existir.</p>
+<p>Neste modelo eu estou utilizando o backend YAML.</p>
+<h3 id="51-tipos-de-datasources">5.1 Tipos de datasources</h3>
+<p>O Hiera pode trabalhar tanto com data sources estáticos, quanto dinâmicos (com interpolação de tokens e variáveis).</p>
+<p>Exemplo de datasource estático (common):</p>
+<pre tabindex="0"><code>---
+:hierarchy:
+   - common
+:backends:
+   - yaml
+:yaml:
+   :datadir: /etc/puppet/hieradata 
+</code></pre><p>Exemplo de datasource dinâmico (osfamily):</p>
+<pre tabindex="0"><code>---
+:hierarchy:
+   - %{osfamily}
+:backends:
+   - yaml
+:yaml:
+   :datadir: /etc/puppet/hieradata 
+</code></pre><p>Exemplo de datasource combinado (dinâmico e estático):</p>
+<pre tabindex="0"><code>---
+:hierarchy:
+   - host/%{fqdn}
+   - host/%{hostname}
+   - os/%{osfamily}
+   - domain/%{domain}
+   - common
+:backends:
+   - yaml
+:yaml:
+   :datadir: /etc/puppet/hieradata 
+</code></pre><h2 id="6-criando-manifest">6. Criando Manifest</h2>
+<p>Agora vamos criar um manifest sem separação de dados e logo após vamos mostrar o mesmo manifest utilizando o Hiera.</p>
+<h3 id="61-sem-hiera">6.1 Sem Hiera</h3>
+<p>{% codeblock lang:puppet %}
+class webapps {</p>
+<pre><code>### tratamentos e definiçoes #############
+
+# primeiro tratamento: verifica fqdn
+
+case $::fqdn {
+
+    'defiant.hackab': {
+        $nameserver = [ &quot;8.8.8.8&quot;, &quot;8.8.4.4&quot; ]
+    }
+    'voyager.hacklab': {
+        $nameserver = [ &quot;208.67.222.222&quot;, &quot;208.67.220.220&quot; ]
+    }
+    default: {
+        $nameserver = [ &quot;10.0.1.1&quot; ]
+    }
+
+}
+
+# segundo tratamento: verifica dominio
+
+case $::domain {
+    'hacklab': {
+        $user = 'admin'
+    }
+    default: {
+        $user = 'gutocarvalho'
+    }
+}
+
+# terceiro tratamento: verifica o sistema operacional
+
+case $::operatingsystem {
+    Debian: {
+        $editor_package = 'vim'
+        $http_package = 'apache2'
+        }
+    RedHat: {
+        $editor_package = 'vim-enhanced'
+        $http_package = 'httpd'
+        }
+}
+
+# definindo uma constante simples
+
+$puppet_ipaddr = '192.168.56.60'
+
+### declarando recursos ###############################
+
+# gerenciando resolv.conf (fqdn)
+
+file { '/etc/resolv.conf':
+    ensure  =&gt; present,
+    owner   =&gt; 'root',
+    group   =&gt; 'root',
+    mode    =&gt; '0644',
+    content =&gt; template('webapps/resolv.conf.erb'),
+}
+
+# gerenciando usuarios (domain)
+
+user { $user:
+    ensure =&gt; present,
+}
+
+# gerenciando pacotes (operatingsystem)
+
+package { $editor_package:
+    ensure =&gt; present,
+}
+
+package { $http_package:
+    ensure =&gt; present,
+}
+
+# gerenciando host puppet (common)
+
+host { 'puppet.hacklab':
+    ensure     =&gt; present,
+    ip         =&gt; $puppet_ipaddr,
+    host_alias =&gt; 'puppet',
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Veja o template resolv.conf.erb definido neste manifest.</p>
+<pre tabindex="0"><code>&lt;% hiera_nameserver.each do |val| -%&gt;
+  nameserver &lt;%= val %&gt;  
+&lt;% end -%&gt;
+</code></pre><p>Observe quantas vezes repetimos as mesmas variáveis em cada tratamento.</p>
+<h3 id="62-com-hiera">6.2 Com Hiera</h3>
+<p>Agora vamos utilizar o HIERA e modificar o manifest, veja como fica:</p>
+<p>{% codeblock lang:puppet %}
+class webapps::hiera {</p>
+<pre><code>### tratamentos e definiçoes #############
+
+$hiera_nameserver = hiera_array('nameserver')
+$hiera_user = hiera_array('users')
+$hiera_editor_package = hiera('editor_package')
+$hiera_http_package = hiera('http_package')
+$hiera_puppet_ipaddr = hiera('puppet_ipaddr')
+
+### declarando recursos ###############################
+
+# gerenciando resolv.conf (fqdn)
+
+    file { '/etc/resolv.conf':
+            ensure  =&gt; present,
+            owner   =&gt; 'root',
+            group   =&gt; 'root',
+            mode    =&gt; '0644',
+            content =&gt; template('webapps/resolv.conf.erb'),
+    }
+
+    # gerenciando usuarios (domain)
+
+    user { $hiera_user:
+            ensure =&gt; present,
+    }
+
+    # imprimindo nome do ambiente (environment)
+
+    notify { &quot;Ambiente de ${hiera_myenv}&quot;: }
+
+    # gerenciando pacotes (operatingsystem)
+
+    package { $hiera_editor_package:
+            ensure =&gt; present,
+    }
+
+    package { $hiera_http_package:
+            ensure =&gt; present,
+    }
+
+    # gerenciando host puppet (common)
+
+    host { 'puppet.hacklab':
+            ensure       =&gt; present,
+            ip           =&gt; $hiera_puppet_ipaddr,
+            host_aliases =&gt; puppet,
+    }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Observe que não há dados no manifest, apenas código, agora vamos ver como criar os arquivos que conterão os dados.</p>
+<h4 id="621-arquivos-yaml">6.2.1 Arquivos YAML</h4>
+<p>Acompanhe abaixo o conteúdo dos arquivos.</p>
+<p>Arquivo /etc/puppet/hieradata/host/defiant.hacklab.yaml</p>
+<pre tabindex="0"><code>---
+nameserver:
+   - 8.8.8.8
+   - 8.8.4.4
+</code></pre><p>Arquivo /etc/puppet/hieradata/host/voyager.hacklab.yaml</p>
+<pre tabindex="0"><code>---
+nameserver:
+   - 208.67.222.222
+   - 208.67.220.220
+</code></pre><p>Arquivo /etc/puppet/hieradata/domain/hacklab.yaml</p>
+<pre tabindex="0"><code>---
+nameserver:
+   - 10.0.0.10
+user:
+   - admin
+</code></pre><p>Arquivo /etc/puppet/hieradata/os/Debian.yaml</p>
+<pre tabindex="0"><code>---
+editor_package: vim
+http_package: apache2
+</code></pre><p>Arquivo /etc/puppet/hieradata/os/RedHat.yaml</p>
+<pre tabindex="0"><code>---
+editor_package: vim-enhanced
+http_package: httpd
+</code></pre><p>Arquivo /etc/puppet/hieradata/common.yaml</p>
+<pre tabindex="0"><code>---
+nameserver:
+  - 10.0.1.1
+  - 8.8.8.8
+  - 8.8.4.4
+  - 208.67.222.222
+  - 208.67.220.220
+user:
+  - gutocarvalho
+puppet_ipaddr:
+   - 192.168.56.60
+</code></pre><p>Com o Hiera os dados ficam fora do arquivo deixando o código mais limpo, coeso, evitando repetição e erros de edição.</p>
+<h2 id="7-comandos-e-consultas-hiera">7. Comandos e consultas Hiera</h2>
+<p>Para invocar o hiera para uma pesquisa seguindo a hierarquia definida.</p>
+<pre><code># hiera ntp_server
+</code></pre>
+<p>Para invocar o hiera especificando parâmetros de busca</p>
+<pre><code># hiera ntp_server -yaml web01.example.com.yaml 
+</code></pre>
+<p>É bem simples fazer a pesquisa e testar se vai retornar o que você está esperando.</p>
+<h2 id="8-referências">8. Referências</h2>
+<p>Puppetlabs Misc</p>
+<ul>
+<li><a href="https://puppetlabs.com/blog/the-problem-with-separating-data-from-puppet-code/">https://puppetlabs.com/blog/the-problem-with-separating-data-from-puppet-code/</a></li>
+<li><a href="https://puppetlabs.com/blog/first-look-installing-and-using-hiera/">https://puppetlabs.com/blog/first-look-installing-and-using-hiera/</a></li>
+</ul>
+<p>Hiera</p>
+<ul>
+<li><a href="http://docs.puppetlabs.com/hiera/1/index.html">http://docs.puppetlabs.com/hiera/1/index.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/installing.html">http://docs.puppetlabs.com/hiera/1/installing.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/configuring.html">http://docs.puppetlabs.com/hiera/1/configuring.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/lookup_types.html">http://docs.puppetlabs.com/hiera/1/lookup_types.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/data_sources.htm">http://docs.puppetlabs.com/hiera/1/data_sources.htm</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/variables.html">http://docs.puppetlabs.com/hiera/1/variables.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/puppet.html">http://docs.puppetlabs.com/hiera/1/puppet.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/complete_example.html">http://docs.puppetlabs.com/hiera/1/complete_example.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/command_line.html">http://docs.puppetlabs.com/hiera/1/command_line.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/custom_backends.html">http://docs.puppetlabs.com/hiera/1/custom_backends.html</a></li>
+<li><a href="http://docs.puppetlabs.com/hiera/1/release_notes.html">http://docs.puppetlabs.com/hiera/1/release_notes.html</a></li>
+</ul>
+<p>Misc</p>
+<ul>
+<li><a href="http://pt.wikipedia.org/wiki/Comma-separated_values">http://pt.wikipedia.org/wiki/Comma-separated_values</a></li>
+<li><a href="http://www.devco.net/archives/2009/08/31/complex_data_and_puppet.php">http://www.devco.net/archives/2009/08/31/complex_data_and_puppet.php</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

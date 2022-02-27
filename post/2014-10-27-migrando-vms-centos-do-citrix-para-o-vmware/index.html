@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Migrando vms centos do citrix para o vmware</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Migrando vms centos do citrix para o vmware</h1>
+        <div>
+                <time>October 27, 2014</time>
+            </div>
+    </header><p>Recentemente fui contratado para dar apoio em um processo de migração do Citrix Xen Server 5x e 6x para o VMWARE ESX Server 5x. Basicamente o cliente tem VMs CentOS 5x e CentOS 6x para migrar, a equipe que estava migrando as VMs conseguia colocá-las no VMWARE mas na hora do boot as VMs não subiam.</p>
+<p>Abaixo eu vou mostrar algumas dicas pós conversão para subir a VM no VMWARE com sucesso.</p>
+<h3 id="1-conversion">1. Conversion</h3>
+<p>Use o VMWARE Converter, pegue no site da VMWARE.</p>
+<ul>
+<li>conversão basic</li>
+<li>usar discos thin</li>
+<li>versão 7</li>
+</ul>
+<h3 id="2-boot">2. Boot</h3>
+<p>Tenha em mãos a ISO do CentOS 6x.</p>
+<p>Associe a ISO do CentOS 6x a VM convertida - prefira colocar a ISO no datastore, é a melhor forma.</p>
+<p>Se necessário entre nas configurações da VM, clique em Options, acesse o Boot Options, aumente o delay de inicialização para 1000 e clique em &ldquo;Force BIOS Setup&rdquo; para entrar na BIOS no próximo boot e definir a ordem de boot.</p>
+<p>Dê um boot na VM, na BIOS defina a ordem de BOOT colocando o CDROM primeiro.</p>
+<p>Dê outro boot, escolha o CD do CentOS 6x.</p>
+<h3 id="3-rescue-mode">3. Rescue mode</h3>
+<p>Entrar em modo Rescue do CD</p>
+<ul>
+<li>Selecione Rescue installed system</li>
+<li>Selecione English como idioma default</li>
+<li>Selecione US como teclado</li>
+<li>Selecione ativar a rede (colocar um IPv4 na máquina e desligar IPv6)</li>
+<li>Selecione buscar discos</li>
+<li>Selecione montar discos em /mnt/sysimage</li>
+<li>Selecione iniciar o terminal do modo Rescue (ssh)</li>
+</ul>
+<p>Sair para internet é pré-requisito neste cenário.</p>
+<h3 id="4-partition">4. Partition</h3>
+<p>Acesse a partição montada e rode o chroot no diretório montado</p>
+<pre><code># cd /mnt/sysimage
+# chroot .
+</code></pre>
+<h3 id="5-kernel">5. Kernel</h3>
+<p>Instale o kernel mais novo disponível</p>
+<pre><code># yum install kernel -y
+</code></pre>
+<p>Se não houver pacote novo e você estiver no centos 6 rode</p>
+<pre><code># yum reinstall kernel -y
+</code></pre>
+<p>Se estiver no centos 5 faça o seguinte</p>
+<pre><code># yum remove kernel -y
+# yum install kernel -y
+</code></pre>
+<p>No centos 5 o reinstall não fez a reinstalação como ocorre no centos 6.</p>
+<h3 id="6-grub">6. GRUB</h3>
+<p>Vamos ajustar algumas coisas no grub para ter um boot com sucesso</p>
+<pre><code># vim /boot/grub/menu.lst
+</code></pre>
+<p>Acesse a linha kernel da versão mais recente instalada e remova o trecho abaixo - caso exista</p>
+<pre><code>console=xvc0
+</code></pre>
+<p>Caso deseje ver as mensagens de inicialização remova o trecho</p>
+<pre><code>quiet
+</code></pre>
+<p>Confira se está apontando para o kernel certo, confira se a opção de kernel default aponta para o kernel mais novo, salve o arquivo!</p>
+<h3 id="7-network">7. Network</h3>
+<p>Como provavelmente já existia uma interface de rede configurada como <strong>eth0</strong> - mas com outro MAC, será necessário atualizar o MAC da interface de rede <strong>eth0</strong> no arquivo de configuração desta em <strong>/etc/sysconfig/network-scripts/ifcfg-eth0</strong></p>
+<pre><code># ip a s eth0|grep ether
+# vim /etc/sysconfig/network-scripts/ifcfg-eth0
+</code></pre>
+<p>Atualize a linha HWADDR</p>
+<pre><code>HWADDR=00:0C:29:11:17:7F
+</code></pre>
+<p>Caso esteja migrando um CentOS 6, apague o arquivo <strong>/etc/udev/rules.d/70-persistent-net.rules</strong> - fique tranquilo ele será gerado no próximo boot.</p>
+<pre><code> # rm /etc/udev/rules.d/70-persistent-net.rules
+</code></pre>
+<p>Caso queira apenas atualizar o mac address dentro do <strong>70-persistent-net.rules</strong> isso também funciona, eu apago pois prefiro que ele gere o arquivo novamente.</p>
+<h3 id="8-inittab">8. Inittab</h3>
+<p>Se estiver migrando um CentOS 5, remova ou comente a linha abaixo do /etc/inittab</p>
+<pre><code>co:2345:respawn:/sbin/agetty xvc0 9600 vt100-nav
+</code></pre>
+<p>E descomente as seguintes linhas</p>
+<pre tabindex="0"><code>#1:2345:respawn:/sbin/mingetty tty1
+#2:2345:respawn:/sbin/mingetty tty2
+#3:2345:respawn:/sbin/mingetty tty3
+#4:2345:respawn:/sbin/mingetty tty4
+#5:2345:respawn:/sbin/mingetty tty5
+#6:2345:respawn:/sbin/mingetty tty6
+</code></pre><p>Pronto!</p>
+<h3 id="9-reboot">9. Reboot</h3>
+<p>Agora dê um reboot na VM e acompanhe o carregamento.</p>
+<h3 id="10-kernel-panic">10. Kernel Panic?</h3>
+<h4 id="101-centos-5x">10.1 CentOS 5.x</h4>
+<p>Se estiver no CentOS 5 pode receber um kernek panic relacionado a não detecção do volume group, a mensagem seria como a abaixo:</p>
+<pre><code>No volume groups found&quot;
+</code></pre>
+<p>E logo depois</p>
+<pre><code>&quot;Kernel panic - not syncing: Attempted to kill init!&quot;
+</code></pre>
+<p>Para resolver a questão, entre novamente no modo rescue (passo 3 e passo 4),  edite o arquivo /etc/modprobe.conf e comente ou remova as linhas abaixo</p>
+<pre><code>alias scsi_hostadapter xenblk
+alias eth0 xennet
+</code></pre>
+<p>E adicione as linhas abaixo</p>
+<pre><code>alias eth0 e1000
+alias scsi_hostadapter mptbase
+alias scsi_hostadapter1 mptspi
+alias scsi_hostadapter2 ata_piix
+</code></pre>
+<p>Depois disto é preciso regerar a o initrd para que esses módulos utilizados dentro da imagem</p>
+<pre><code>cd /boot
+mv initrd-2.6.18-398.el5 initrd-2.6.18-398.el5.old
+mkinitrd -v --force-lvm-probe --force-raid-probe /boot/initrd-2.6.18-398.el5.img 2.6.18-398.el5
+</code></pre>
+<h4 id="102-centos-6x">10.2 CentOS 6.x</h4>
+<p>Caso esteja com um kernel panic no centos 6, você pode regerar o initramfs com o dracut ao invés do mkinitrd (ele vai regerar todos os initramfs), repita os passos 3 e 4 e rode os comandos abaixo no /boot.</p>
+<pre><code># dracut -f 
+</code></pre>
+<p>Caso queira ser específico quanto qual o initramfs quer regerar, veja o exemplo</p>
+<pre><code># dracut -f /boot/initramfs-2.6.x32-xxx.el6.x86_64.img 2.6.32-xxx.el6.x86_64
+</code></pre>
+<p>E depois verifique se a vm vai iniciar.</p>
+<h3 id="11-conclusão">11. Conclusão</h3>
+<p>Esse procedimento resolveu as dores de cabeça do cliente e da empresa contratada para fazer a migração do CITRIX para o VMWARE, podem haver outros ajustes, esses foram os que nós detectamos, em sua maioria ajustes simples e objetivos.</p>
+<h4 id="111-incompatibilidade">11.1 Incompatibilidade?</h4>
+<p>Alguns ténicos da empresa que estava migrando o CITRIX para o VMWARE me disseram que essa &lsquo;imcompatibilidade&rsquo; entre VMWARE e CITRIX é &ldquo;velha&rdquo;&quot; conhecida deles, eu por outro lado discordo, não existe nenhuma &lsquo;incompatibilidade&rsquo;, uma VM rodando no CITRIX pode ser migrada para o VMWARE, são necessários alguns pequenos ajustes devido a mudança de Hypervisor, nada além disto.</p>
+<p>A incompatibilidade neste caso, foi na verdade, falta de experiência e falta de conhecimento de sistemas linux.</p>
+<p>Fica a dica!</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

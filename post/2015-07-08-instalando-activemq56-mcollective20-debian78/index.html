@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>ActiveMQ 5.6 em Debian 7.8 para Mcollective 2.0</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ActiveMQ 5.6 em Debian 7.8 para Mcollective 2.0</h1>
+        <div>
+                <time>July 8, 2015</time>
+            </div>
+    </header><p>Em um recente projeto eu tive que subir o ActiveMQ 5.6.x em Debian 7.8 para servir como fila para o Mcollective 2.0. Confesso que eu e sofri um pouco, mas compartilho o resultado para evitar sofrimento desnecessário dos colegas que desejem subir um cenário similar.</p>
+<p>Vamos lá, aos corajosos quem forem instalar o ActiveMQ 5.6.x no Debian 7.8 para uso do Mcollective 2.0, segue abaixo o arquivo de configuração <strong>activemq.xml</strong> que funciona nessa combinação de OS/Middleware/Orquestrador.</p>
+<pre tabindex="0"><code>&lt;!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the &quot;License&quot;); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+--&gt;
+&lt;beans
+  xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+  xmlns:amq=&quot;http://activemq.apache.org/schema/core&quot;
+  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd&quot;&gt;
+
+    &lt;!-- Allows us to use system properties as variables in this configuration file --&gt;
+    &lt;bean class=&quot;org.springframework.beans.factory.config.PropertyPlaceholderConfigurer&quot;/&gt;
+
+    &lt;broker xmlns=&quot;http://activemq.apache.org/schema/core&quot;
+            brokerName=&quot;localhost&quot;
+            dataDirectory=&quot;${activemq.base}/data&quot;&gt;
+
+        &lt;!--
+            Configure message persistence for the broker. The default persistence
+            mechanism is the KahaDB store (identified by the kahaDB tag).
+            For more information, see:
+
+            http://activemq.apache.org/persistence.html
+        --&gt;
+        &lt;persistenceAdapter&gt;
+            &lt;kahaDB directory=&quot;${activemq.base}/data/kahadb&quot;/&gt;
+        &lt;/persistenceAdapter&gt;
+
+        &lt;!--
+            The transport connectors expose ActiveMQ over a given protocol to
+            clients and other brokers. For more information, see:
+
+            http://activemq.apache.org/configuring-transports.html
+        --&gt;
+
+&lt;plugins&gt;
+&lt;simpleAuthenticationPlugin&gt;
+        &lt;users&gt;
+          &lt;authenticationUser username=&quot;mcollective&quot; password=&quot;marionette&quot; groups=&quot;mcollective,everyone&quot;/&gt;
+          &lt;authenticationUser username=&quot;admin&quot; password=&quot;secret&quot; groups=&quot;mcollective,admins,everyone&quot;/&gt;
+        &lt;/users&gt;
+      &lt;/simpleAuthenticationPlugin&gt;
+      &lt;authorizationPlugin&gt;
+        &lt;map&gt;
+          &lt;authorizationMap&gt;
+              &lt;authorizationEntries&gt;
+                  &lt;authorizationEntry queue=&quot;&gt;&quot; write=&quot;admins&quot; read=&quot;admins&quot; admin=&quot;admins&quot; /&gt;
+                  &lt;authorizationEntry topic=&quot;&gt;&quot; write=&quot;admins&quot; read=&quot;admins&quot; admin=&quot;admins&quot; /&gt;
+                  &lt;authorizationEntry topic=&quot;mcollective.&gt;&quot; write=&quot;mcollective&quot; read=&quot;mcollective&quot; admin=&quot;mcollective&quot; /&gt;
+                  &lt;authorizationEntry queue=&quot;mcollective.&gt;&quot; write=&quot;mcollective&quot; read=&quot;mcollective&quot; admin=&quot;mcollective&quot; /&gt;
+                  &lt;!--
+                    The advisory topics are part of ActiveMQ, and all users need access to them.
+                    The &quot;everyone&quot; group is not special; you need to ensure every user is a member.
+                  --&gt;
+                  &lt;authorizationEntry topic=&quot;ActiveMQ.Advisory.&gt;&quot; read=&quot;everyone&quot; write=&quot;everyone&quot; admin=&quot;everyone&quot;/&gt;
+                &lt;/authorizationEntries&gt;
+          &lt;/authorizationMap&gt;
+        &lt;/map&gt;
+      &lt;/authorizationPlugin&gt;
+    &lt;/plugins&gt;
+
+        &lt;transportConnectors&gt;
+            &lt;transportConnector name=&quot;openwire&quot; uri=&quot;tcp://127.0.0.1:61616&quot;/&gt;
+            &lt;transportConnector name=&quot;stomp+nio&quot; uri=&quot;stomp+nio://0.0.0.0:61613&quot;/&gt;
+        &lt;/transportConnectors&gt;
+
+
+    &lt;/broker&gt;
+
+&lt;/beans&gt;
+</code></pre><p>Com essa configuração, o Mcollective 2.0 de vocês conseguirá se conectar no ActiveMQ 5.6 sem maiores dificuldades.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Style Guide</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Style Guide</h1>
+        <div>
+                <time>April 20, 2013</time>
+            </div>
+    </header><h2 id="1-puppet-guia-de-estilos">1. Puppet Guia de estilos</h2>
+<p>Neste post eu vou trazer algumas dicas da puppetlabs sobre estilo de código. No site da Puppetlabs há uma página chamada <a href="http://docs.puppetlabs.com/guides/style_guide.html">style guide</a> explicando isto em inglês, eu pretendo me inspirar nesta página e estender as dicas na medida do possível.</p>
+<p>O principal objetivo do style guide é apresentar como utilizar a sintaxe do Puppet de forma mais eficiente. Quando usamos a sintaxe coerentemente, temos ganhos na velocidade de processamento de nossos manifests, além disto, nosso código fica mais legível e elegante.</p>
+<p>O parser do Puppet é bastante flexível e mesmo quando você produz algo fora padrões esperados, ele consegue entender, processar e aplicar as configurações descritas em seu manifest, contudo, ele levará mais tempo para processar o manifest, logo podemos dizer que certos tipos de código dificultam vida do parser, isto diminui a performance do agente quando ele for aplicar suas configurações, além disto, a aplicação do manifest pode ter algum comportamento inesperado.</p>
+<p>Acompanhe o artigo para entender a melhor forma de usar sintaxe do Puppet.</p>
+<h2 id="2-dicas-gerais">2. Dicas Gerais</h2>
+<h3 id="21-código-de-fácil-leitura">2.1 Código de fácil leitura</h3>
+<p>Se você tiver que optar em escrever um código obscuro e complexo e um código mais legível, procure sempre optar por escrever um código legível, seja para você, seja para outras pessoas. Isto pode parecer subjetivo, mas quando trabalhamos em equipe ou quando compartilhamos nosso código, quanto mais legível melhor. Além disto, isto evita situações em que você relê um código escrito meses atrás e não consegue entender o que estava fazendo.</p>
+<h3 id="22-herança-em-classes">2.2 Herança em classes</h3>
+<p>A Puppetlabs em regra geral pede para evitarmos o uso de herança entre classes, eles acreditam que isso dificulta a leitura e o entendimento do código.</p>
+<p>Em minha opinião esse recurso pode ser muito útil em alguns casos, logo recomendo que você estude bem como funciona o conceito antes de utilizar, mais a frente voltaremos a falar disto.</p>
+<h3 id="23-módulos">2.3 Módulos</h3>
+<p>Quando for escrever módulos já planeje e desenhe seu módulo primeiro para funcionar com auto loading, segundo para que funcione tanto com um ENC quanto sem um ENC (External Node Classifier). O Foreman e Puppet Dashboard são exemplos de ENC.</p>
+<p>Pense também em criar seu módulo utilizando o comando <strong>puppet module generate</strong> para que você siga a estrutura correta e recomendada,
+escreva o README bem detalhado e não deixe de preencher os metadados.</p>
+<h3 id="24-declaração-de-classes">2.4 Declaração de classes</h3>
+<p>Antes de entrar no assunto, vamos entender os conceitos DEFINIR e DECLARAR no universo Puppet.</p>
+<p>Quando falarmos <strong>definir</strong>, significa que vamos escrever nosso manifest, ou seja, vamos colocar código lá.</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>class guto {
+user { &lsquo;guto&rsquo;:
+ensure =&gt; present,
+}
+}</p>
+<p>{% endcodeblock %}</p>
+<p>Quando falarmos <strong>declarar</strong>, significa que vamos executar o código de nosso manifest, ou seja, vamos aplicar a configuração.</p>
+<p>{% codeblock lang:puppet %}
+class { &lsquo;guto&rsquo;: }
+{% endcodeblock %}</p>
+<p>A puppetlabs não recomenda que durante a <strong>definição</strong> de uma classe, seja feita também <strong>declaração</strong> de outra classe.</p>
+<p>Na minha opinião essa recomendação é feita pois este tipo declaração pode dificultar a ação do parser, aumentando o tempo de processamento do catálogo e além disto, pode gerar algum tipo de comportamento indesejável ao aplicar o manifest.</p>
+<p>{% codeblock lang:puppet %}
+class sudo {</p>
+<pre><code>package { 'sudo':
+	ensure =&gt; present,
+}
+
+class { 'guto': }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>A declaração de classes deve ser utilizada o mais próximo possível do escopo do <strong>node</strong>, eles recomendam que sejamos conservadores com isto, contudo, há o recurso <strong>include</strong> que permite múltipla declaração de classes, se você precisar declarar outra classe, use include ou então verifique se não é melhor utilizar herança.</p>
+<h2 id="3-metadados-do-módulo">3. Metadados do módulo</h2>
+<p>Todo o módulo deve ter um arquivo de metadados, essa é uma recomendação importante principalmente se você deseja compartilhar seu módulo no forge ou github.</p>
+<p>Quando você gera seu módulo usando o comando <strong>puppet module</strong>, o exemplo de metadados abaixo é criado, a partir daí é só ajustar.</p>
+<pre tabindex="0"><code>name 'myuser-mymodule'
+version '0.0.1'
+author 'Author of the module - for shared modules this is Puppet Labs'
+summary 'One line description of the module'
+description 'Longer description of the module including an example'
+license 'The license the module is release under - generally GPLv2 or Apache'
+project_page 'The URL where the module source is located'
+dependency 'otheruser/othermodule', '&gt;= 1.2.3'
+</code></pre><p>Um guia completo sobre a estrutura de um módulo pode ser encontrado no projeto <a href="https://github.com/puppetlabs/puppet-module-tool/blob/master/README.markdown">puppet-module-tool</a> no github.</p>
+<h2 id="4-indentação">4. Indentação</h2>
+<p>Se o seu manifest seguir as recomendações abaixo, estará dentro dos
+moldes descritos no guia de estilo.</p>
+<p>O seu manifest…</p>
+<ul>
+<li>Deve usar <strong>two-space soft tab</strong> (tab convertida para 2 espaços)</li>
+<li>Não deve usar <strong>tab</strong> (literal)</li>
+<li>Não deve ter <strong>trailing whitespace</strong> em seu código</li>
+<li>Não deve extraploar <strong>80 caracteres</strong> por linha</li>
+<li>Deve ter todas as <strong>setas</strong> (comma arrows) <strong>=&gt;</strong> alinhadas</li>
+</ul>
+<p>Eu particularmente uso soft tab no <strong>vim</strong> ou <em>sublime text 2</em>* com 4 espaços, mas a recomendação deles é clara, 2 espaços para estar dentro dos padrões puppetlabs.</p>
+<h3 id="41-puppet-lint">4.1 Puppet-lint</h3>
+<p>Use o <a href="http://puppet-lint.com">puppet lint</a> para verificar se o seu manifest está de acordo com o <a href="http://docs.puppetlabs.com/guides/style_guide.html">style guide</a> do Puppet.</p>
+<h2 id="5-comentários">5. Comentários</h2>
+<p>O Puppet permite vários tipo de comentários, porém o recomendado é utilizar hash.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<pre><code># Este é o tipo comentário recomendado
+</code></pre>
+<p>A puppetlabs não recomenda o uso dos estilos de comentários abaixo:</p>
+<pre><code>// Comentário em formato não recomendado
+/* Comentário em formato não recomendado */
+</code></pre>
+<h2 id="6-quoting">6. Quoting</h2>
+<p>Todas as <strong>strings</strong> que não contenham <strong>variáveis</strong> devem usar <strong>single quotes</strong>.</p>
+<p>{% codeblock lang:puppet %}
+&lsquo;string em single quote&rsquo;
+{% endcodeblock %}</p>
+<p>Quando for necessário <strong>interpolar</strong> strings e variáveis, use <strong>double quoting</strong> e <strong>chaves</strong> nas variáveis para identificá-las.</p>
+<p>{% codeblock lang:puppet %}
+&ldquo;string e ${variável}&rdquo;
+{% endcodeblock %}</p>
+<p>Valores específicos de <strong>atributos</strong> não precisam de quote.</p>
+<p>{% codeblock lang:puppet %}
+ensure =&gt; present,
+{% endcodeblock %}</p>
+<p>O uso de <strong>quotes</strong> é opcional quando uma <strong>string</strong> for <strong>alfa-numérica</strong> e desde que não seja o <strong>título</strong> de um recurso.</p>
+<h3 id="61-interpolação-de-variável">6.1 Interpolação de variável</h3>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+&ldquo;/etc/${file}.conf&rdquo;
+&ldquo;${::operatingsystem} is not supported by ${module_name}&rdquo;
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+&ldquo;/etc/$file.conf&rdquo;
+&ldquo;$::operatingsystem is not supported by $module_name&rdquo;
+{% endcodeblock %}</p>
+<h3 id="62-valor-de-atributos">6.2 Valor de atributos</h3>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+mode =&gt; $my_mode
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+mode =&gt; &ldquo;$my_mode&rdquo;
+mode =&gt; &ldquo;${my_mode}&rdquo;
+{% endcodeblock %}</p>
+<h2 id="7-resources">7. Resources</h2>
+<h3 id="71-resource-names">7.1 Resource names</h3>
+<p><strong>Todos</strong> os resource names devem usar <strong>quote</strong>, no entanto, o puppet permite o uso de <strong>nomes</strong> para <strong>títulos</strong> sem quotes desde que o nome não tenha hífen ou espaços, contudo, para seguir um padrão consistente, use sempre quote.</p>
+<p><strong>Variáveis</strong> ou <strong>fatos</strong> não necessitam de <strong>quotes</strong> quando forem utilizadas como título.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+package { &lsquo;htop&rsquo;: ensure =&gt; present }
+package { $package_name: ensure =&gt; present }
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+package { htop: ensure =&gt; present }
+package { &ldquo;${package_name}&quot;: ensure =&gt; present }
+{% endcodeblock %}</p>
+<h3 id="72-alinhamento">7.2. Alinhamento</h3>
+<p>Todos os atributos e valores de um recurso devem estar alinhados em seu bloco,
+as setas devem ter um espaço após o nome do atributo mais longo.</p>
+<p>Apesar de ser uma recomendação estética, isto facilita muito a leitura.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+package { &lsquo;pacote&rsquo;:
+ensure =&gt; present,
+}</p>
+<p>service { &lsquo;servico&rsquo;:
+ensure     =&gt; running,
+enable     =&gt; true,
+hasrestart =&gt; true,
+hasstatus  =&gt; true,
+require    =&gt; Package[&lsquo;pacote&rsquo;],
+}</p>
+<p>file { &lsquo;main.cf&rsquo;:
+path    =&gt; &ldquo;/etc/pacote/pacote.conf&rdquo;,
+source  =&gt; &ldquo;/root/puppet/pacote.conf&rdquo;,
+owner   =&gt; &lsquo;root&rsquo;,
+group   =&gt; &lsquo;root&rsquo;,
+mode    =&gt; 644,
+require =&gt; Package[&lsquo;pacote&rsquo;],
+notify  =&gt; Service[&lsquo;servico&rsquo;],
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+package { &lsquo;pacote&rsquo;:
+ensure =&gt; present,
+}</p>
+<p>service { &lsquo;servico&rsquo;:
+ensure =&gt; running,
+enable =&gt; true,
+hasrestart =&gt; true,
+hasstatus =&gt; true,
+require =&gt; Package[&lsquo;pacote&rsquo;],
+}</p>
+<p>file { &lsquo;main.cf&rsquo;:
+path =&gt; &ldquo;/etc/pacote/pacote.conf&rdquo;,
+source =&gt; &ldquo;/root/puppet/pacote.conf&rdquo;,
+owner =&gt; &lsquo;root&rsquo;,
+group =&gt; &lsquo;root&rsquo;,
+mode =&gt; 644,
+require =&gt; Package[&lsquo;pacote&rsquo;],
+notify =&gt; Service[&lsquo;servico&rsquo;],
+}</p>
+<p>{% endcodeblock %}</p>
+<h3 id="73-ordenação-de-atributos">7.3. Ordenação de atributos</h3>
+<p>Se a declaração de um recurso possuir o atributo <strong>ensure</strong>, este deve preceder qualquer outro atributo, ele sempre vem primeiro.</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/tmp/readme.txt&rsquo;:
+ensure =&gt; file,
+owner  =&gt; &lsquo;0&rsquo;,
+group  =&gt; &lsquo;0&rsquo;,
+mode   =&gt; &lsquo;0644&rsquo;,
+}
+{% endcodeblock %}</p>
+<h3 id="74-múltiplos-resources">7.4 Múltiplos resources</h3>
+<p>A puppetlabs só recomenda o uso de múltiplos resources para tornar o código mais legível, portando, evite o uso a não ser que isso seja realmente necessário.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/tmp/a&rsquo;:
+content =&gt; &lsquo;a&rsquo;,
+}</p>
+<p>file { &lsquo;/tmp/b&rsquo;:
+content =&gt; &lsquo;b&rsquo;,
+}</p>
+<p>file { &lsquo;/tmp/c&rsquo;:
+content =&gt; &lsquo;c&rsquo;,
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+file {
+&ldquo;/tmp/a&rdquo;:
+content =&gt; &ldquo;a&rdquo;;
+&ldquo;/tmp/b&rdquo;:
+content =&gt; &ldquo;b&rdquo;;
+&ldquo;/tmp/c&rdquo;:
+content =&gt; &ldquo;c&rdquo;;
+}
+{% endcodeblock %}</p>
+<h3 id="75-links-simbólicos">7.5 Links simbólicos</h3>
+<p>Apenas para deixar o código mais limpo e legível, recomenda-se declarar o link simbólico de forma explícita.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/var/log/syslog&rsquo;:
+ensure =&gt; link,
+target =&gt; &lsquo;/var/log/messages&rsquo;,
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/var/log/syslog&rsquo;:
+ensure =&gt; &lsquo;/var/log/messages&rsquo;,
+}
+{% endcodeblock %}</p>
+<h3 id="76-file-modes">7.6 File modes</h3>
+<p>Devemos representar as permissões de arquivos e diretórios com 4 dígitos ao invés de 3 dígitos.</p>
+<p>As permissões devem ser declaradas usando <strong>single-quote</strong>, <strong>sempre</strong>.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/var/log/syslog&rsquo;:
+ensure =&gt; present,
+mode   =&gt; &lsquo;0644&rsquo;,
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/var/log/syslog&rsquo;:
+ensure =&gt; present,
+mode   =&gt; 644,
+}
+{% endcodeblock %}</p>
+<h3 id="77-resource-defaults">7.7 Resource Defaults</h3>
+<p>Podemos declarar alguns padrões para uso de recursos, porém, isso deve ser utilizado com cuidado, este tipo de declaração deve ser feita apenas no nível mais alto do seu ecosistema de manifests. Especificamente, eles devem ser declarados:</p>
+<ul>
+<li>No topo de escopo dentro do arquivo site.pp</li>
+<li>Em classes que não serão herdadas</li>
+<li>Em classes em que não você não declara outras classes</li>
+</ul>
+<p>Se essas recomendações não forem seguidas poderão ocorrer comportamentos inesperados durante a execução de seus manifests, principalmente se
+essa configuração for propagada ou herdada de alguma forma.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetlabspuppetmanifestssitepp">/etc/puppetlabs/puppet/manifests/site.pp:</h1>
+<p>File {
+mode  =&gt; &lsquo;0644&rsquo;,
+owner =&gt; &lsquo;root&rsquo;,
+group =&gt; &lsquo;root&rsquo;,
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+#/etc/puppetlabs/puppet/modules/ssh/manifests/init.pp
+File {
+mode  =&gt; &lsquo;0600&rsquo;,
+owner =&gt; &lsquo;nobody&rsquo;,
+group =&gt; &lsquo;nogroup&rsquo;,
+}</p>
+<p>class {&lsquo;ssh::client&rsquo;:
+ensure =&gt; present,
+}
+{% endcodeblock %}</p>
+<h2 id="8-condicionais">8. Condicionais</h2>
+<h3 id="81-mantenha-suas-declarações-simples">8.1 Mantenha suas declarações simples</h3>
+<p>A Puppetalabs não recomenda misturar resource types e condicionais, isto está bem ligado ao uso de <strong>seletores</strong>, portanto, faça o tratamento condicional fora do resource type, é mais eficaz do ponto de vista de processamento do catálogo e além disto, fica mais legível e elegante.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+$file_mode = $::operatingsystem ? {
+debian =&gt; &lsquo;0007&rsquo;,
+redhat =&gt; &lsquo;0776&rsquo;,
+fedora =&gt; &lsquo;0007&rsquo;,
+}</p>
+<p>file { &lsquo;/tmp/readme.txt&rsquo;:
+content =&gt; &ldquo;Hello World\n&rdquo;,
+mode    =&gt; $file_mode,
+}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+file { &lsquo;/tmp/readme.txt&rsquo;:
+mode =&gt; $::operatingsystem ? {
+debian =&gt; &lsquo;0777&rsquo;,
+redhat =&gt; &lsquo;0776&rsquo;,
+fedora =&gt; &lsquo;0007&rsquo;,
+}
+}
+{% endcodeblock %}</p>
+<h3 id="82-estado-default-em-case-e-seletores">8.2 Estado Default em Case e Seletores</h3>
+<p>Tanto em CASE quanto em SELETORES, podemos utilizar o statement DEFAULT, ou seja, isto determina um valor default se não casar com nenhuma opção do CASE ou SELETOR.</p>
+<p>case:</p>
+<p>{% codeblock lang:puppet %}
+case $var {
+valor1:  { bloco de código }
+valor2:  { bloco de código }
+default: { bloco de codigo }
+}
+{% endcodeblock %}</p>
+<p>seletor:</p>
+<p>{% codeblock lang:puppet %}
+$file_mode = $::operatingsystem ? {
+debian  =&gt; &lsquo;0007&rsquo;,
+redhat  =&gt; &lsquo;0776&rsquo;,
+fedora  =&gt; &lsquo;0007&rsquo;,
+default =&gt; &lsquo;0077&rsquo;,
+}
+{% endcodeblock %}</p>
+<p>A puppetlabs recomenda que a opção default esteja presente em qualquer tratamento condicional que o suporte, e recomenda ainda que seja associada a função fail, esta função interrompe o processamento do catálogo caso o sistema
+não seja compatível com o tratamento condicional definido.</p>
+<p>exemplo:</p>
+<p>{% codeblock lang:puppet %}
+case $::operatingsystem {
+centos, redhat: { $apache = &ldquo;httpd&rdquo; }
+debian, ubuntu: { $apache = &ldquo;apache2&rdquo; }
+default: { fail(&ldquo;Sistema operacional não reconhecido&rdquo;) }
+}
+{% endcodeblock %}</p>
+<p>No exemplo acima, o <strong>CASE</strong> verifica qual é o sistema operacional do node - usando o <strong>fato</strong>, caso o valor detectado não case com nenhuma das opções do CASE, o <strong>default</strong> é acionado e executa a função <strong>fail</strong>, isto interrompe o processamento do catálogo e retorna um erro que poderá ser visualizado em seu ENC ou no log do agente.</p>
+<h2 id="9-classes">9. Classes</h2>
+<p>Recomenda-se separar classes e definições em arquivos distintos no diretório manifest de seu módulo.</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetlabspuppetmodulesapachemanifests">/etc/puppetlabs/puppet/modules/apache/manifests</h1>
+<pre><code># init.pp
+  class apache { }
+# ssl.pp
+  class apache::ssl { }
+# virtual_host.pp
+  define apache::virtual_host () { }
+</code></pre>
+<p>{% endcodeblock %}</p>
+<p>É importante entender que isto não altera em nada o funcionamento do módulo,
+tem o mesmo efeito de declarar tudo no arquivo init.pp, contudo, separando
+os arquivos temos uma estrutura que facilita o entendimento e torna o todo
+mais legível.</p>
+<h3 id="91-nomes-de-classes">9.1 Nomes de classes</h3>
+<p>Observe que o nome das classes dentro dos arquivos utiliza escopos, a regra é clara, o nome da classe recebe o nome do módulo + o nome da classe, veja o exemplo:
+{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetlabspuppetmodulesapachemanifests-1">/etc/puppetlabs/puppet/modules/apache/manifests</h1>
+<h1 id="sslpp">ssl.pp</h1>
+<p>class apache::ssl
+{% endcodeblock %}</p>
+<p>Caso você queria criar um diretório para organizar melhor seu módulo a regra passa a incluir o nome do diretório, veja o exemplo:</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetlabspuppetmodulesapachemanifests-2">/etc/puppetlabs/puppet/modules/apache/manifests</h1>
+<h1 id="confparameterspp">conf/parameters.pp</h1>
+<p>class apache::conf::parameters
+{% endcodeblock %}</p>
+<p>Essa estrutura em escopo torna o nome das classes do módulo única, diferenciando dos demais módulos, evitando conflitos e problemas
+de carregamento, siga sempre essa estrutura.</p>
+<h3 id="92-organização-interna">9.2 Organização interna</h3>
+<p>As classes precisam ser organizadas de forma a manter um estilo e estrutura consistente. Abaixo uma lista com itens importantes encontrados em um classe
+que foi construída seguindo a lógica do style guide.</p>
+<p>A classe&hellip;</p>
+<ul>
+<li>Deve definir parâmetros</li>
+<li>Deve validar parâmetros</li>
+<li>Deve interromper a execução em falha de validação</li>
+<li>Deve oferecer parâmetros default</li>
+<li>Pode ter declaração de variáveis locais</li>
+<li>Pode ter relação com outras classes
+<ul>
+<li>Class[&lsquo;apache&rsquo;] -&gt; Class[&lsquo;local_yum&rsquo;]</li>
+</ul>
+</li>
+<li>Pode sobrescrever (override) resources</li>
+<li>Pode declarar resources</li>
+<li>Pode declarar relação entre resources dentro de condicionais</li>
+</ul>
+<p>Exemplo de uma classe que segue essas recomendações:</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>class myservice($ensure=&lsquo;running&rsquo;) {</p>
+<pre><code>  # checagem condicional
+ 
+  if $ensure in [ running, stopped ] {  
+    $ensure_real = $ensure
+  } else {
+    # interrompendo execução em caso de falta de parâmetro
+    fail('ensure parameter must be running or stopped')
+  }
+  case $::operatingsystem {
+    centos: {
+      $package_list = 'openssh-server'
+    }
+    solaris: {
+      $package_list = [ SUNWsshr, SUNWsshu ]
+    }
+    default: {
+  	   # interrompendo execução caso o sistema operacional seja desconhecido
+      fail(&quot;Module ${module_name} does not support ${::operatingsystem}&quot;)
+  
+    }
+  
+  }
+
+  # variável de uso local
+  $variable = 'something'
+
+  Package { ensure =&gt; present, }
+
+  File { owner =&gt; '0', group =&gt; '0', mode =&gt; '0644' }
+
+  package { $package_list: }
+
+  file { &quot;/tmp/${variable}&quot;:
+    ensure =&gt; present,
+  }
+
+  service { 'myservice':
+    ensure    =&gt; $ensure_real,
+    hasstatus =&gt; true,
+  }
+}
+</code></pre>
+<p>{% endcodeblock %}</p>
+<h3 id="93-relações-encadeadas">9.3 Relações encadeadas</h3>
+<p>O puppet nos oferece duas formas de trabalhar com relações, a primeira é usando meta-parâmetros como <strong>require</strong>, <strong>before</strong>, <strong>notify</strong> e <strong>subscribe</strong> e a segunda é usando uma cadeia de relações, para entender veja dois exemplos básicos, o primeiro precedência e o segundo notificação.</p>
+<p><strong>Precedência via meta-parâmetro</strong></p>
+<p>{% codeblock lang:puppet %}</p>
+<p>package { &lsquo;httpd&rsquo;:
+ensure =&gt; installed,
+before =&gt; Service[httpd],
+}</p>
+<p>service { &lsquo;httpd&rsquo;:
+ensure =&gt; running,
+}</p>
+<p>{% endcodeblock %}</p>
+<p><strong>Precedência usando cadeia de relacionamento</strong></p>
+<p>{% codeblock lang:puppet %}</p>
+<p>Package[&lsquo;httpd&rsquo;] -&gt; Service[&lsquo;httpd&rsquo;]</p>
+<p>{% endcodeblock %}</p>
+<p><strong>Notificando via meta-parâmetro</strong></p>
+<p>{% codeblock lang:puppet %}</p>
+<p>file { &lsquo;httpdconf&rsquo;:
+path   =&gt; &lsquo;/etc/httpd/httpd.conf&rsquo;
+ensure =&gt; present,
+notify =&gt; Service[httpd]</p>
+<p>service { &lsquo;httpd&rsquo;:
+ensure =&gt; running,
+}</p>
+<p>{% endcodeblock %}</p>
+<p><strong>Notificando via cadeia de relacionamento</strong></p>
+<p>{% codeblock lang:puppet %}
+File[&lsquo;httpdconf&rsquo;] ~&gt; Service[&lsquo;httpd&rsquo;]
+{% endcodeblock %}</p>
+<p>Cadeias de relacionamento são recursos úteis mas devem ser utilizados com cuidado, recomenda-se
+utilizar cadeias com regras da esquera para direta sempre, evite outras variações</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+Package[&lsquo;httpd&rsquo;] -&gt; Service[&lsquo;httpd&rsquo;]
+File[&lsquo;httpconf&rsquo;] ~&gt; Service[&lsquo;httpd&rsquo;]
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+Service[&lsquo;httpd&rsquo;] &lt;- Package[&lsquo;httpd&rsquo;]
+Service[&lsquo;httpd&rsquo;] &lt;~ File[&lsquo;httpdconf&rsquo;]
+{% endcodeblock %}</p>
+<p>Quando possível, utilize meta-parâmetros ao invés de relacionamento interno.</p>
+<h3 id="94-classes-internas">9.4 Classes internas</h3>
+<p>No início já falamos disto, devemos evitar criar classes dentro de classes, ou mesmo definições dentro de classes.</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+class apache {
+class ssl { &hellip; }
+}
+{% endcodeblock %}</p>
+<p>Outra forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+class apache {
+define config() { &hellip; }
+}
+{% endcodeblock %}</p>
+<p>Prefira sempre criar um arquivo separado e declarar uma única classe ou uma única definição neste arquivo.</p>
+<h3 id="95-classes-e-herança">9.5 Classes e herança</h3>
+<p>Herança pode ser usada em módulos, mas deve ser utilizada entre as classes do módulo. Se o seu objetivo é  herdar uma classe de outro módulo, pense em usar o <strong>include</strong> ao invés do <strong>inherits</strong>. O simples ato de fazer herança entre módulos já viola o proprio conceito de modularidade, evite isto ao máximo.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+class ssh { &hellip; }</p>
+<pre><code>class ssh::client inherits ssh { ... }
+
+class ssh::server inherits ssh { ... }
+
+class ssh::server::solaris inherits ssh::server { ... }
+</code></pre>
+<p>{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+class ssh inherits server { &hellip; }</p>
+<pre><code>class ssh::client inherits workstation { ... }
+
+class wordpress inherits apache { ... }
+</code></pre>
+<p>{% endcodeblock %}</p>
+<h3 id="96-variáveis-e-namespace">9.6 Variáveis e namespace</h3>
+<p>Quando usarmos váriaveis de topo de escopo ou fatos, devemos declará-las de forma a evitar carregamento de uma variável com o mesmo nome
+mas em escopo local.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+$::operatingsystem
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+$operatingsystem
+{% endcodeblock %}</p>
+<p>Se não fizermos isto e houver uma variável com o mesmo nome em escopo
+local, ou seja, se você por alguma razão criou uma variável em um
+manifest do seu módulo com o nome <strong>operatingsystem</strong>, por ordem
+de precedência a variável de escopo <strong>local</strong> será carregada e não a  variável - ou fato - de topo de escopo, desta forma seu código pode ter um comportamento indesejado.</p>
+<h3 id="97-nome-de-variáveis">9.7 Nome de variáveis</h3>
+<p>Quando for definir variáveis, procure usar apenas letras, números
+e underscore. Não use hífen ou travessão.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+$foo_bar123
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+$foo-bar123
+{% endcodeblock %}</p>
+<h3 id="98-classes-e-parâmetros">9.8 Classes e Parâmetros</h3>
+<p>Em classes parametrizadas e definições, devemos tomar um cuidado especial na hora da declaração. Parâmetros obrigatórios devem ser listados antes de parâmetros opcionais.</p>
+<p>A forma <strong>certa</strong> de fazer:</p>
+<p>{% codeblock lang:puppet %}
+class ntp (
+$servers,
+$options   = &ldquo;iburst&rdquo;,
+$multicast = false
+) {}
+{% endcodeblock %}</p>
+<p>A forma <strong>não</strong> recomendada:</p>
+<p>{% codeblock lang:puppet %}
+class ntp (
+$options   = &ldquo;iburst&rdquo;,
+$servers,
+$multicast = false
+) {}
+{% endcodeblock %}</p>
+<h2 id="10-testes">10. Testes</h2>
+<p>Todos os manifests de um módulo devem ter um manifest de teste no diretório tests, isso é chamado de smoking test, o objetivo do
+smoking test é demonstrar como uma classe ou definição deve
+ser declarada.</p>
+<p>exemplo de manifest:</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetmodulesntpmanifestsinitpp">/etc/puppet/modules/ntp/manifests/init.pp</h1>
+<p>class ntp {
+package { &lsquo;ntp&rsquo;:
+ensure =&gt; present,
+}
+}
+{% endcodeblock %}</p>
+<p>exemplo de smoking test:</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetmodulesntptestsinitpp">/etc/puppet/modules/ntp/tests/init.pp</h1>
+<p>class { ntp: }
+{% endcodeblock %}</p>
+<h2 id="11-puppet-doc">11. Puppet DOC</h2>
+<p>O Puppet Doc é um recurso que nos permite documentar nossas classes e definições utilizando RDoc markup. Esse documentação inline é
+importante para facilitar a geração de documentação online, isto
+significa que uma vez gerada, poderá ser extraída pelo própio puppet
+doc quando desejar informações e comentários das classes e definções
+de seu módulo.</p>
+<p>Modelo para classes:</p>
+<pre tabindex="0"><code>    # == Class: example_class
+    #
+    # Full description of class example_class here.
+    #
+    # === Parameters
+    #
+    # Document parameters here.
+    #
+    # [*ntp_servers*]
+    #   Explanation of what this parameter affects and what it defaults to.
+    #   e.g. &quot;Specify one or more upstream ntp servers as an array.&quot;
+    #
+    # === Variables
+    #
+    # Here you should define a list of variables that this module would require.
+    #
+    # [*enc_ntp_servers*]
+    #   Explanation of how this variable affects the funtion of this class and if it
+    #   has a default. e.g. &quot;The parameter enc_ntp_servers must be set by the
+    #   External Node Classifier as a comma separated list of hostnames.&quot; (Note,
+    #   global variables should not be used in preference to class parameters  as of
+    #   Puppet 2.6.)
+    #
+    # === Examples
+    #
+    #  class { 'example_class':
+    #    ntp_servers =&gt; [ 'pool.ntp.org', 'ntp.local.company.com' ]
+    #  }
+    #
+    # === Authors
+    #
+    # Author Name &lt;author@example.com&gt;
+    #
+    # === Copyright
+    #
+    # Copyright 2011 Your name here, unless otherwise noted.
+    #
+    class example_class {
+
+    }
+
+</code></pre><p>Modelo para definições:</p>
+<pre tabindex="0"><code>    # == Define: example_resource
+    #
+    # Full description of defined resource type example_resource here.
+    #
+    # === Parameters
+    #
+    # Document parameters here
+    #
+    # [*namevar*]
+    #   If there is a parameter that defaults to the value of the title string
+    #   when not explicitly set, you must always say so.  This parameter can be
+    #   referred to as a &quot;namevar,&quot; since it's functionally equivalent to the
+    #   namevar of a core resource type.
+    #
+    # [*basedir*]
+    #   Description of this variable.  For example, &quot;This parameter sets the
+    #   base directory for this resource type.  It should not contain a trailing
+    #   slash.&quot;
+    #
+    # === Examples
+    #
+    # Provide some examples on how to use this type:
+    #
+    #   example_class::example_resource { 'namevar':
+    #     basedir =&gt; '/tmp/src',
+    #   }
+    #
+    # === Authors
+    #
+    # Author Name &lt;author@example.com&gt;
+    #
+    # === Copyright
+    #
+    # Copyright 2011 Your name here, unless otherwise noted.
+    #
+    define example_class::example_resource($basedir) {
+
+    }
+
+</code></pre><p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

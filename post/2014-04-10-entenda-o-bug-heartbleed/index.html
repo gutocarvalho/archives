@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Entenda o Bug Heartbleed</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Entenda o Bug Heartbleed</h1>
+        <div>
+                <time>April 10, 2014</time>
+            </div>
+    </header><h2 id="1-sobre-o-bug">1. Sobre o Bug</h2>
+<p>No dia 07 de Abril de 2014 o projeto OpenSSL divulgou um <a href="https://www.openssl.org/news/secadv_20140407.txt">boletim</a> de segurança informando sobre uma grave falha de implementação nas versões 1.0.1f, 1.0.1e, 1.0.1d, 1.0.1c, 1.0.1b, 1.0.1a e 1.0.1 do OpenSSL, a falha foi chamada de Heartbleed.</p>
+<p>O Bug foi reportado por Neel Mehta do time de segurança do google, a correção foi escrita pelos desenvolvedores Adam Langley (<a href="mailto:agl@chromium.org">agl@chromium.org</a>) e Bodo Moeller (<a href="mailto:bmoeller@acm.org">bmoeller@acm.org</a>).</p>
+<p>A equipe do OpenSSL recomenda a atualização da lib para versão 1.0.1g ou então a recompilação do pacote OpenSSL com a seguinte flag habilitada</p>
+<pre><code>-DOPENSSL_NO_HEARTBEATS
+</code></pre>
+<p>O bug foi inicialmente registrado no <a href="https://cve.mitre.org/">CVE</a> sob o ID <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-0160">2014-0160</a>.</p>
+<p>O CVE é uma das maiores e mais respeitadas base de dados de segurança que contém dados do tipo vulnerability (erros de implementação em softwares) e exposure (falhas de configuração ou de uso de software).</p>
+<h2 id="2-entenda-o-bug">2. Entenda o Bug</h2>
+<p>A falha é tão séria que permite a leitura de fragmentos de memória dos sistemas operacionais que utilizam o OpenSSL como biblioteca de segurança para seus sistemas e serviços.</p>
+<p>Esses fragmentos são obtidos através de clientes ou até mesmo servidores SSL/TLS maliciosos.</p>
+<p>Estes clientes ou sevidores podem enviar pacotes DTLS com a extensão Heartbeat (recurso da versão 1.0.1) e durante esse processo de comunicação, a cada requisição eles conseguem interceptar um pequeno vazamento de dados da memória do sistema operacional, no total cerca 64kb de dados são expostos. Vale informar que essas requisições podem ocorrer repetidas vezes, vazando mais e mais dados.</p>
+<p>Isto significa que um atacante pode interceptar informações sensíveis ou sigilosas em sistemas que utilizam o openSSL como mecanismo de segurança.</p>
+<h2 id="3-o-que-pode-ser-interceptado">3. O que pode ser interceptado?</h2>
+<p>O pessoal da <a href="http://www.codenomicon.com">codenomicon</a> fez diversos testes para simular e validar o bug e os resultados foram surpreendentes, algo que chocou especialistas de segurança no mundo todo.</p>
+<p>Eles atacaram seus próprios servidores - externamente - explorando a falha no OpenSSL e conseguiram capturar informações muito sensíveis sem serem percebidos pelos sistemas de segurança - o exploit não deixa nenhum rastro.</p>
+<p>Não foi necessário utilizar nenhum tipo de informação interna, não foi necessário conhecer o ambiente, tão pouco utilizar credenciais de acesso locais (user/senha). Explorando o bug de forma simples e direta foi possível acessar dados sensíveis como por exemplo nomes de usuários, senhas, mensagens instantâneas que deveriam estar codificadas, mensagens de correio eletrônico e até fragmentos de documentos internos da empresa.</p>
+<p>O mais grave de tudo isto é que foi possível inclusive interceptar e capturar as chaves privadas x.509 que são utilizadas para criptografar tais informações, e uma vez de posse destas chaves, é possível decriptar todos os pacotes de uma determinada origem ou serviço, comprometendo de forma perigosa o sigilo na comunicação de ambientes de toda a empresa.</p>
+<h2 id="4-como-se-proteger-do-heartbleed">4. Como se proteger do HeartBleed?</h2>
+<p>A primeira coisa a se fazer é atualizar o OpenSSL, possívelmente sua distribuição Linux ou Unix já deve ter disponibilizado pacotes com essa correção, atualize seu ambiente e reinicie os serviços que utilizam a biblioteca OpenSSL, o restart é necessário para que a versão antiga do OpenSSL seja descarregada da memória, algumas pessoas para ter 100% certeza, reiniciam até mesmo o OS, se você tem janela para isto, é algo que pode ser feito.</p>
+<h2 id="5-por-que-o-bug-recebeu-o-nome-heartbleed">5. Por que o bug recebeu o nome HeartBleed?</h2>
+<p>O BUG está relacionado a uma falha na implementação da extensão Heartbeat no protocolo TLS/DTSL (transport layer security protocol), e como ele gera um LEAK (vazamento) foi apelidado assim Heart (de HeartBeat) + Bleed (de sangrar, escorrer), HeartBleed.</p>
+<h2 id="6-quais-medidas-devo-tomar-além-da-atualização-do-openssl">6. Quais medidas devo tomar além da atualização do OpenSSL?</h2>
+<h3 id="61-medidas-para-o-usuário-final">6.1 Medidas para o usuário final</h3>
+<p>O ideal é que você troque suas senhas nos sistemas e serviços que são oferecidos via HTTPS pela Internet, isto é necessário pois todos os dados que trafegavam em sistemas afetados estão potencialmente comprometidos já que podiam ser interceptados, e neste processo está incluso a sua senha pessoal.</p>
+<h3 id="62-medidas-para-o-sysadmin-e-developer">6.2 Medidas para o sysadmin e developer</h3>
+<p>É importante atualizar o OpenSSL, reiniciar os serviços que usam a biblioteca - e se possível o servidor - para liberar a memória e carregar a nova lib OpenSSL.</p>
+<p>É importante revogar certificados antigos, gerar novas chaves e certificados para seus serviços internos. Tem gente até regerando a CA local, mas não é preciso tanto, normalmente a chave do CA está bem protegida e encriptada (pelo menos deveria).</p>
+<p>No caso de serviços externos que usam certificados gerados por terceiros é importante verificar informações no site do seu provedor de certificados, é possível que ele gere uma nova CA, se for esse o caso, você vai revogar os certificadoa antigos e a partir daí você vai gerar uma requisição de assinatura de certificados para cada um dos seus certificados e vai enviar estes arquivos para seu provedor assinar com a nova CA - já criada em um ambiente pós aplicação do bugfix.</p>
+<p>Se eles não publicarem nova CA, você vai então revogar seus certificados antigos e gerar outros novos pelo sistema do provedor, seguindo a mesma lógica, gere as requisições de assinatura e assine no sistema deles, ou então, envie para eles assinarem.</p>
+<p>Pensando no pior cenário, caso você tenha alguma chave ssh para acesso a servidores externos como sua vm pessoal ou github por exemplo, se essa chave foi enviada por IM ou EMAIL, vale a pena gerar outra e trocar - por segurança e paz de espírito, assim você dormirá traquilo.</p>
+<h2 id="7-informações-sobre-distros-linux">7. Informações sobre distros linux</h2>
+<p>Como já mencionei acima, a maioria das distros já publicou atualizações para o pacote OpenSSL, então verifique no site do projeto de sua distro qual é a versão corrigida e verifique a versão do pacote instalado em seu servidor - via terminal - para ter certeza de que o pacote foi atualizado.</p>
+<p>Abaixo uma lista das principais distros linux com as versões corrigidas do OpenSSL, acompanhe:</p>
+<p>CentOS 6</p>
+<pre><code>[gutocarvalho@exige ~]$ rpm -qa|grep openssl
+openssl-1.0.1e-16.el6_5.7.x86_64
+</code></pre>
+<p>Fedora 19</p>
+<pre><code> openssl-1.0.1e-37.fc19.1 
+</code></pre>
+<p>Ubuntu 13.10</p>
+<pre><code> 1.0.1e-3ubuntu1.2
+</code></pre>
+<p>Debian 7</p>
+<pre><code> 1.0.1e-2+deb7u6
+</code></pre>
+<h2 id="8-quais-serviços-são-afetados">8. Quais serviços são afetados?</h2>
+<p>Todos os serviços que utilizam de alguma forma SSL/TLS são afetados, como por exemplo Apache, Nginx, OpenVPN, Postfix, Dovecot, OpenLDAP, Samba, Jabber, dentre outros.</p>
+<p>Atualizando seu ambiente, trocando suas senhas, regerando suas chaves e certificados, o problema se resolve.</p>
+<h2 id="9-o-ssh-foi-afetado-pelo-bug">9. O SSH foi afetado pelo BUG?</h2>
+<p>O serviço SSH não foi afetado, este é um protocolo distinto, fique tranquilo.</p>
+<p>Agora, se o seu servidor roda qualquer outro tipo de serviço que usa SSL, e se o seu servidor disponibiliza esse serviço externamente, e se ele rodava uma versão do OpenSSL com o bug, logo este ambiente está potencialmente comprometido, portanto, é recomendável que você troque suas senhas locais, remotas e chaves ssh para ficar principalmente com a consciência tranquila, além do ambiente protegido.</p>
+<h2 id="10-há-quanto-tempo-estamos-vulneráveis">10. Há quanto tempo estamos vulneráveis?</h2>
+<p>Apartentemente o BUG foi descoberto em Dezembro de 2013, contudo, o recurso HeartBeat está disponível desde o início de 2012, com isso nossos ambientes ficaram cerca de 2 anos expostos e vulneráveis ao HeartBleed.</p>
+<h2 id="11-tirinha-do-xkcd-que-explica-o-bug">11. Tirinha do XKCD que explica o BUG</h2>
+<p><img src="http://imgs.xkcd.com/comics/heartbleed_explanation.png" alt="xkcd heartbleed"></p>
+<h2 id="12-referências">12. Referências</h2>
+<ul>
+<li>
+<p><a href="https://www.openssl.org/news/secadv_20140407.txt">https://www.openssl.org/news/secadv_20140407.txt</a></p>
+</li>
+<li>
+<p><a href="https://rhn.redhat.com/errata/RHSA-2014-0376.html">https://rhn.redhat.com/errata/RHSA-2014-0376.html</a></p>
+</li>
+<li>
+<p><a href="http://heartbleed.com/">http://heartbleed.com/</a></p>
+</li>
+<li>
+<p><a href="http://xkcd.com/1354/">http://xkcd.com/1354/</a></p>
+</li>
+<li>
+<p><a href="https://www.digitalocean.com/community/articles/how-to-protect-your-server-against-the-heartbleed-openssl-vulnerability">https://www.digitalocean.com/community/articles/how-to-protect-your-server-against-the-heartbleed-openssl-vulnerability</a></p>
+</li>
+<li>
+<p><a href="https://community.openvpn.net/openvpn/wiki/heartbleed">https://community.openvpn.net/openvpn/wiki/heartbleed</a></p>
+</li>
+<li>
+<p><a href="http://serverfault.com/questions/587414/do-i-need-to-replace-keys-for-openssh-in-response-to-heartbleed">http://serverfault.com/questions/587414/do-i-need-to-replace-keys-for-openssh-in-response-to-heartbleed</a></p>
+</li>
+<li>
+<p><a href="http://superuser.com/questions/739349/does-heartbleed-affect-ssh-keys">http://superuser.com/questions/739349/does-heartbleed-affect-ssh-keys</a></p>
+</li>
+<li>
+<p><a href="http://security.stackexchange.com/questions/55076/what-should-a-website-operator-do-about-the-heartbleed-openssl-exploit">http://security.stackexchange.com/questions/55076/what-should-a-website-operator-do-about-the-heartbleed-openssl-exploit</a></p>
+</li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

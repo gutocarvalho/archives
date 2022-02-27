@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>ProxMox Migration Aborted</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ProxMox Migration Aborted</h1>
+        <div>
+                <time>April 14, 2020</time>
+            </div>
+    </header><p>As vezes quando estamos migrando uma VM de um Node para outro em nosso Cluster ProxMox, pode ser que a gente se depare com esse erro:</p>
+<pre tabindex="0"><code>/usr/bin/ssh -e none -o 'BatchMode=yes' -o 'HostKeyAlias=node_name' root@node-ipv4 /bin/true
+ Host key verification failed.
+ ERROR: migration aborted (duration 00:00:00): Can't connect to destination address using public key
+TASK ERROR: migration aborted
+</code></pre><p>Olhando mais de perto:</p>
+<pre tabindex="0"><code>Host key verification failed.
+ ERROR: migration aborted (duration 00:00:00): Can't connect to destination address using public key
+</code></pre><p>O que ocorre é o seguinte, cada node do seu cluster Proxmox tem dentro do arquivo <strong><em>/etc/ssh/ssh_known_hosts</em></strong> chaves que permitem essa migração entre nodes. Eventualmente, devido a alguma reconfiguração ou atualização isso pode ser modificado e perder a referência.</p>
+<pre tabindex="0"><code>root@netuno:~# cat /etc/ssh/ssh_known_hosts
+
+|1|pgRxKKlBvP6k+PHM9qzUFjkUurI=|jL2i1JDwEUwqYGTKZeSzyj+yDdo= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKnEUasTFGpYfuHHHxTi8G8X6GtX+OK0H9f45FK08lFqzDqp1bYyAAt9NR2mZAnS15TnggMg8ecGuSI1ukVLlA8=
+
+|1|Ah1gr9RovFPuTWIRB+vQ4PqMvYo=|cDQ8Vgh8ZxASIPu6cPSm2uup+Cw= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKnEUasTFGpYfuHHHxTi8G8X6GtX+OK0H9f45FK08lFqzDqp1bYyAAt9NR2mZAnS15TnggMg8ecGuSI1ukVLlA8=
+</code></pre><p>Para resolver se conecte ao node onde está rodando a VM na qual que deseja migrar e rode o seguinte comando:</p>
+<pre tabindex="0"><code>/usr/bin/ssh -e none -o 'HostKeyAlias=node_name root@node_ip /bin/true
+
+</code></pre><p>Substitua <strong>node_name</strong> e <strong>node_ip</strong> pelos valores corretos e aceite a fingerprint. Depois disso tente rodar a migração novamente, você vai ver que ela voltará a funcionar :)Não conseguiu resolver? Quer saber mais de ProxMox? [s]Guto</p>
+<hr>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

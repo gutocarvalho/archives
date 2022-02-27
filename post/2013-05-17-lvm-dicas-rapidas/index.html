@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>LVM dicas rápidas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>LVM dicas rápidas</h1>
+        <div>
+                <time>May 17, 2013</time>
+            </div>
+    </header><h2 id="1-lvm">1. LVM</h2>
+<p>LVM significa &ldquo;Logic Volume Manager&rdquo;, em português &ldquo;Gerenciador de volume lógico&rdquo;, ele gerencia discos e dispositivos de armazenamento em massa. No LVM um volume é o equivalente a uma partição de um disco.</p>
+<h2 id="11-usos-do-lvm">1.1 Usos do LVM</h2>
+<p>O LVM é muito utilizado em servidores linux por oferecer uma capacidade de ajuste dinâmico de seus volumes.</p>
+<p>Se você por exemplo que refazer o desenho de partições de um disco, no método tradicional você precisaria fazer backup dos dados, apagar as partições, criar um novo layout de partições, formatar as partições, reinstalar o sistema operacional e depois ainda fazer o restore dos dados, algo chato e demorado.</p>
+<p>Se você utilizar LVM estará administrando seu armazenamento em uma camada de abstração, você trabalhará com volumes físicos (PV), grupos de volumes (VG) e volumes lógicos (LV), guarde esses nomes.</p>
+<p>Quando você cria uma partição do disco destinada a uso via LVM esta partição será um PV (Physical Volume), e fará parte de algum VG (Volume Group), já os LV são &lsquo;fatias&rsquo; de algum VG.</p>
+<p>Um VG pode ser criado com um ou mais PVs e o LVM lhe permite adicionar outros PVs a um VG para aumentar a capacidade de armazenamento quando for necessário.</p>
+<p>Imagine um VG como se fosse um grande dispositivo de armazenamento composto por vários PVs, a capacidade total de armazenamento de um VG é a soma da capacidade dos PVs associados a ele.</p>
+<p>LVs (Logical Volumes) são fatias do seu VG (volume group), imagine que você tem um VG com capacidade de 100 GB, você pode ter 10 LVs de 10GB ou dois LVs de 50GB, isso é configurável, para o sistema operacional linux, um LV equivale a uma partição de um disco, pode ser formatada e montada da mesma forma que uma partição de um disco comum.</p>
+<p>A grande vantagem do LVM é que você pode redimensionar VGs e LVs, aumentando ou diminuindo seu tamanho, e se estiver utilizando um sistema de arquivos que suporte resize, algo como ext3 ou ext4, poderá também aumentar e diminuir o sistema de arquivos sem precisar reconstruir todas as partições e reinstalar seu ambiente.</p>
+<h3 id="12-vantagens">1.2 Vantagens</h3>
+<p>Se o seu /var está quase cheio, e se você estiver utilizando LVM, bastará adicionar um novo PV (Physical Volume) ao VG (Volume Group) que possui o LV (Logical Volume) utilizado para o o ponto de montagem /VAR, após aumentar a capacidade do VG, você poderá com poucos comandos - em poucos minutos - aumentar o tamanho do /var sem grandes impactos em seu ambiente.</p>
+<p>Especificamente para aumentar ou diminuir o /var, será necessário parar a máquina, mas dependendo da partição não será preciso.</p>
+<p>Você pode também diminuir um LV que não esteja usando muito espaço para aumentar outro que esteja precisando de espaço, desde que estejam no mesmo VG.</p>
+<p>O LVM torna a administração de partições algo muito flexível.</p>
+<h3 id="13-desvantagens">1.3 Desvantagens</h3>
+<p>Um VG é composto por PVs, se um PV quebrar você perde o VG e os LVs, isso pode ser um grande problema, portanto, é importante ter confiança nos discos envolvidos em um ambiente LVM.</p>
+<p>Se possível é interessante utilizar RAID para poder perder um ou mais discos de um LVM sem perder seu VG inteiro.</p>
+<p>Há quem diga também que por ser uma camada a mais em seu ambiente, haverá perda de performance em relação a gravação e leitura em um PV, contudo, acho que isso é imperceptível na grande maioria dos ambientes.</p>
+<p>Normalmente o LVM versão 2 já vem instalado na maioria das distribuições linux, em Debian e CentOS está disponível desde a instalação.</p>
+<h2 id="2-mão-na-massa">2. Mão na massa</h2>
+<p>Vamos aprender a trabalhar com LVM, no estilo dicas rápidas.</p>
+<h3 id="21-criando-partição-lvm">2.1 Criando partição LVM</h3>
+<p>Vamos particionar o disco sdb como exemplo</p>
+<pre><code>fdisk /dev/sdb
+</code></pre>
+<p>Acesse a ajuda</p>
+<pre><code>Command (m for help): m
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Command action
+   a   toggle a bootable flag
+   b   edit bsd disklabel
+   c   toggle the dos compatibility flag
+   d   delete a partition
+   l   list known partition types
+   m   print this menu
+   n   add a new partition
+   o   create a new empty DOS partition table
+   p   print the partition table
+   q   quit without saving changes
+   s   create a new empty Sun disklabel
+   t   change a partition's system id
+   u   change display/entry units
+   v   verify the partition table
+   w   write table to disk and exit
+   x   extra functionality (experts only)
+</code></pre><p>Vamos criar uma nova partição</p>
+<pre><code>Command (m for help): n
+</code></pre>
+<p>Escolha o tipo de partição</p>
+<pre tabindex="0"><code>Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+
+</code></pre><p>Eu escolhi primária, as quatro primeiras partições de um disco podem ser primárias, se você pretende ter mais de quatro partições, crie 3 primárias e uma extendida.</p>
+<pre><code>Select (default p): p
+</code></pre>
+<p>Esta será a primeira partição</p>
+<pre><code>Partition number (1-4, default 1): 1
+</code></pre>
+<p>Agora o fdisk me pergunta em qual setor essa partição deve começar e depois ele também pergunta o tamanho, eu vou dar ENTER e depois ENTER para usar todo o disco a partir do primeiro setor.</p>
+<pre tabindex="0"><code>First sector (2048-125829119, default 2048):
+Using default value 2048
+Last sector, +sectors or +size{K,M,G} (2048-125829119, default 125829119):
+Using default value 125829119
+</code></pre><p>Agora vou imprimir as partições</p>
+<pre><code>Command (m for help): p
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Disk /dev/sdb: 64.4 GB, 64424509440 bytes
+255 heads, 63 sectors/track, 7832 cylinders, total 125829120 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xe61fc21b
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1            2048   125829119    62913536   83  Linux
+</code></pre><p>Veja que uma partição foi criada, agora vamos definir o tipo da partição, veja os tipos disponíveis</p>
+<pre><code>command (m for help): l
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> 0  Empty           24  NEC DOS         81  Minix / old Lin bf  Solaris
+ 1  FAT12           27  Hidden NTFS Win 82  Linux swap / So c1  DRDOS/sec (FAT-
+ 2  XENIX root      39  Plan 9          83  Linux           c4  DRDOS/sec (FAT-
+ 3  XENIX usr       3c  PartitionMagic  84  OS/2 hidden C:  c6  DRDOS/sec (FAT-
+ 4  FAT16 &lt;32M      40  Venix 80286     85  Linux extended  c7  Syrinx
+ 5  Extended        41  PPC PReP Boot   86  NTFS volume set da  Non-FS data
+ 6  FAT16           42  SFS             87  NTFS volume set db  CP/M / CTOS / .
+ 7  HPFS/NTFS/exFAT 4d  QNX4.x          88  Linux plaintext de  Dell Utility
+ 8  AIX             4e  QNX4.x 2nd part 8e  Linux LVM       df  BootIt
+ 9  AIX bootable    4f  QNX4.x 3rd part 93  Amoeba          e1  DOS access
+ a  OS/2 Boot Manag 50  OnTrack DM      94  Amoeba BBT      e3  DOS R/O
+ b  W95 FAT32       51  OnTrack DM6 Aux 9f  BSD/OS          e4  SpeedStor
+ c  W95 FAT32 (LBA) 52  CP/M            a0  IBM Thinkpad hi eb  BeOS fs
+ e  W95 FAT16 (LBA) 53  OnTrack DM6 Aux a5  FreeBSD         ee  GPT
+ f  W95 Ext'd (LBA) 54  OnTrackDM6      a6  OpenBSD         ef  EFI (FAT-12/16/
+10  OPUS            55  EZ-Drive        a7  NeXTSTEP        f0  Linux/PA-RISC b
+11  Hidden FAT12    56  Golden Bow      a8  Darwin UFS      f1  SpeedStor
+12  Compaq diagnost 5c  Priam Edisk     a9  NetBSD          f4  SpeedStor
+14  Hidden FAT16 &lt;3 61  SpeedStor       ab  Darwin boot     f2  DOS secondary
+16  Hidden FAT16    63  GNU HURD or Sys af  HFS / HFS+      fb  VMware VMFS
+17  Hidden HPFS/NTF 64  Novell Netware  b7  BSDI fs         fc  VMware aMKCORE
+18  AST SmartSleep  65  Novell Netware  b8  BSDI swap       fd  Linux raid auto
+1b  Hidden W95 FAT3 70  DiskSecure Mult bb  Boot Wizard hid fe  LANstep
+1c  Hidden W95 FAT3 75  PC/IX           be  Solaris boot    ff  BBT
+1e  Hidden W95 FAT1 80  Old Minix
+</code></pre><p>Agora vamos definir o tipo da partição</p>
+<pre><code>Command (m for help): t
+</code></pre>
+<p>Escolha LVM (tipo 8e)</p>
+<pre><code>Selected partition 1
+Hex code (type L to list codes): 8e
+Changed system type of partition 1 to 8e (Linux LVM)
+</code></pre>
+<p>Vamos imprimir novamente a tabela de partições do disco</p>
+<pre><code>command (m for help): p
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Disk /dev/sdb: 64.4 GB, 64424509440 bytes
+255 heads, 63 sectors/track, 7832 cylinders, total 125829120 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xe61fc21b
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1            2048   125829119    62913536   8e  Linux LVM
+</code></pre><p>Ótimo, tudo certo, agora vamos gravar essa configuração no disco</p>
+<pre><code>Command (m for help): w
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+</code></pre><p>Agora já podemos sair do fdisk</p>
+<pre><code>Command (m for help): q
+</code></pre>
+<p>Pronto, para ter certeza que está tudo certo rode o comando abaixo</p>
+<pre><code>fdisk -l /dev/sdb
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Disk /dev/sdb: 64.4 GB, 64424509440 bytes
+128 heads, 39 sectors/track, 25206 cylinders, total 125829120 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xe61fc21b
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1            2048   125829119    62913536   8e  Linux LVM
+</code></pre><p>Veja que a partição sdb1 foi criada corretamente</p>
+<h3 id="22-criando-pv">2.2 Criando PV</h3>
+<p>Agora que já temos uma partição LVM, podemos criar um volume físico (PV)</p>
+<pre><code>pvcreate /dev/sdb1
+</code></pre>
+<p>Vamos checar os PVs</p>
+<pre><code>pvscan
+</code></pre>
+<p>Veja detalhes dos PVs</p>
+<pre><code>pvdisplay
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>&quot;/dev/sdb1&quot; is a new physical volume of &quot;60.00 GiB&quot;
+  --- NEW Physical volume ---
+  PV Name               /dev/sdb1
+  VG Name
+  PV Size               60.00 GiB
+  Allocatable           NO
+  PE Size               0
+  Total PE              0
+  Free PE               0
+  Allocated PE          0
+  PV UUID               KtmCte-RHtK-XgTi-rLnd-qGL0-0OZe-8KHm4b
+</code></pre><p>Beleza, agora podemos criar um VG</p>
+<h3 id="23-criando-vg">2.3 Criando VG</h3>
+<p>Depois de criar os volumes físicos, podemos criar os grupos de volume</p>
+<pre><code>vgcreate fileserver /dev/sdb1
+</code></pre>
+<p>Verifique os VGs existentes</p>
+<pre><code>vgscan
+</code></pre>
+<p>Veja detalhes dos VGs</p>
+<pre><code>vgdisplay
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>--- Volume group ---
+  VG Name               fileserver
+  System ID
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  1
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                0
+  Open LV               0
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               60.00 GiB
+  PE Size               4.00 MiB
+  Total PE              15359
+  Alloc PE / Size       0 / 0
+  Free  PE / Size       15359 / 60.00 GiB
+  VG UUID               JYkvTQ-hZ3R-Mib0-tIzm-CXmr-7NWH-UPu8UT
+</code></pre><h3 id="24-adicionando-pv-a-vg">2.4 Adicionando PV a VG</h3>
+<p>Se você quer expandir o seu VG adicionando outra partição use o comando abaixo</p>
+<pre><code>vgextend fileserver /dev/sdc1
+</code></pre>
+<h3 id="25-criando-lv">2.5 Criando LV</h3>
+<p>Agora que temos um grupo de volumes, vamos criar um volume lógico</p>
+<pre><code>lvcreate --name public --size 40G fileserver
+</code></pre>
+<p>Verique os LVs</p>
+<pre><code>lvscan
+</code></pre>
+<p>Veja detalhes dos LVs</p>
+<pre><code>lvdisplay
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>  --- Logical volume ---
+  LV Path                /dev/fileserver/fileserver-public
+  LV Name                public
+  VG Name                fileserver
+  LV UUID                Qn8u3P-Olgx-whQE-eLPn-OiaH-eguo-jfM8Vg
+  LV Write Access        read/write
+  LV Creation host, time debian64, 2013-05-16 11:51:59 -0300
+  LV Status              available
+  # open                 1
+  LV Size                40.00 GiB
+  Current LE             39424
+  Segments               2
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           254:2
+</code></pre><h3 id="26-formatando-a-partição">2.6 Formatando a partição</h3>
+<p>Depois de criar o LV já podemos formatá-lo</p>
+<pre><code>mkfs.ext4 /dev/mapper/fileserver-public
+</code></pre>
+<h3 id="27-montando-a-partição">2.7 Montando a partição</h3>
+<pre><code>mkdir /srv/public
+mount /dev/mapper/fileserver-public /srv/public   
+</code></pre>
+<h3 id="28-configurando-fstab">2.8 Configurando fstab</h3>
+<p>Verifique o identificador único das partições</p>
+<pre><code>blkid /dev/sdb1
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>/dev/mapper/fileserver-public: UUID=&quot;811782cc-ddc3-43ca-8ba8-f67efa80f229&quot; TYPE=&quot;ext4&quot;     
+</code></pre>
+<p>No fstab insira a seguinte linha</p>
+<pre><code>UUID=811782cc-ddc3-43ca-8ba8-f67efa80f229 /srv/public               ext4    defaults 0       1
+</code></pre>
+<h3 id="29-aumentando-lv-ext4">2.9 Aumentando LV (ext4)</h3>
+<p>Desmonte a partição</p>
+<pre><code>umount /srv/public
+</code></pre>
+<p>Vamos estender o volume lógico adicionando mais 114 GB ao LV</p>
+<pre><code>lvextend -L +114GB /dev/mapper/fileserver-public
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Extending logical volume fileserver to 154.00 GiB
+Logical volume mirrordata successfully resized 
+</code></pre><p>E depois vamos passar o e2fsck para o verificar o LV</p>
+<pre><code>e2fsck -f /dev/mapper/fileserver-public 
+</code></pre>
+<p>Agora vamos aumentar a partição ext4</p>
+<pre><code>resize2fs -p /dev/mapper/fileserver-public
+</code></pre>
+<p>Rode novamente o e2fsck para checar a partição que fora estendida</p>
+<pre><code>e2fsck -f /dev/mapper/fileserver-public
+</code></pre>
+<p>Monte a nova partição</p>
+<pre><code>mount /srv/public
+</code></pre>
+<p>Pronto, partição estendida.</p>
+<h3 id="210-diminuindo-lv-ext4">2.10 Diminuindo LV (ext4)</h3>
+<p>Desmonte o filesystem</p>
+<pre><code>umount /srv/public
+</code></pre>
+<p>Antes de prosseguir verifique a partição</p>
+<pre><code>e2fsck -f /dev/mapper/fileserver-public
+</code></pre>
+<p>Diminua o LV em 40GB</p>
+<pre><code>resize2fs -p /dev/mapper/fileserver-public 40G
+</code></pre>
+<p>Diminua a partição ext4 em 40 gigas</p>
+<pre><code>lvreduce -L 40G /dev/mapper/fileserver-public
+</code></pre>
+<p>Verifique a partição</p>
+<pre><code>e2fsck -f /dev/mapper/fileserver-public
+</code></pre>
+<p>Rode mais uma vez o o resize para se certificar que partição vai ficar do mesmo tamanho do LV</p>
+<pre><code>resize2fs -p /dev/mapper/fileserver-public
+</code></pre>
+<p>Verifique a partição</p>
+<pre><code>e2fsck -f /dev/mapper/fileserver-public
+</code></pre>
+<p>Monte a partição</p>
+<pre><code>mount /srv/public
+</code></pre>
+<p>Pronto.</p>
+<h2 id="3-referências">3. Referências</h2>
+<ul>
+<li>
+<p><a href="http://www.tldp.org/HOWTO/LVM-HOWTO/">http://www.tldp.org/HOWTO/LVM-HOWTO/</a></p>
+</li>
+<li>
+<p><a href="http://sourceware.org/lvm2/">http://sourceware.org/lvm2/</a></p>
+</li>
+<li>
+<p><a href="http://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)">http://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)</a></p>
+</li>
+<li>
+<p><a href="http://pubmem.wordpress.com/2010/09/16/how-to-resize-lvm-logical-volumes-with-ext4-as-filesystem/">http://pubmem.wordpress.com/2010/09/16/how-to-resize-lvm-logical-volumes-with-ext4-as-filesystem/</a></p>
+</li>
+<li>
+<p><a href="http://www.howtoforge.com/linux_lvm_p2">http://www.howtoforge.com/linux_lvm_p2</a></p>
+</li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

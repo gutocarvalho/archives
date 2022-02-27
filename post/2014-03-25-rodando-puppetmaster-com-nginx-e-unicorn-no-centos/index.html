@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Rodando PuppetMaster com Nginx e Unicorn no CentOS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Rodando PuppetMaster com Nginx e Unicorn no CentOS</h1>
+        <div>
+                <time>March 25, 2014</time>
+            </div>
+    </header><h2 id="1-acelerando-e-escalando-master-com-unicorn-e-nginx">1. Acelerando e escalando master com Unicorn e Nginx</h2>
+<p>No post <a href="http://gutocarvalho.net/octopress/2014/03/25/rodando-puppetmaster-com-nginx-e-unicorn-no-ubuntu/">anterior</a> demonstrei esse procedimento no Ubuntu, agora vamos ver como fazer no CentOS.</p>
+<p>O UNICORN é um servidor web especializado em apps ruby, escrito em ruby e focado em performance, muito mais eficiente e rápido do que o webrick, e também com melhor performance se compararmos com apache + passenger.</p>
+<h2 id="2-cenário">2. Cenário</h2>
+<p>Neste cenário utilizei apenas uma VM para instalar e validar o funcionamento do puppetmaster com unicorn.</p>
+<ul>
+<li>CentOS 6.5</li>
+<li>1 VM VMWARE, Puppet Master (1 VPCU, 1GB RAM, 4GB DISCO)</li>
+</ul>
+<h2 id="3-procedimento">3. Procedimento</h2>
+<p>Abaixo segue o procedimento passo a passo para configuração deste cenário.</p>
+<h3 id="31-configurando-hostname">3.1 Configurando hostname</h3>
+<p>Ajuste o nome do seu servidor nos seguintes arquivos para puppet.hacklab</p>
+<pre><code># echo NETWORKING=yes &gt; /etc/sysconfig/network
+# echo HOSTNAME=puppet.hacklab &gt;&gt; /etc/sysconfig/network
+# echo 127.0.0.1 localhost puppet.hacklab puppet &gt; /etc/hosts
+# hostname puppet.hacklab
+</code></pre>
+<p>Faça logout e login e depois rode o comando abaixo</p>
+<pre><code># hostname
+</code></pre>
+<p>Ele precisa retornar o nome</p>
+<pre><code>puppet.hacklab
+</code></pre>
+<h3 id="32-instalando-repositório">3.2 Instalando repositório</h3>
+<p>Faça o download do pacote release da puppetlabs</p>
+<pre><code>yum install http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-10.noarch.rpm
+</code></pre>
+<h3 id="33-instalando-puppetmaster">3.3 Instalando puppetmaster</h3>
+<p>Instale o puppetmaster</p>
+<pre><code>yum install puppet-server
+</code></pre>
+<p>Desative o daemon puppetmaster no boot pois vamos usar o unicorn</p>
+<pre><code>chkconfig puppetmaster off
+</code></pre>
+<p>Desligue o daemon puppetmaster - se estiver ligado - para que a porta 8140 seja liberada para o nginx</p>
+<pre><code>service puppetmaster stop
+</code></pre>
+<h3 id="34-instalando-unicorn">3.4 Instalando Unicorn</h3>
+<p>Instale as dependências necessárias</p>
+<pre><code>yum install make gcc ruby-devel rubygems
+</code></pre>
+<p>Instale o unicorn e rack utilizando gem (não tem pacotes deb)</p>
+<pre><code>gem install unicorn rack
+</code></pre>
+<p>Crie o arquivo <strong>/etc/puppet/config.ru</strong> como seguinte conteúdo</p>
+<pre tabindex="0"><code># a config.ru, for use with every rack-compatible webserver.
+# SSL needs to be handled outside this, though.
+
+# if puppet is not in your RUBYLIB:
+# $LOAD_PATH.unshift('/opt/puppet/lib')
+
+$0 = &quot;master&quot;
+
+# if you want debugging:
+# ARGV &lt;&lt; &quot;--debug&quot;
+
+ARGV &lt;&lt; &quot;--rack&quot;
+
+# Rack applications typically don't start as root.  Set --confdir and --vardir
+# to prevent reading configuration from ~puppet/.puppet/puppet.conf and writing
+# to ~puppet/.puppet
+ARGV &lt;&lt; &quot;--confdir&quot; &lt;&lt; &quot;/etc/puppet&quot;
+ARGV &lt;&lt; &quot;--vardir&quot;  &lt;&lt; &quot;/var/lib/puppet&quot;
+
+# NOTE: it's unfortunate that we have to use the &quot;CommandLine&quot; class
+#  here to launch the app, but it contains some initialization logic
+#  (such as triggering the parsing of the config file) that is very
+#  important.  We should do something less nasty here when we've
+#  gotten our API and settings initialization logic cleaned up.
+#
+# Also note that the &quot;$0 = master&quot; line up near the top here is
+#  the magic that allows the CommandLine class to know that it's
+#  supposed to be running master.
+#
+# --cprice 2012-05-22
+
+require 'puppet/util/command_line'
+# we're usually running inside a Rack::Builder.new {} block,
+# therefore we need to call run *here*.
+run Puppet::Util::CommandLine.new.execute
+</code></pre><p>Caso as configurações do puppet estejam em um diretório diferente do padrão, ajuste a linha confdir, a mesma coisa para o diretório em que ficam os arquivos variáveis</p>
+<pre><code>ARGV &lt;&lt; &quot;--confdir&quot; &lt;&lt; &quot;/etc/puppet&quot;
+ARGV &lt;&lt; &quot;--vardir&quot;  &lt;&lt; &quot;/var/lib/puppet&quot;
+</code></pre>
+<p>Crie o arquivo <strong>/etc/puppet/unicorn.conf</strong> com o seguinte conteúdo</p>
+<pre tabindex="0"><code> worker_processes 8
+    working_directory &quot;/etc/puppet&quot;
+    listen '/var/run/puppet/puppetmaster_unicorn.sock', :backlog =&gt; 512
+    timeout 120
+    pid &quot;/var/run/puppet/puppetmaster_unicorn.pid&quot;
+
+    preload_app true
+    if GC.respond_to?(:copy_on_write_friendly=)
+      GC.copy_on_write_friendly = true
+    end
+
+    before_fork do |server, worker|
+      old_pid = &quot;#{server.config[:pid]}.oldbin&quot;
+      if File.exists?(old_pid) &amp;&amp; server.pid != old_pid
+        begin
+          Process.kill(&quot;QUIT&quot;, File.read(old_pid).to_i)
+        rescue Errno::ENOENT, Errno::ESRCH
+          # someone else did our job for us
+        end
+      end
+    end
+</code></pre><p>Caso as configurações do puppet estejam em diretório diferente do padrão, ajuste a diretiva working_directory.</p>
+<pre><code>working_directory &quot;/etc/puppet&quot;
+</code></pre>
+<p>Inicie o serviço para testar o unicorn</p>
+<pre><code>root@ubuntu:/etc/puppet# unicorn -c unicorn.conf
+</code></pre>
+<p>Veja a saída esperada</p>
+<pre tabindex="0"><code>I, [2014-03-23T15:14:30.028793 #2067]  INFO -- : Refreshing Gem list
+I, [2014-03-23T15:14:31.142611 #2067]  INFO -- : unlinking existing socket=/var/run/puppet/puppetmaster_unicorn.sock
+I, [2014-03-23T15:14:31.142844 #2067]  INFO -- : listening on addr=/var/run/puppet/puppetmaster_unicorn.sock fd=6
+I, [2014-03-23T15:14:31.170260 #2073]  INFO -- : worker=0 spawned pid=2073
+I, [2014-03-23T15:14:31.186108 #2073]  INFO -- : worker=0 ready
+I, [2014-03-23T15:14:31.199679 #2074]  INFO -- : worker=1 spawned pid=2074
+I, [2014-03-23T15:14:31.207474 #2074]  INFO -- : worker=1 ready
+I, [2014-03-23T15:14:31.224235 #2075]  INFO -- : worker=2 spawned pid=2075
+I, [2014-03-23T15:14:31.243385 #2075]  INFO -- : worker=2 ready
+I, [2014-03-23T15:14:31.256398 #2076]  INFO -- : worker=3 spawned pid=2076
+I, [2014-03-23T15:14:31.266525 #2076]  INFO -- : worker=3 ready
+I, [2014-03-23T15:14:31.280448 #2077]  INFO -- : worker=4 spawned pid=2077
+I, [2014-03-23T15:14:31.289763 #2077]  INFO -- : worker=4 ready
+I, [2014-03-23T15:14:31.310051 #2078]  INFO -- : worker=5 spawned pid=2078
+I, [2014-03-23T15:14:31.320665 #2078]  INFO -- : worker=5 ready
+I, [2014-03-23T15:14:31.339841 #2079]  INFO -- : worker=6 spawned pid=2079
+I, [2014-03-23T15:14:31.355532 #2079]  INFO -- : worker=6 ready
+I, [2014-03-23T15:14:31.357241 #2067]  INFO -- : master process ready
+I, [2014-03-23T15:14:31.362016 #2080]  INFO -- : worker=7 spawned pid=2080
+I, [2014-03-23T15:14:31.367252 #2080]  INFO -- : worker=7 ready
+</code></pre><p>Se houver uma saída similar é sinal de que está fucionando como esperado, dê um CTRL+C para interromper o processo.</p>
+<pre><code>^C
+</code></pre>
+<p>Crie o arquivo <strong>/etc/init/unicorn.conf</strong> com o conteúdo abaixo</p>
+<pre tabindex="0"><code># When to start the service
+start on runlevel [2345]
+
+# When to stop the service
+stop on runlevel [016]
+
+# Automatically restart process if crashed
+respawn
+respawn limit 5 15
+
+# Upstart will expect the process executed to call fork(2) exactly twice.
+expect daemon
+
+exec /usr/bin/unicorn -c /etc/puppet/unicorn.conf -D
+</code></pre><p>Inicie o serviço</p>
+<pre><code> start unicorn
+</code></pre>
+<p>Verifique se o unicorn está realmente rodando</p>
+<pre><code>ps aux|grep unicorn
+</code></pre>
+<p>A saída será similar a esta abaixo</p>
+<pre tabindex="0"><code>puppet    2164  0.1  4.7 140108 48580 ?        S    15:37   0:01 unicorn master -D -c /etc/puppet/unicorn.conf
+puppet    2170  0.0  4.5 140072 46376 ?        S    15:37   0:00 unicorn worker[0] -D -c /etc/puppet/unicorn.conf
+puppet    2171  0.0  4.5 140076 46376 ?        S    15:37   0:00 unicorn worker[1] -D -c /etc/puppet/unicorn.conf
+puppet    2172  0.0  4.5 140080 46376 ?        S    15:37   0:00 unicorn worker[2] -D -c /etc/puppet/unicorn.conf
+puppet    2173  0.0  4.5 140084 46376 ?        S    15:37   0:00 unicorn worker[3] -D -c /etc/puppet/unicorn.conf
+puppet    2174  0.0  4.5 140088 46380 ?        S    15:37   0:00 unicorn worker[4] -D -c /etc/puppet/unicorn.conf
+puppet    2175  0.0  4.5 140092 46380 ?        S    15:37   0:00 unicorn worker[5] -D -c /etc/puppet/unicorn.conf
+puppet    2176  0.0  4.5 140096 46380 ?        S    15:37   0:00 unicorn worker[6] -D -c /etc/puppet/unicorn.conf
+puppet    2177  0.0  6.5 159236 66328 ?        S    15:37   0:00 unicorn worker[7] -D -c /etc/puppet/unicorn.conf
+</code></pre><h3 id="35-instalando-o-nginx">3.5 Instalando o Nginx</h3>
+<p>Instale o nginx</p>
+<pre><code>yum install nginx
+</code></pre>
+<p>Ative o nginx no boot</p>
+<pre><code>chkconfig nginx on
+</code></pre>
+<p>Crie o arquivo <strong>/etc/nginx/conf.d/puppetmaster.conf</strong> com o conteúdo abaixo</p>
+<pre tabindex="0"><code>upstream puppetmaster_unicorn {
+    server unix:/var/run/puppet/puppetmaster_unicorn.sock fail_timeout=0;
+}
+
+server {
+    listen 8140;
+
+    ssl on;
+    ssl_session_timeout 5m;
+    ssl_certificate /var/lib/puppet/ssl/certs/puppet.hacklab.pem;
+    ssl_certificate_key /var/lib/puppet/ssl/private_keys/puppet.hacklab.pem;
+    ssl_client_certificate /var/lib/puppet/ssl/ca/ca_crt.pem;
+    ssl_ciphers SSLv2:-LOW:-EXPORT:RC4+RSA;
+    ssl_verify_client optional;
+
+    root /usr/share/empty;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Client-Verify $ssl_client_verify;
+    proxy_set_header X-Client-DN $ssl_client_s_dn;
+    proxy_set_header X-SSL-Issuer $ssl_client_i_dn;
+    proxy_read_timeout 120;
+
+    location / {
+        proxy_pass http://puppetmaster_unicorn;
+        proxy_redirect off;
+    }
+}
+</code></pre><p>Lembre-se de ajustar o nome do certificado de acordo com seu FQDN, após r 	einicie o nginx</p>
+<pre><code>/etc/init.d/nginx restart
+</code></pre>
+<p>Verfique se a porta 8140 está em modo listen</p>
+<pre><code>root@puppet:/etc/nginx/sites-enabled# netstat -ntpl|grep 8140
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>tcp    0      0 0.0.0.0:8140    0.0.0.0:*  OUÇA       2204/nginx
+</code></pre>
+<h3 id="37-testando-o-puppet">3.7 Testando o Puppet</h3>
+<p>Crie o arquivo <strong>/etc/puppet/manifests/site.pp</strong> com o conteúdo abaixo</p>
+<pre tabindex="0"><code>node &quot;puppet.hacklab&quot; {
+
+        package { 'htop':
+                ensure =&gt; present,
+        }
+
+}
+</code></pre><p>Agora vamos testar se o puppet está funcionando.</p>
+<pre><code>root@puppet:/etc/puppet# puppet agent -t
+</code></pre>
+<p>Acompanhe a saída do comando e observe o puppet aplicando a configuração</p>
+<pre tabindex="0"><code>Info: Retrieving plugin
+Info: Caching catalog for puppet.hacklab
+Info: Applying configuration version '1395600179'
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Package[htop]/ensure: created
+Info: Creating state file /var/lib/puppet/state/state.yaml
+Notice: Finished catalog run in 3.56 seconds
+</code></pre><p>Veja o log do Nginx</p>
+<pre><code>tail -f /var/log/nginx/access.log
+</code></pre>
+<p>Acompanhe o nginx atuando como reverse proxy do unicorn</p>
+<pre tabindex="0"><code>192.168.200.1 - - [21/Mar/2014:04:11:14 -0300] &quot;GET /production/file_metadatas/plugins?links=manage&amp;recurse=true&amp;checksum_type=md5&amp;ignore=.svn&amp;ignore=CVS&amp;ignore=.git HTTP/1.1&quot; 200 46650 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [21/Mar/2014:04:11:24 -0300] &quot;POST /production/catalog/puppet.hacklab HTTP/1.1&quot; 200 77809 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [21/Mar/2014:04:11:26 -0300] &quot;GET /production/file_metadata/modules/concat/concatfragments.sh?links=manage HTTP/1.1&quot; 200 307 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [21/Mar/2014:04:11:27 -0300] &quot;GET /production/file_metadata/modules/postgresql/validate_postgresql_connection.sh?links=manage HTTP/1.1&quot; 200 326 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [21/Mar/2014:04:11:32 -0300] &quot;GET /production/file_metadata/modules/puppetdb/routes.yaml?links=manage HTTP/1.1&quot; 200 302 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [21/Mar/2014:04:11:32 -0300] &quot;PUT /production/report/puppet.hacklab HTTP/1.1&quot; 200 9 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [23/Mar/2014:15:42:55 -0300] &quot;GET /production/node/puppet.hacklab? HTTP/1.1&quot; 200 84 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [23/Mar/2014:15:42:56 -0300] &quot;GET /production/file_metadatas/plugins?ignore=.svn&amp;ignore=CVS&amp;ignore=.git&amp;checksum_type=md5&amp;links=manage&amp;recurse=true HTTP/1.1&quot; 200 283 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [23/Mar/2014:15:43:00 -0300] &quot;POST /production/catalog/puppet.hacklab HTTP/1.1&quot; 200 1022 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+192.168.200.1 - - [23/Mar/2014:15:43:04 -0300] &quot;PUT /production/report/puppet.hacklab HTTP/1.1&quot; 200 9 &quot;-&quot; &quot;-&quot; &quot;-&quot;
+</code></pre><p>Configuração aplicada, isto significa que o puppetmaster está rodando com Unicorn e Nginx, encaixe perfeito.</p>
+<h2 id="4-amarrando-as-pontas">4. Amarrando as pontas</h2>
+<p>Como eu já mencionei no post anterior, é um processo relativamente simples e bastante rápido, utilizamos apenas pacotes oficiais da puppetlabs e neste caso CentOS, e usamos dois gems. Se quiser pode integrar o puppetdb no mesmo cenário. Com esse setup o puppetmaster fica rápido e escalável, recomendo.</p>
+<h2 id="5-referências">5. Referências</h2>
+<p>Projects</p>
+<ul>
+<li><a href="http://unicorn.bogomips.org/">http://unicorn.bogomips.org/</a></li>
+<li><a href="http://wiki.nginx.org/Main">http://wiki.nginx.org/Main</a></li>
+<li><a href="http://puppetlabs.com/">http://puppetlabs.com/</a></li>
+</ul>
+<p>Blogs</p>
+<ul>
+<li><a href="http://linuxmoz.com/rhel-centos-install-puppet-nginx-unicorn/">http://linuxmoz.com/rhel-centos-install-puppet-nginx-unicorn/</a></li>
+<li><a href="http://tomayko.com/writings/unicorn-is-unix">http://tomayko.com/writings/unicorn-is-unix</a></li>
+<li><a href="http://wiki.unixh4cks.com/index.php/Puppetmaster_:_Nginx_%2B_Unicorn">http://wiki.unixh4cks.com/index.php/Puppetmaster_:_Nginx_%2B_Unicorn</a></li>
+<li><a href="http://projects.puppetlabs.com/projects/1/wiki/using_unicorn">http://projects.puppetlabs.com/projects/1/wiki/using_unicorn</a></li>
+<li><a href="http://www.prontab.com/2011/01/this-page-should-outline-how-to-set-up.html">http://www.prontab.com/2011/01/this-page-should-outline-how-to-set-up.html</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

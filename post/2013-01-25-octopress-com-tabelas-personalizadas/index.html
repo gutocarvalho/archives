@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Octopress com tabelas personalizadas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Octopress com tabelas personalizadas</h1>
+        <div>
+                <time>January 25, 2013</time>
+            </div>
+    </header><p>Trabalhar com tabelas em markdown não é complicado, no octopress funciona da mesma forma que em qualquer editor markdown, porém, por alguma razão a configuração definida na folha de estilos (CSS) para tabelas no octopress não formata as bordas, tabela sem borda nem parece tabela.</p>
+<p>Para resolver o problema, novamente pesquisei e achei algumas referências, veja abaixo como resolvi em meu ambiente.</p>
+<h3 id="ajustando-o-octopress">Ajustando o Octopress</h3>
+<p>Primeiro passo, crie um arquivo chamado data-table.css em source/stylesheets com o conteúdo abaixo:</p>
+<p>{% codeblock lang:css %}</p>
+<ul>
+<li>
+<ul>
+<li>table {
+border-style:solid;
+border-width:1px;
+border-color:#e7e3e7;
+}</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>table th, * + table td {
+border-style:dashed;
+border-width:1px;
+border-color:#e7e3e7;
+padding-left: 3px;
+padding-right: 3px;
+}</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>table th {
+border-style:solid;
+font-weight:bold;
+}</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>table th[align=&ldquo;left&rdquo;], * + table td[align=&ldquo;left&rdquo;] {
+text-align:left;
+}</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>table th[align=&ldquo;right&rdquo;], * + table td[align=&ldquo;right&rdquo;] {
+text-align:right;
+}</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>table th[align=&ldquo;center&rdquo;], * + table td[align=&ldquo;center&rdquo;] {
+text-align:center;
+}</li>
+</ul>
+</li>
+</ul>
+<p>{% endcodeblock %}</p>
+<p>Segundo passo, adicione a linha abaixo ao arquivo source/_includes/head.html</p>
+<p>{% codeblock lang:html %}</p>
+<link href="/stylesheets/data-table.css" media="screen, projection" rel="stylesheet" type="text/css" />
+<p>{% endcodeblock %}</p>
+<p>A partir deste momento a tabelas que você criar via markdown</p>
+<pre tabindex="0"><code>Nome                    | Twitter      
+----------------------- | --------------
+Guto Carvalho           | @gutocarvalho
+Jose Augusto Carvalho   | @joseaugustocc
+
+</code></pre><p>Vão ter bordas, o resultado final é este abaixo</p>
+<table>
+<thead>
+<tr>
+<th>Nome</th>
+<th>Twitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Guto Carvalho</td>
+<td>@gutocarvalho</td>
+</tr>
+<tr>
+<td>Jose Augusto Carvalho</td>
+<td>@joseaugustocc</td>
+</tr>
+</tbody>
+</table>
+<br>
+<p>Viram como foi fácil, e via CSS você pode personalizar ainda mais o estilo de suas tabelas.</p>
+<p>No site <a href="http://coding.smashingmagazine.com/2008/08/13/top-10-css-table-designs/">smashingmagazine</a> tem vários exemplos de CSS para tabelas.</p>
+<h3 id="referências">Referências</h3>
+<ul>
+<li><a href="http://samwize.com/2012/09/24/octopress-table-stylesheet/">http://samwize.com/2012/09/24/octopress-table-stylesheet/</a></li>
+<li><a href="http://programus.github.com/blog/2012/03/07/add-table-data-css-for-octopress">http://programus.github.com/blog/2012/03/07/add-table-data-css-for-octopress</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

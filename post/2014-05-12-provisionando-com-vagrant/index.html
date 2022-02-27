@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Provisionando com Vagrant</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Provisionando com Vagrant</h1>
+        <div>
+                <time>May 12, 2014</time>
+            </div>
+    </header><h2 id="1-provisioners">1. Provisioners</h2>
+<p>Após a introdução ao <a href="http://gutocarvalho.net/octopress/2014/05/09/entenda-o-vagrant/">vagrant</a> e uma rápida passagem pelo conceito de <a href="http://gutocarvalho.net/octopress/2014/05/12/vagrant-multi-machines/">multi machines</a>, vamos começar a entrar no provisionamento.</p>
+<p>Como eu já disse a vocês, o vagrant tem suporte a diversos provisionadores, isto significa que você pode automatizar a instalação e configuração de sua VM, tornando isto parte do processo <strong>vagrant up</strong>.</p>
+<p>O vagrant atualmente suporta os seguintes provisionadores</p>
+<ul>
+<li>File</li>
+<li>Shell</li>
+<li>Ansible</li>
+<li>CFEngine</li>
+<li>Chef Solo</li>
+<li>Chef Client</li>
+<li>Docker</li>
+<li>Puppet Apply</li>
+<li>Puppet Agent</li>
+<li>Salt</li>
+</ul>
+<p>Eu vou abordar neste post o provisionamento <strong>shell</strong>.</p>
+<h3 id="11-requisitos">1.1 Requisitos</h3>
+<p>É importante que você tenha executado os exemplos nos posts anteriores e criado o projeto lamp, este post é uma sequência e vai utilizar os arquivos e projetos criados anteriormente.</p>
+<p>Entre no diretório do projeto lamp</p>
+<pre><code>cd ~/vagrant/projects/lamp
+</code></pre>
+<h2 id="2-shell-provisioner">2. Shell Provisioner</h2>
+<p>O provisionamento shell pode ser feito de duas formas, a primeira é o chamado INLINE e a segunda EXTERNAL SCRIPT.</p>
+<h3 id="21-shell-inline">2.1 Shell INLINE</h3>
+<p>Vamos fazer um exemplo simples em que invoco os comandos abaixo</p>
+<pre><code>yum clean all
+yum install tcpdump -y
+</code></pre>
+<p>Traduzindo para a sintaxe do vagrant ficaria assim</p>
+<pre><code>vm.provision :shell, :inline =&gt; &quot;yum clean all;yum install tcpdump -y&quot;
+</code></pre>
+<p>Agora vamos inserir no Vagrantfile do projeto &lsquo;lamp&rsquo;.</p>
+<pre tabindex="0"><code># -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  # Apache
+  config.vm.define &quot;apache&quot; do |apache|
+
+    apache.vm.hostname = &quot;apache.hacklab&quot;
+    apache.vm.box = &quot;centos6x64&quot;
+    apache.vm.network &quot;forwarded_port&quot;, guest: 80, host: 9090
+    apache.vm.network &quot;private_network&quot;, ip: &quot;192.168.200.30&quot;
+    apache.vm.provision :shell, :inline =&gt; &quot;yum clean all;yum install tcpdump -y&quot;
+    apache.vm.provider &quot;virtualbox&quot; do |v|
+        v.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;1&quot; ]
+        v.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;600&quot; ]
+    end
+
+  end
+  # End apache
+
+  # Mysql
+  config.vm.define &quot;mysql&quot; do |mysql|
+
+    mysql.vm.hostname = &quot;mysql.hacklab&quot;
+    mysql.vm.box = &quot;centos6x64&quot;
+    mysql.vm.network &quot;forwarded_port&quot;, guest: 3306, host: 9091
+    mysql.vm.network &quot;private_network&quot;, ip: &quot;192.168.200.31&quot;
+    mysql.vm.provision :shell, :inline =&gt; &quot;yum clean all;yum install tcpdump -y&quot;
+    mysql.vm.provider &quot;virtualbox&quot; do |y|
+        y.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;1&quot; ]
+        y.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;600&quot; ]
+    end
+
+  end
+  # End Mysql
+
+end
+</code></pre><p>Arquivo ajustado vamos fazer um teste em nosso ambiente, primeiro desligue as VMs</p>
+<pre><code>cd ~/vagrant/projects/lamp
+vagrant halt
+</code></pre>
+<p>Verifique se as VMs desligaram</p>
+<pre><code>vagrant status
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Current machine states:
+
+apache                    poweroff (virtualbox)
+mysql                     poweroff (virtualbox)
+
+This environment represents multiple VMs. The VMs are all listed
+above with their current state. For more information about a specific
+VM, run `vagrant status NAME`.
+</code></pre><p>Agora vamos religar e verificar se o provisionamento ocorreu.</p>
+<pre><code>vagrant up
+</code></pre>
+<p>Perceba que vamos receber as seguintes mensagens</p>
+<pre tabindex="0"><code>==&gt; apache: VM already provisioned. Run `vagrant provision` or use `--provision` to force it
+
+==&gt; mysql: VM already provisioned. Run `vagrant provision` or use `--provision` to force it
+	
+</code></pre><p>Essa mensagem diz que sua máquina já foi provisionada na primeira vez que rodamos vagrant up, é importante entender isto, o provisionamento só é executado quando a VM é criada, no momento do UP, depois o vagrant considera que a VM já foi devidamente provisionada.</p>
+<p>Bom, caso queiramos executar novamente as tarefas de provisionamento, principalmente se elas foram adicionadas após o processo de criação da VM, teremos que ser mais explícitos, então vamos digitar</p>
+<pre><code>vagrant provision
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>==&gt; apache: Running provisioner: shell...
+    apache: Running: inline script
+Loaded plugins: fastestmirror, security
+Cleaning repos: base extras puppetlabs-deps puppetlabs-products updates
+Cleaning up Everything
+Cleaning up list of fastest mirrors
+Loaded plugins: fastestmirror, security
+Determining fastest mirrors
+ * base: mirror.globo.com
+ * extras: mirror.globo.com
+ * updates: mirror.globo.com
+Setting up Install Process
+Package 14:tcpdump-4.0.0-3.20090921gitdf3cb4.2.el6.x86_64 already installed and latest version
+Nothing to do
+==&gt; mysql: Running provisioner: shell...
+    mysql: Running: inline script
+Loaded plugins: fastestmirror, security
+Cleaning repos: base extras puppetlabs-deps puppetlabs-products updates
+Cleaning up Everything
+Loaded plugins: fastestmirror, security
+Determining fastest mirrors
+ * base: mirror.globo.com
+ * extras: mirror.globo.com
+ * updates: mirror.globo.com
+Setting up Install Process
+Package 14:tcpdump-4.0.0-3.20090921gitdf3cb4.2.el6.x86_64 already installed and latest version
+Nothing to do
+</code></pre><p>Veja que o provisionamento foi realizado em ambas as VMs e o pacote solicitado já havia sido instalado corretamente, portanto, nada foi realizado.</p>
+<p>Em relação a esse provisioner, sua criatividade é o limite, você pode intalar pacotes, criar usuários, arquivos, diretórios, links, alterar configurações, fazer um deploy de aplicações e até instalar sua ferramenta preferida de gerência de configurações ( puppet :).</p>
+<p>Podemos usar constantes para colocar mais comandos no velho estilo EOF, veja o exemplo abaixo</p>
+<pre tabindex="0"><code>$script = &lt;&lt;SCRIPT
+echo &quot;Estou provisionando via inline shell&quot;
+yum clean all
+yum install tcpdump -y
+SCRIPT
+
+Vagrant.configure(&quot;2&quot;) do |config|
+  config.vm.provision &quot;shell&quot;, inline: $script
+end
+</code></pre><p>Essa forma também é bastante prática, porém seu Vagrantfile pode ficar um pouco poluído.</p>
+<h3 id="22-external-script">2.2 External Script</h3>
+<p>Para evitar poluição do Vagrantfile podemos construir scripts mais complexos do lado de fora em um arquivo externo.</p>
+<p>crie o arquivo users.sh dentro do diretorio do projeto</p>
+<pre><code>cd ~/vagrant/projects/lamp
+vim users.sh
+</code></pre>
+<p>Coloque o conteúdo abaixo</p>
+<pre><code>#!/bin/bash
+useradd gutocarvalho
+</code></pre>
+<p>Agora vamos ver a sintaxe para uso do external script</p>
+<pre><code>apache.vm.provision :shell, :path =&gt; &quot;users.sh&quot;
+mysql.vm.provision :shell, :path =&gt; &quot;users.sh&quot;
+</code></pre>
+<p>Veja como fica o arquivo completo</p>
+<pre tabindex="0"><code># -*- mode: ruby -*-
+
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  # Apache
+  config.vm.define &quot;apache&quot; do |apache|
+
+    apache.vm.hostname = &quot;apache.hacklab&quot;
+    apache.vm.box = &quot;centos6x64&quot;
+    apache.vm.network &quot;forwarded_port&quot;, guest: 80, host: 9090
+    apache.vm.network &quot;private_network&quot;, ip: &quot;192.168.200.30&quot;
+    apache.vm.provision :shell, :path =&gt; &quot;users.sh&quot;
+    apache.vm.provider &quot;virtualbox&quot; do |v|
+        v.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;1&quot; ]
+        v.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;600&quot; ]
+    end
+
+  end
+  # End apache
+
+  # Mysql
+  config.vm.define &quot;mysql&quot; do |mysql|
+
+    mysql.vm.hostname = &quot;mysql.hacklab&quot;
+    mysql.vm.box = &quot;centos6x64&quot;
+    mysql.vm.network &quot;forwarded_port&quot;, guest: 3306, host: 9091
+    mysql.vm.network &quot;private_network&quot;, ip: &quot;192.168.200.31
+    mysql.vm.provision :shell, :path =&gt; &quot;users.sh&quot;
+    mysql.vm.provider &quot;virtualbox&quot; do |y|
+        y.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;1&quot; ]
+        y.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;600&quot; ]
+    end
+
+  end
+  # End Mysql
+
+end
+</code></pre><p>E agora vamos rodar o provisionamento</p>
+<pre><code>vagrant provision
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>==&gt; apache: Running provisioner: shell...
+    apache: Running: /var/folders/ty/7b7lzgzd5wl_4hgncfgctf3r0000gn/T/vagrant-shell20140513-61540-1tolxu9
+==&gt; mysql: Running provisioner: shell...
+    mysql: Running: /var/folders/ty/7b7lzgzd5wl_4hgncfgctf3r0000gn/T/vagrant-shell20140513-61540-jmxaov
+</code></pre><p>O provisionamento aconteceu, agora vamos verificar se o usuário foi criado em ambas VMs.</p>
+<pre tabindex="0"><code>[kaiten@gutocarvalho lamp]$ vagrant ssh apache
+Last login: Tue May 13 04:16:37 2014 from 10.0.2.2
+Welcome to your Packer-built virtual machine.
+[vagrant@apache ~]$ id gutocarvalho
+uid=501(gutocarvalho) gid=501(gutocarvalho) grupos=501(gutocarvalho)
+[vagrant@apache ~]$ exit
+logout
+Connection to 127.0.0.1 closed.
+
+[kaiten@gutocarvalho lamp]$ vagrant ssh mysql
+Last login: Tue May 13 04:28:22 2014 from 10.0.2.2
+Welcome to your Packer-built virtual machine.
+[vagrant@mysql ~]$ id gutocarvalho
+uid=501(gutocarvalho) gid=501(gutocarvalho) grupos=501(gutocarvalho)
+[vagrant@mysql ~]$ exit
+logout
+Connection to 127.0.0.1 closed.
+</code></pre><p>O usuário foi criado nas duas VMs.</p>
+<p>Um dica rápida, é possível utilizar um arquivo remoto como external script, veja o exemplo abaixo</p>
+<pre tabindex="0"><code>Vagrant.configure(&quot;2&quot;) do |config|
+  config.vm.provision &quot;shell&quot;, path: &quot;https://example.com/provisioner.sh&quot;
+end
+</code></pre><h2 id="6-conclusão">6. Conclusão</h2>
+<p>O uso de provisionadores facilita a vida do sysadmin, o vasto suporte a diferentes tipos de provisionadores atende amplamente as mais diferentes modalidades de gerência de configurações, é um resurso imprescindível e deve ser utilizado para extrairmos o máximo do vagrant.</p>
+<p>O próximo post será sobre o provisionador Puppet Apply, até lá ;)</p>
+<h2 id="7-referências">7. Referências</h2>
+<p><a href="https://docs.vagrantup.com/v2/provisioning/shell.html">https://docs.vagrantup.com/v2/provisioning/shell.html</a></p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

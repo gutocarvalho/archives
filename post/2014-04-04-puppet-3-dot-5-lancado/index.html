@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet 3.5 Lançado</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet 3.5 Lançado</h1>
+        <div>
+                <time>April 4, 2014</time>
+            </div>
+    </header><p>Foi lançado no dia 03 de Abril a versão <a href="http://docs.puppetlabs.com/puppet/latest/reference/release_notes.html#puppet-350">3.5</a> do <a href="http://www.puppetlabs.com">Puppet</a>, esta versão traz muitas novidades, correções e melhorias de performance.</p>
+<p>Se você instalou o Puppet através do repositórios da Puppetlabs, faça inicialmente a atualização do puppemaster e depois dos agentes, esta é a recomendação Puppetlabs para atualizar o seu ambiente.</p>
+<p>Se você vai atualizar da versão 2.x para a 3.x não deixe de ler a página <a href="http://docs.puppetlabs.com/guides/upgrading.html">upgrading</a> e  o release notes da versão <a href="http://docs.puppetlabs.com/puppet/3/reference/release_notes.html">3.0.0</a> para saber o que pode quebrar com a atualização.</p>
+<h2 id="1-principais-novidades">1. Principais Novidades</h2>
+<h3 id="11-environments">1.1. Environments</h3>
+<p>Nova forma de configurar environments, esse novo método é um substituto para o workaround &ldquo;dynamic environments&rdquo;, agora podemos utilizar a diretiva <strong>$confdir/environments</strong>, e cada diretório que for criado lá dentro será um novo environment. Todas as configurações do diretório criado serão carregadas automaticamente, nenhuma configuração adicional será necessária para utilização deste recurso.</p>
+<h3 id="12-import-deprecated">1.2 Import Deprecated</h3>
+<p>Nova forma de carregar manifests, a forma clássica <strong>import &ldquo;subdir/*.pp&rdquo;</strong> que normalmente utilizamos no <strong>site.pp</strong> pode ser deixada para trás, agora podemos setar a diretiva <strong>$confdir/manifests</strong> e definir o diretório em que estão nossos manifests, o puppet vai ler o diretório e carregar todos os manifests existentes - recursivamente.</p>
+<h3 id="13-config-settings">1.3 Config Settings</h3>
+<p>Agora poderemos alterar as configurações do puppet sem necessariamente editar, modificar ou recarregar o arquivo <strong>puppet.conf</strong>.</p>
+<p>Abaixo a sintaxe do comando</p>
+<pre><code># puppet config set &lt;SETTING NAME&gt; &lt;VALUE&gt; --section &lt;CONFIG SECTION&gt;
+</code></pre>
+<p>Abaixo veja um exemplo da seção agent do puppet.conf</p>
+<pre tabindex="0"><code>[agent]
+graph = true
+pluginsync = true
+</code></pre><p>Vamos adicionar uma diretiva a seção <strong>agent</strong> através do novo comando</p>
+<pre><code>puppet config set report true --section agent
+</code></pre>
+<p>Após rodar o comando você vai verificar que a diretiva foi adicionada ao arquivo</p>
+<pre tabindex="0"><code>[agent]
+report = true
+graph = true
+pluginsync = true
+</code></pre><p>Você pode adicionar, remover ou alterar o valor de uma diretiva  com ele.</p>
+<h3 id="15-global-facts">1.5 Global Facts</h3>
+<p>Essa talvez seja uma das novidades mais interessantes desta versão, e vai certamente ajudar a diferenciar fatos de variáveis em nossos manifests e templates, algo que gerava - e ainda gera - confusão e dúvidas entre usuários iniciantes.</p>
+<p>Até a versão 3.4 a forma recomendada de declarar um fato era assim</p>
+<pre><code>$::operationalsystem
+</code></pre>
+<p>Veja que fatos deveriam ser declarados como se fossem variáveis globais - topo de escopo, era ai que morava a confusão, e além disto, neste modelo o nomes dos fatos <strong>não</strong> são protegidos, podendo ser sobrescritos por variáveis locais se estiverem declarados incorretamente.</p>
+<p>Com o recurso <strong>global facts</strong> podemos declarar fatos através da variável protegida <strong>$facts</strong>, essa variável vai conter todos os fatos de um node, e estes poderão ser extraídos da seguinte forma:</p>
+<pre><code>$facts[operationalsystem]
+</code></pre>
+<p>Usando global facts a Puppetlabs pretende deixar o código do Puppet mais legível, limpo, evitando poluir os namespaces de variáveis globais.</p>
+<p>Esse recurso vem desligado no Puppet 3.5, mas você pode ativá-lo com o comando abaixo</p>
+<pre><code>puppet config set trusted_node_data true --section master
+</code></pre>
+<p>Ele provavelmente virá habilitado por padrão na versão 4.</p>
+<h3 id="16-structured-facts-early-version">1.6 Structured Facts (Early Version)</h3>
+<p>Todos os valores de fatos retornados na versão <strong>1.x</strong> do facter são strings, o que limita muito a construção de módulos com manifests e templates mais complexos. Já no facter <strong>2.0</strong> - que será padrão no Puppet 4 - temos suporte a vários tipos dados como Boleanos, Strings, Arrays e Hashs. Na versão 3.5 já é possível utilizar esse recurso, porém, ele precisa ser habilitado manualmente.</p>
+<pre><code>puppet config set stringify_facts false --section master
+</code></pre>
+<p>Vale lembrar que isso ainda é bem novo no Puppet, está funcionando de forma estável, contudo, alguns sistemas externos como o PuppetDB ainda não tem suporte a esses diferentes tipos de dados, logo quando fatos personalizados forem enviados para o PuppetDB, estes serão convertidos em strings.</p>
+<p>A Puppetlabs assegura que entre o Puppet e o Facter tudo funciona bem, isso em si já possibilta construir ou modificar nossos custom facts para usar esses novos tipos de dados, então aproveite.</p>
+<h3 id="17-future-parser">1.7 Future Parser</h3>
+<p>Desde o Puppet 3.2.1 o Future Parser está presente, porém agora a Puppetlabs informa que ele está mais maduro para ambientes maiores e mais complexos. O Puppet Future Parser será o novo parser na versão 4 do Puppet, ele será compatível com a nova linguagem do Puppet, esta nova linguagem vai deixar de ser baseada em estados e passará a ser baseada em expressões, o que segundo a puppetlabs trará maior flexibilidade dentro do que se pode fazer hoje com o Puppet.</p>
+<p>Na versão 3.5 é necessário habilitar esse recurso manualmente, mas fique ciente de que a Puppetlabs informa que não é aconselhável seu uso em produção.</p>
+<pre><code>puppet config set parser future --section master
+</code></pre>
+<h3 id="18-ordering">1.8 Ordering</h3>
+<p>Quem já tem alguma experiência com o Puppet sabe que é possível especificar a ordem de execução de nossos manifests criando dependências entre nossos rescursos, fazemos isto geralmente através dos meta-parâmetros before, require, notify e subscribe, com isto, temos como garantir a ordem em que as
+coisas vão acontecer, porém, novos entusiastas do Puppet tem muita
+dificuldade em estabelecer essa ordem, isto ocorre por não conhecerem a fundo
+meta-parâmetros ou regras de relacionamento com chaining arrows.</p>
+<p>Quem está começando com o Puppet geralmente espera que ele execute o manifest em modo na ordem em que escreve o seu manifest - TOP DOWN, porém não é assim que acontece.</p>
+<p>Na série 3.x é possível definir esse comportamento ajustando o valor da diretiva <strong>ordering</strong> para <strong>manifest</strong>, podemos fazer isto com o comando abaixo.</p>
+<pre><code>puppet config set ordering manifest --section master
+</code></pre>
+<p>Funciona bem, contudo, não é algo que eu indico ou recomendo, principalmente se você vai compartilhar código com alguém, ou se vai liberar seus módulos públicamente. Em classes simples até dá para pensar, mas em módulos e em ambiente produtivo é melhor estudar, entender e aplicar recursos de relacionamento, pois sem eles pode ficar bem difícil entender seu código.</p>
+<h3 id="19-suporte-a-novos-sistemas-operacionais">1.9 Suporte a novos sistemas operacionais</h3>
+<p>O Puppet agora funciona no RHEL 7 e tem suporte pleno ao systemd. Em breve Fedora 19 e 20 também serão suportados, ambos estão em fase final de testes.</p>
+<h3 id="110-deixa-de-ser-suportado">1.10 Deixa de ser suportado</h3>
+<p>A Puppetlabs deixa de suportar o sistema operacional Fedora 18.</p>
+<h3 id="111-melhoria-de-performance">1.11 Melhoria de performance</h3>
+<p>A versão 3.5 está bem mais rápida! A puppetlabs encontrou algumas situações relacionadas ao <strong>puppet cert list</strong>, <strong>definitions</strong> e <strong>geração de módulos</strong> que eram bem mais lentas do que deveriam ser, e após o devido tratamento a performance de todos estes recursos, e mais alguns outros, foi melhorada sensivelmente.</p>
+<h2 id="2-correções">2. Correções</h2>
+<p>Acessa a lista completa de correções da versão 3.5.0</p>
+<ul>
+<li><a href="https://tickets.puppetlabs.com/browse/PUP/fixforversion/11009">https://tickets.puppetlabs.com/browse/PUP/fixforversion/11009</a></li>
+</ul>
+<h2 id="3-referências">3. Referências</h2>
+<h5 id="puppet-530">Puppet 5.3.0</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/release_notes.html#puppet-350">http://docs.puppetlabs.com/puppet/latest/reference/release_notes.html#puppet-350</a></li>
+</ul>
+<h5 id="environments">Environments</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/environments.html">http://docs.puppetlabs.com/puppet/latest/reference/environments.html</a></li>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/dirs_modulepath.html">http://docs.puppetlabs.com/puppet/latest/reference/dirs_modulepath.html</a></li>
+</ul>
+<h5 id="import">Import</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/dirs_manifest.html">http://docs.puppetlabs.com/puppet/latest/reference/dirs_manifest.html</a></li>
+</ul>
+<h5 id="puppet-config">Puppet Config</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/config_set.html">http://docs.puppetlabs.com/puppet/latest/reference/config_set.html</a></li>
+</ul>
+<h5 id="global-facts">Global Facts</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/config_important_settings.html#getting-new-features-early">http://docs.puppetlabs.com/puppet/latest/reference/config_important_settings.html#getting-new-features-early</a></li>
+</ul>
+<h5 id="structured-facts">Structured Facts</h5>
+<ul>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/config_important_settings.html#getting-new-features-early">http://docs.puppetlabs.com/puppet/latest/reference/config_important_settings.html#getting-new-features-early</a></li>
+</ul>
+<h5 id="future-parser">Future Parser</h5>
+<ul>
+<li>
+<p><a href="http://docs.puppetlabs.com/puppet/latest/reference/experiments_future.html">http://docs.puppetlabs.com/puppet/latest/reference/experiments_future.html</a></p>
+</li>
+<li>
+<p><a href="http://puppetlabs.com/blog/puppet-3-2-introduces-an-experimental-parser-and-new-iteration-features">http://puppetlabs.com/blog/puppet-3-2-introduces-an-experimental-parser-and-new-iteration-features</a></p>
+</li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

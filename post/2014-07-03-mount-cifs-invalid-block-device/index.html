@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Mount cifs invalid block device</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Mount cifs invalid block device</h1>
+        <div>
+                <time>July 3, 2014</time>
+            </div>
+    </header><p>Recentemente instalei algumas VMS com CentOS 6.5 x86.64 - instalação mínima. Estes servidores precisavam montar alguns compartilhamentos de servidores windows. No FSTAB eu fiz a configuração dos pontos de montagem, alguns dos compartilhamentos montaram normalmente, outros apresentaram o seguinte problema quando eu tentava montar.</p>
+<pre><code>mount /mnt/share 
+//ip-do-servidor/share is not a valid block device
+</code></pre>
+<p>Na hora não fez muito sentido, afinal outros compartilhamentos CIFS haviam montado, mas este não. Após alguma pesquisa descobri que para montar compartilhamentos cifs em versões mais recentes do Windows é necessário ter o pacote cifs-utils instalado no CentOS.</p>
+<pre><code>yum install cifs-utils
+</code></pre>
+<p>Feito isto consegui montar o compartilhamento com sucesso. Fica a dica!</p>
+<h2 id="referências">Referências:</h2>
+<ul>
+<li><a href="http://wiki.centos.org/TipsAndTricks/WindowsShares">http://wiki.centos.org/TipsAndTricks/WindowsShares</a></li>
+<li><a href="http://tutcenter.com/linux/centos/centos-mount-valid-block-device/">http://tutcenter.com/linux/centos/centos-mount-valid-block-device/</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

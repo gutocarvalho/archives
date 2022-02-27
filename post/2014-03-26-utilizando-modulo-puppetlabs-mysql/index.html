@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Utilizando módulo Puppetlabs MySQL</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Utilizando módulo Puppetlabs MySQL</h1>
+        <div>
+                <time>March 26, 2014</time>
+            </div>
+    </header><h2 id="1-módulos-da-puppetlabs">1. Módulos da Puppetlabs</h2>
+<p>Resolvi iniciar uma série de posts para divulgar os excelentes módulos da Puppetlabs, muita gente não os usa e não os conhece. Estes módulos são maduros e bem testados, afinal são construídos de forma coletiva pela comunidade puppet.</p>
+<p>Não vale a pena investir tempo reinventando a roda, use estes módulos!</p>
+<h2 id="2-método-aplicado">2. Método aplicado</h2>
+<p>A ideia aqui não é mostrar como se instala e configura o PuppetMaster, isso já foi bem coberto neste blog e nas wikis do meu site, partirei da ideia de que você já tem um ambiente rodando e em produção. Eu simplesmente vou mostrar alguns exemplos de uso do módulo para facilitar a configuração.</p>
+<h2 id="3-entendendo-os-módulos">3. Entendendo os módulos</h2>
+<p>Todos os módulos da Puppetlabs tem um arquivo <strong>README</strong>, este arquivo contém informações mais do que suficientes para entender seu funcionamento e fazer
+uso dele.</p>
+<p>Você vai encontrar os módulos da puppetlabs no <a href="http://forge.puppetlabs.com/puppetlabs">Forge</a> e no <a href="https://github.com/puppetlabs/">Github</a>.</p>
+<p>No caso do Github existem outros projetos no repositório além dos módulos, normalmente os módulos terão o nome de puppetlabs-module, mas na descrição estará bem claro.</p>
+<h2 id="4-sobre-o-módulo-puppetlabs-mysql">4. Sobre o módulo Puppetlabs MySQL</h2>
+<p>Este módulo é bastante interessante, particularmente eu o uso para gerenciar todos os meus servidores mysql, ele possui as seguintes classes.</p>
+<p>Public classes</p>
+<ul>
+<li>mysql::server: Installs and configures MySQL.</li>
+<li>mysql::server::account_security: Deletes default MySQL accounts.</li>
+<li>mysql::server::monitor: Sets up a monitoring user.</li>
+<li>mysql::server::mysqltuner: Installs MySQL tuner script.</li>
+<li>mysql::server::backup: Sets up MySQL backups via cron.</li>
+<li>mysql::bindings: Installs various MySQL language bindings.</li>
+<li>mysql::client: Installs MySQL client (for non-servers).</li>
+</ul>
+<p>Private classes</p>
+<ul>
+<li>mysql::server::install: Installs packages.</li>
+<li>mysql::server::config: Configures MYSQL.</li>
+<li>mysql::server::service: Manages service.</li>
+<li>mysql::server::root_password: Sets MySQL root password.</li>
+<li>mysql::server::providers: Creates users, grants, and databases.</li>
+<li>mysql::bindings::java: Installs Java bindings.</li>
+<li>mysql::bindings::perl: Installs Perl bindings.</li>
+<li>mysql::bindings::python: Installs Python bindings.</li>
+<li>mysql::bindings::ruby: Installs Ruby bindings.</li>
+<li>mysql::client::install: Installs MySQL client.</li>
+</ul>
+<p>Cada uma destas classes tem diversos parâmetros, portanto, recomendo uma leitura completa no README do módulo antes de iniciar suas aventuras.</p>
+<ul>
+<li><a href="https://github.com/puppetlabs/puppetlabs-mysql">https://github.com/puppetlabs/puppetlabs-mysql</a></li>
+</ul>
+<h2 id="4-instalando-o-módulo-mysql">4. Instalando o módulo Mysql</h2>
+<p>No servidor puppetmaster acesse o diretório de módulos</p>
+<pre><code>cd /etc/puppet/modules
+</code></pre>
+<p>E inicie uma busca por módulos da puppetlabs</p>
+<pre><code>puppet module search puppetlabs
+</code></pre>
+<p>Veja os módulos disponíveis (filtrado)</p>
+<pre tabindex="0"><code>puppetlabs-activemq
+puppetlabs-apache
+puppetlabs-appdirector
+puppetlabs-apt
+puppetlabs-awsdemo_profiles
+puppetlabs-azure
+puppetlabs-bacula
+puppetlabs-boundary
+puppetlabs-ceilometer
+puppetlabs-cinder
+puppetlabs-cloud_provisioner
+puppetlabs-cloudformation
+puppetlabs-concat
+puppetlabs-corosync
+puppetlabs-dashboard
+puppetlabs-denyhosts
+puppetlabs-dism
+puppetlabs-drbd
+puppetlabs-f5
+puppetlabs-firewall
+puppetlabs-gcc
+puppetlabs-gce_compute
+puppetlabs-git
+puppetlabs-glance
+puppetlabs-grizzly
+puppetlabs-haproxy
+puppetlabs-havana
+puppetlabs-heat
+puppetlabs-horizon
+puppetlabs-inifile
+puppetlabs-java
+puppetlabs-java_ks
+puppetlabs-keystone
+puppetlabs-kwalify
+puppetlabs-lib_puppet
+puppetlabs-logentries
+puppetlabs-lvm
+puppetlabs-mcollective
+puppetlabs-mongodb
+puppetlabs-motd
+puppetlabs-mount_providers
+puppetlabs-mrepo
+puppetlabs-mssql
+puppetlabs-mysql
+puppetlabs-neutron
+puppetlabs-newrelic
+puppetlabs-nginx
+puppetlabs-node_gce
+puppetlabs-node_openstack
+puppetlabs-nodejs
+puppetlabs-nova
+puppetlabs-ntp
+puppetlabs-opennebula
+puppetlabs-openstack
+puppetlabs-passenger
+puppetlabs-pe_gem
+puppetlabs-pe_upgrade
+puppetlabs-postgresql
+puppetlabs-puppetdb
+puppetlabs-quantum
+puppetlabs-rabbitmq
+puppetlabs-razor
+puppetlabs-reboot
+puppetlabs-registry
+puppetlabs-rsync
+puppetlabs-ruby
+puppetlabs-sqlite
+puppetlabs-stdlib
+puppetlabs-stunnel
+puppetlabs-swift
+puppetlabs-tftp
+puppetlabs-vcenter
+puppetlabs-vcli_rsyslog
+puppetlabs-vcsrepo
+puppetlabs-vswitch
+puppetlabs-win_desktop_shortcut
+puppetlabs-xinetd
+</code></pre><p>Vamos instalar o módulo mysql</p>
+<pre><code>puppet module install puppetlabs-mysql
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Notice: Preparing to install into /etc/puppet/modules ...
+Notice: Downloading from https://forge.puppetlabs.com ...
+Notice: Installing -- do not interrupt ...
+/etc/puppet/modules
+└─┬ puppetlabs-mysql (v2.2.3)
+  └── puppetlabs-stdlib (v4.1.0)
+</code></pre><p>Veja que ele instalou o módulo stdlib que é dependência para este módulo.</p>
+<h2 id="5-utilizando-o-módulo">5. Utilizando o módulo</h2>
+<p>Edite o arquivo /etc/puppet/manifests/site.pp e insira as configuações abaixo no node que receberá as configurações para instalação do MYSQL Server.</p>
+<h3 id="51-para-instalar-o-mysql-server">5.1 Para instalar o Mysql Server</h3>
+<p>{% codeblock lang:puppet %}
+node &ldquo;mysql.hacklab&rdquo; {</p>
+<pre><code>class { 'mysql::server':
+
+	root_password    =&gt; 'suasenha',
+
+	override_options =&gt; {
+		'mysqld' =&gt; {
+			'connect_timeout'                 =&gt; '60',
+			'bind_address'                    =&gt; '0.0.0.0',
+			'max_connections'                 =&gt; '100',
+			'max_allowed_packet'              =&gt; '512M',
+			'thread_cache_size'               =&gt; '16',
+			'query_cache_size'                =&gt; '128M',
+		}
+	}
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Observe que é uma configuração bastante objetiva e direta, e eu uso a diretiva override_options para definir algumas configurações diretamente no aquivo my.cnf, sem depender dos parâmetros do módulo diretamente. Agora vamos aplicar a configuração.</p>
+<pre><code>puppet agent -t
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Info: Retrieving plugin
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/puppet_vardir.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/root_home.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/pe_version.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/facter_dot_d.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/puppet_vardir.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/root_home.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/pe_version.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/facter_dot_d.rb
+Info: Caching catalog for puppet.hacklab
+Info: Applying configuration version '1395658656'
+Notice: /Stage[main]/Mysql::Server::Install/Package[mysql-server]/ensure: created
+Notice: /Stage[main]/Mysql::Server::Config/File[/etc/mysql]/ensure: created
+Notice: /Stage[main]/Mysql::Server::Config/File[/etc/my.cnf]/content:
+--- /etc/my.cnf	2014-02-12 17:42:13.000000000 -0200
++++ /tmp/puppet-file20140324-2025-10nhr9y-0	2014-03-24 07:58:32.036141657 -0300
+@@ -1,10 +1,46 @@
++[client]
++port = 3306
++socket = /var/lib/mysql/mysql.sock
++
++[isamchk]
++key_buffer_size = 16M
++
+ [mysqld]
+-datadir=/var/lib/mysql
+-socket=/var/lib/mysql/mysql.sock
+-user=mysql
+-# Disabling symbolic-links is recommended to prevent assorted security risks
+-symbolic-links=0
++basedir = /usr
++bind_address = 0.0.0.0
++connect_timeout = 60
++datadir = /var/lib/mysql
++expire_logs_days = 10
++key_buffer_size = 16M
++log-error = /var/log/mysqld.log
++max_allowed_packet = 512M
++max_binlog_size = 100M
++max_connections = 1400
++myisam_recover = BACKUP
++pid-file = /var/run/mysqld/mysqld.pid
++port = 3306
++query_cache_limit = 1M
++query_cache_size = 128M
++skip-external-locking
++socket = /var/lib/mysql/mysql.sock
++ssl = false
++ssl-ca = /etc/mysql/cacert.pem
++ssl-cert = /etc/mysql/server-cert.pem
++ssl-key = /etc/mysql/server-key.pem
++thread_cache_size = 16
++thread_stack = 256K
++tmpdir = /tmp
++user = mysql
+
+ [mysqld_safe]
+-log-error=/var/log/mysqld.log
+-pid-file=/var/run/mysqld/mysqld.pid
++log-error = /var/log/mysqld.log
++nice = 0
++socket = /var/lib/mysql/mysql.sock
++
++[mysqldump]
++max_allowed_packet = 16M
++quick
++quote-names
++
++
++!includedir /etc/mysql/conf.d/
+
+Info: /Stage[main]/Mysql::Server::Config/File[/etc/my.cnf]: Filebucketed /etc/my.cnf to puppet with sum 8ace886bbe7e274448bc8bea16d3ead6
+Notice: /Stage[main]/Mysql::Server::Config/File[/etc/my.cnf]/content: content changed '{md5}8ace886bbe7e274448bc8bea16d3ead6' to '{md5}995ee9b1c5173f66fe1e8adf81d1e0f0'
+Notice: /Stage[main]/Mysql::Server::Config/File[/etc/mysql/conf.d]/ensure: created
+Notice: /Stage[main]/Mysql::Server::Service/Service[mysqld]/ensure: ensure changed 'stopped' to 'running'
+Info: /Stage[main]/Mysql::Server::Service/Service[mysqld]: Unscheduling refresh on Service[mysqld]
+Notice: /Stage[main]/Mysql::Server::Root_password/Mysql_user[root@localhost]/password_hash: defined 'password_hash' as '*686FAFB0D22504AC4005869A48377E6056C40F6A'
+Notice: /Stage[main]/Mysql::Server::Root_password/File[/root/.my.cnf]/ensure: defined content as '{md5}c51fe9a952a98fdd64ad44e0f4b9e660'
+Notice: Finished catalog run in 53.98 seconds
+</code></pre><p>Veja que o puppet instalou o mysqlserver, ajustou a senha de root, e alterou o arquivo de configuração. Agora verifique se o serviço está rodando</p>
+<pre><code>netstat -ntpl|grep 3306
+tcp        0      0 0.0.0.0:3306     0.0.0.0:*  OUÇA     2495/mysqld
+</code></pre>
+<p>Tente se conectar no mysql</p>
+<pre><code>mysql
+</code></pre>
+<p>Acompanhe</p>
+<pre tabindex="0"><code>Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 74
+Server version: 5.1.73 Source distribution
+
+Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql&gt;    
+</code></pre><p>Tudo perfeito.</p>
+<h3 id="52-criando-database-usuário-e-grant">5.2 Criando database, usuário e grant</h3>
+<p>Abaixo vamos ajustar a configuração do node para criar um banco de dados para a aplicação teampass, já vamos definir o nome do banco, nome de usuário de acesso ao banco, senha do usuário e qual o host autoriado a acessar este banco com estas credenciais.</p>
+<p>{% codeblock lang:puppet %}
+node &ldquo;mysql.hacklab&rdquo; {</p>
+<pre><code># instalando mysql server
+
+class { 'mysql::server':
+	root_password    =&gt; 'suasenha',
+	override_options =&gt; {
+		'mysqld' =&gt; {
+			'connect_timeout'                 =&gt; '60',
+			'bind_address'                    =&gt; '0.0.0.0',
+			'max_connections'                 =&gt; '1400',
+			'max_allowed_packet'              =&gt; '512M',
+			'thread_cache_size'               =&gt; '16',
+			'query_cache_size'                =&gt; '128M',
+		}
+	}
+}
+
+# sistema teampass
+
+    mysql::db { 'prod_teampass':
+            user     =&gt; 'teampass_user',
+            password =&gt; 'senha_teampass',
+            host     =&gt; 'teampass.hacklab',
+            grant    =&gt; ['all'],
+    }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Feito os ajustes vamos rodar o puppet</p>
+<pre><code>puppet agent -t
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Info: Retrieving plugin
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/puppet_vardir.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/root_home.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/pe_version.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/facter_dot_d.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/puppet_vardir.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/root_home.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/pe_version.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/facter_dot_d.rb
+Info: Caching catalog for puppet.hacklab
+Info: Applying configuration version '1395659211'
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Mysql::Db[prod_teampass]/Mysql_database[prod_teampass]/ensure: created
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Mysql::Db[prod_teampass]/Mysql_user[teampass_user@teampass.hacklab]/ensure: created
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Mysql::Db[prod_teampass]/Mysql_grant[teampass_user@teampass.hacklab/prod_teampass.*]/ensure: created
+Notice: Finished catalog run in 5.91 seconds
+</code></pre><p>Base criada, usuário criado, grant criado, simples, rápido e fácil.</p>
+<h3 id="53-criando-usuário-gutocarvalho">5.3 Criando usuário gutocarvalho</h3>
+<p>Agora vamos criar o usuário gutocarvalho, vamos configurar uma senha e determinar o host de origem dos acessos deste usuário.</p>
+<p>{% codeblock lang:puppet %}
+node &ldquo;mysql.hacklab&rdquo; {</p>
+<pre><code># instalando mysql server
+
+class { 'mysql::server':
+	root_password    =&gt; 'suasenha',
+	override_options =&gt; {
+		'mysqld' =&gt; {
+			'connect_timeout'                 =&gt; '60',
+			'bind_address'                    =&gt; '0.0.0.0',
+			'max_connections'                 =&gt; '1400',
+			'max_allowed_packet'              =&gt; '512M',
+			'thread_cache_size'               =&gt; '16',
+			'query_cache_size'                =&gt; '128M',
+		}
+	}
+}
+
+# sistema teampass
+
+    mysql::db { 'prod_teampass':
+            user     =&gt; 'teampass_user',
+            password =&gt; 'senha_teampass',
+            host     =&gt; 'teampass.hacklab',
+            grant    =&gt; ['all'],
+    }
+
+# usuario gutocarvalho
+
+    mysql_user{ 'gutocarvalho@10.138.25.102':
+            ensure        =&gt; present,
+            password_hash =&gt; mysql_password('minhasenha'),
+            require       =&gt; Class['mysql::server'],
+    }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Vamos aplicar a configuração</p>
+<pre><code>puppet agent -t
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Info: Retrieving plugin
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/puppet_vardir.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/root_home.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/pe_version.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/facter_dot_d.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/puppet_vardir.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/root_home.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/pe_version.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/facter_dot_d.rb
+Info: Caching catalog for puppet.hacklab
+Info: Applying configuration version '1395659615'
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Mysql_user[gutocarvalho@10.138.25.102]/ensure: created
+Notice: Finished catalog run in 5.79 seconds
+</code></pre><p>Veja que o usuário foi criado no mysql.</p>
+<h3 id="54-configurando-grant-para-usuário">5.4 Configurando grant para usuário</h3>
+<p>Agora vamos ver como definir um grant para um usuário, no caso vamos dizer ao puppet que o usuário gutocarvalho terá permissão de SELECT no banco prod_teampass.</p>
+<p>{% codeblock lang:puppet %}
+node &ldquo;mysql.hacklab&rdquo; {</p>
+<pre><code># instalando mysql server
+
+class { 'mysql::server':
+	root_password    =&gt; 'suasenha',
+	override_options =&gt; {
+		'mysqld' =&gt; {
+			'connect_timeout'                 =&gt; '60',
+			'bind_address'                    =&gt; '0.0.0.0',
+			'max_connections'                 =&gt; '1400',
+			'max_allowed_packet'              =&gt; '512M',
+			'thread_cache_size'               =&gt; '16',
+			'query_cache_size'                =&gt; '128M',
+		}
+	}
+}
+
+# sistema teampass
+
+    mysql::db { 'prod_teampass':
+            user     =&gt; 'teampass_user',
+            password =&gt; 'senha_teampass',
+            host     =&gt; 'teampass.hacklab',
+            grant    =&gt; ['all'],
+    }
+
+# usuario gutocarvalho
+
+	mysql_user { 'gutocarvalho@10.138.25.102':
+            ensure        =&gt; present,
+            password_hash =&gt; mysql_password('minhasenha'),
+            require       =&gt; Class['mysql::server'],
+   }
+
+# grant para usuario gutocarvalho no banco teampass
+
+	mysql_grant { 'gutocarvalho@10.138.25.102/prod_teampass.*':
+            user       =&gt; 'gutocarvalho@10.138.25.102',
+            table      =&gt; 'prod_teampass.*',
+            privileges =&gt; ['SELECT'],
+	}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Vamos aplicar a configuração</p>
+<pre><code>puppet agent -t
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Info: Retrieving plugin
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/puppet_vardir.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/root_home.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/pe_version.rb
+Info: Loading facts in /etc/puppet/modules/stdlib/lib/facter/facter_dot_d.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/puppet_vardir.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/root_home.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/pe_version.rb
+Info: Loading facts in /var/lib/puppet/lib/facter/facter_dot_d.rb
+Info: Caching catalog for puppet.hacklab
+Info: Applying configuration version '1395660070'
+Notice: /Stage[main]/Main/Node[puppet.hacklab]/Mysql_grant[gutocarvalho@10.138.25.102/prod_teampass.*]/ensure: created
+Notice: Finished catalog run in 7.50 seconds
+</code></pre><p>O grant foi criado.</p>
+<h2 id="6-amarrando-as-pontas">6. Amarrando as pontas</h2>
+<p>Neste post eu abordei apenas estes três procedimentos, são os mais comuns, os mais usados. Com o que você fez até aqui, já dá para ter uma ideia de como instalar, configurar e utilizar um módulo da puppetlabs.</p>
+<p>Observe que a declaração dos recursos no node serve como uma documentação, como o Miguel Filho diz, é uma verdadeira documentação executável, tudo o que você precisa saber sobre esse servidor de banco está ali, e com esse dados você inclusive consegue reconstruir a máquina rapidamente.</p>
+<p>O uso do Puppet torna a administração do sgbd um processo limpo, organizado, rápido e eficiente, vale a pena usá-lo.</p>
+<h2 id="7-referências">7. Referências</h2>
+<ul>
+<li><a href="https://github.com/puppetlabs/puppetlabs-mysql">https://github.com/puppetlabs/puppetlabs-mysql</a></li>
+<li><a href="http://forge.puppetlabs.com/puppetlabs">http://forge.puppetlabs.com/puppetlabs</a></li>
+<li><a href="http://docs.puppetlabs.com/puppet/latest/reference/modules_fundamentals.html">http://docs.puppetlabs.com/puppet/latest/reference/modules_fundamentals.html</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

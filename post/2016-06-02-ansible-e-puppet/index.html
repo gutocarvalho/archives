@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet vs Ansible?</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet vs Ansible?</h1>
+        <div>
+                <time>June 2, 2016</time>
+            </div>
+    </header><p>Essa é uma questão recorrente nas comunidades que participo e portanto vou registrar aqui no blog a minha visão para facilitar a resposta.</p>
+<h2 id="definições">Definições</h2>
+<ol>
+<li>
+<p>O Puppet é uma ferramenta de <strong>gerência de configurações</strong> e estados que vem da escola de GCONF do Mark Burgess, criador do CFEngine e destes princípios que vem sendo contruídos desde os anos 90.</p>
+</li>
+<li>
+<p>O Ansible é uma ferramenta que faz o que chamamos de <strong>orquestração</strong>, ele não segue os princípios fundamentais de CCONF e o seu desenho não segue a escola do Mark Burgess.</p>
+</li>
+</ol>
+<h2 id="1-como-funciona-o-ansible">1. Como funciona o Ansible</h2>
+<p>Imagine que você tem uma VM com o ansible instalado.</p>
+<p>Nessa VM voce cria um playbook (código que vai executar alguma ação em um sistema operacional).</p>
+<p>Você diz pro ansible a lista de máquinas em que ele vai se conectar para rodar aquele playbook.</p>
+<p>A VM que roda o ansible converte aquele playbook em um código python e se conecta (faz o PUSH do código) em N máquinas utilizando sua rede para aplicá-lo. Na VM de destino é necessário ter o python e as python-libs exigidas pelo playbook.</p>
+<p>O Ansible se conecta nestas máquinas utilizando o conhecido protocolo SSH, ele depende disso para funcionar, portanto é necessário ter credenciais de acesso ou chaves que te possibilitem chegar nestas VMs, se não houver serviço SSH rodando ou credenciais de acesso, não será possível fazer a orquestração.</p>
+<p>Para se conectar as todas essas VMs, a máquina com Ansible tem que ter acesso a todas as redes em que as VMs estão rodando para poder orquestrá-las, portanto, você terá que fazer algumas regras de firewall para garantir o acesso a todos os pontos de sua infraestrutura.</p>
+<p>Se você for aplicar um playbook em centenas ou milhares de máquinas paralelamente há de se tomar um cuidado extra pois ele pode gerar throughtput além das capacidades do seu switch/roteador no momento em que for tentar alcançar todos OSs simultâneamente ou dentro do paralelismo que você definir.</p>
+<p>Nem tudo no Ansible tem controles rídigos ou é idempotente, algumas coisas são, outras não, idempotência não é uma pedra fundamental em seu desenho, além disto, ele não foi feito para gerar um relatório detalhado, garantir o sucesso ou ter um rídido controle da execução do playbook, no final ele executa o playbook onde você pede - o foco da orquestração é esse - mas a visibilidade é pequena, você não tem como saber de forma precisa se atingiu o seu objetivo ou se tudo o que você queria foi realizado em todas as VMs. No momento, ele não tem o melhor dos feedbacks para o administrador, mesmo assim, como orquestrador ele é uma ferramenta muito interessante e poderosa.</p>
+<h3 id="11-orquestração-em-poucas-palavras">1.1 Orquestração em poucas palavras</h3>
+<p>Orquestração consiste em executar algo de forma paralela ou não em tempo real em um sistema operacional ou em um grupo de sistemas operacionais.</p>
+<p>Quando falarem orquestração, pelo menos do ponto de vista de automação de infraestrutura, tenha em mente alguém que se conecta em N sistemas operacionais e executa algo, pontualmente, sem exigência rígidas ou grandes controles.</p>
+<h2 id="2-como-funciona-o-puppet">2. Como funciona o Puppet?</h2>
+<p>O puppet foi desenhado dentro dos conceitos fundamentais da &ldquo;gerência de configurações&rdquo;, e por isso não tem a característica PUSH. Esses conceitos foram criados em 1993 pelo Professor Mark Burgess da universidade de OSLO. Suas principais características são o drift, convergência, idempotência, gerência de estados e uso de agentes nos &ldquo;nodes&rdquo; (termo que usamos para descrever um sistema operacional com um agente instalado).</p>
+<p>O conceito GCONF (Gerência de Configurações) foi estabelecido de forma mais concisa em 2004 com a criação da teoria Promisse do Mark Burgess que serviu de norte para a criação de todas as ferramentas modernas de CGCOF como Puppet, Salt, Chef e CFENGINE.</p>
+<p>Na CGONF você define um estado desejado através de uma linguagem declarativa chamada DSL (Domain specific language), armazena isso em um local central (neste caso no puppetmaster). Nas pontas temos os agentes rodando nos nodes, esses agentes vão buscar essa configuração e aplicar no node.</p>
+<p>Primeiro o agente verifica o estado atual do node, compara com o estado desejado, se houver divergência ele converge o node para o estado desejado. Todo esse processo gera um relatório robusto que registra todas as mudanças e eventos daquela drift/convergência.</p>
+<blockquote>
+<p>Em resumo se alguém alterar algo que o puppet está gerenciando, o puppet detecta e corrige sem necessidade de intervenção humana, é o que chamamos de auto-healing.</p>
+</blockquote>
+<p>Quaisquer ações ou recursos utilizados no Puppet tem como premissa a idempotência e o rídigo controle durante a aplicação, esse é um princípio fundamental do seu desenho. O agente roda como serviço no sistema operacional, portanto, a cada N minutos ele acorda e executa essa checagem em todo o sistema para garantir o compliance e o estado desejado, essa é sua missão, ele é o guardião dos estados e da integridade do node.</p>
+<p>O servidor nunca se conecta nos nós, apenas os nós de conectam no servidor. O servidor que contém as configurações pode ser facilmente replicado e colocado atrás de um balanceador. Você difícilmente tem problemas com throughput em sua rede como aqueles que podem acontecer com orquestradores e praticamente não precisa de preocupar com regras firewall, os nodes precisam se conectar à porta 8140 TCP do master ou do seu LB, apenas isto.</p>
+<p>O Puppet não depende de serviços de terceiros como SSH para funcionar, ele utiliza seu próprio agente e a comunicação ocorre através de uma API REST que é utilizada pelo agente para se comunicar com o master.</p>
+<p>Toda a comunicação é criptografada ponta-a-ponta e o custo disso para rede é baixíssimo se comparado com outros médotos.</p>
+<p>Outra grande vantagem desse modelo é que mesmo que o servidor esteja fora, os agentes continuam funcionando e aplicando a última configuração recebida.</p>
+<h3 id="21-gerência-de-configurações-em-poucas-palavras">2.1 Gerência de configurações em poucas palavras</h3>
+<p>Ferramentas de gerência de configuração funcionam em arquitetura agente e servidor, o servidor armazena as configurações dos nodes. O agente que roda no node, busca as configurações e aplica localmente.</p>
+<p>O agente funciona com o conceito de gerência de estados. Você usa uma linguagem declarativa para descrever os estados desejados nos nodes de sua rede.</p>
+<p>Idempotência é uma princípio fundamental do agente. Há um robusto sistema de relatórios e registro de eventos e mudanças. O servidor nunca se conecta nos nós, apenas os nós se conectam ao servidor.</p>
+<h2 id="3-conclusão">3. Conclusão</h2>
+<p>No final ambas são ferramentas de gerência, o Puppet faz a gerência de configurações e estados e o Ansible faz gerência por orquestração. Tais ferramentas atuam de formas distintas e tem objetivos e usos diferentes.</p>
+<p>Acima de tudo é importante entender que elas não são concorrentes.</p>
+<p>É bom ter as duas no seu cinto de utilidades, dependendo do projeto você terá uso para uma ou para outra.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

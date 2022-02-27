@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Monitoramento Externo</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Monitoramento Externo</h1>
+        <div>
+                <time>April 13, 2020</time>
+            </div>
+    </header><p>Fala galerinha, tudo bacana?</p>
+<p>Hoje o Tio Guto trouxe algumas dicas de monitoramento.</p>
+<p>Bom, muita gente da minha geração curte o <strong>Zabbix</strong>, <strong>Nagios</strong>, <strong>Monit</strong> e outras ferramentas que podemos instalar &ldquo;<em><strong>in house</strong></em>&rdquo;. São ferramentas fantásticas, fazem o que se propõe e quando bem utilizadas se integram perfeitamente em nossa stack e aos nossos procedimentos de automação.</p>
+<p>Vale lembrar que o foco dessas ferramentas é a Infraestrutura, então podemos dizer que elas nos dão a visão da &ldquo;<em>Infraestrutura pela Infraestrutura</em>&rdquo;.</p>
+<pre tabindex="0"><code>Ixe, Infraestrutrua pela Infraestrutura? Agora complicou hein...
+
+</code></pre><p>Nem tanto, vamos entender isso.</p>
+<p>Apesar de serem ferramentas de monitoramento, elas nos dão um monitoramento do ponto de vista interno na maioria dos casos, e as vezes até mesmo do ponto de vista externo – geralmente partindo de um local/ip &ldquo;conhecido&rdquo; e &ldquo;seguro&rdquo;, o famoso monitoramento via <em>caminho feliz</em>.</p>
+<p>Entenda, é um monitoramento válido e importante, mas pode ocorrer aquela situação de o Monitoramento estar todo &ldquo;<em>Ok</em>&rdquo; ou &ldquo;<em>Green</em>&rdquo; e alguém te mandar um ZAP assim:</p>
+<pre tabindex="0"><code>&quot;Hey, você viu que seus sites estão fora?&quot;
+
+</code></pre><p>E você vai falar:</p>
+<pre tabindex="0"><code>&quot;What, WTF?&quot;
+
+</code></pre><p>É acontece né&hellip;. mas porquê isso acontece?</p>
+<pre tabindex="0"><code>Por que nós não temos uma visão de fora realmente confiável.
+
+</code></pre><p>Para a gente ter uma visão de fora – exercitando a experiência do usuário, precisamos utilizar alguma ferramenta que nos dê esse ponto de vista diferenciado. Essa ferramenta precisa nos responder algumas coisas, entre elas:</p>
+<ul>
+<li>Uma conexão externa vê meu site/serviços corretamente?</li>
+<li>Qual a tempo médio de carregamento de meus sites e serviços?</li>
+<li>Qual a taxa de disponibilidade destes sites/serviços?</li>
+</ul>
+<p>São perguntas simples e não valem o esforço ficar espalhando agentes de alguma ferramenta, ou então proxys Zabbix – por exemplo – em várias regiões da Amazon/Azure/GCP.</p>
+<p>Então, Como eu posso resolver isso rápido e com baixo custo?</p>
+<p>A resposta é SaaS!</p>
+<p>Temos vários sistemas de monitoramento SaaS bem bacanas, em especial eu trouxe 2 serviços bem práticos e gratuitos que fazem esse trabalho sem custo pra gente, vamos a eles:</p>
+<h3 id="uptimerobotcom">Uptimerobot.com</h3>
+<ul>
+<li>50 alertas</li>
+<li>Gráficos de SLA</li>
+<li>Intervalos de 5 minutos</li>
+<li>Checagens: HTTTP, HTTPS, TCP, UDP, PING</li>
+<li>Integrações diversas (email, telegram, twitter, slack, etc.)</li>
+<li>Status Pages Diversas</li>
+<li>API ( <a href="https://uptimerobot.com/api">https://uptimerobot.com/api</a> )</li>
+</ul>
+<h3 id="statuscake">StatusCake</h3>
+<ul>
+<li>10 alertas</li>
+<li>1 Check Speedtest a cada 24 horas</li>
+<li>Gráficos de SLA</li>
+<li>Intervalos de 5 minutos nos alertas</li>
+<li>Checagens: HTTTP, HTTPS, DNS, SMTP, SSH, TCP, UDP, PING, PUSH</li>
+<li>Integrações diversas (email, telegram, twitter, slack, etc.)</li>
+<li>1 Status Page</li>
+<li>API ( <a href="https://www.statuscake.com/api">https://www.statuscake.com/api</a> )</li>
+</ul>
+<h2 id="conclusão">Conclusão</h2>
+<p>Ambas são excelentes, eu já tenho bastante intimidade com o UptimeRobot, uso há alguns anos, me dou bem especialmente com sua API, contudo, o StatusCake tem provado ser uma boa alternativa.</p>
+<p>Ambas ferramentas nos planos pagos oferecem uma gama de recursos extras como SSL Check, relatórios mais detalhados, janela de manutenção, monitoramento de domínios, alertas personalizados com sua logo e muito mais.</p>
+<p>Se você tem budget para queimar, manda ver e assina as ferramentas, se não tem dá para se virar bem com as versões &ldquo;free tier&rdquo;.</p>
+<p>Tá esperando oq? Vai lá conhecer!</p>
+<h2 id="dica-da-dica">Dica da dica</h2>
+<p>Uma boa ferramenta para automar os dois em sua infraestrutura – colocando tudo junto com o provisionamento de sites ou deployment – é o tronitor, conheça o projeto, recomendo.</p>
+<ul>
+<li><a href="https://github.com/christronyxyocum/tronitor">https://github.com/christronyxyocum/tronitor</a></li>
+</ul>
+<p>[s]Guto</p>
+<hr>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

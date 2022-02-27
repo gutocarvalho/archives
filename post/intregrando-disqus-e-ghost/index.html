@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Integrando DISQUS e GHOST</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Integrando DISQUS e GHOST</h1>
+        <div>
+                <time>April 19, 2020</time>
+            </div>
+    </header><h3 id="contexto">Contexto</h3>
+<p>Comentários podem ser construtivos e somarem ao seu blog, mas podem ser também um grande aborrecimento. Contudo, eu prefiro que falem mais do que prefiro que fiquem calados.</p>
+<p>Para comentários eu escolhi o <strong>DISQUS</strong> pois força a pessoa a ter uma conta e se identificar minimente para comentar. É uma camada a mais, um filtro mínimo, sei que não garante muito, mas já é melhor que deixar comentários anônimos ;)</p>
+<h3 id="procedimento-de-integração">Procedimento de integração</h3>
+<p>Edite o aquivo <em><strong>post.hbs</strong></em> do seu tema <em><strong>CASPER</strong></em> e procure as seguintes linhas</p>
+<pre tabindex="0"><code>{{!--
+&lt;section class=&quot;post-full-comments&quot;&gt;
+&lt;/section&gt;
+--}}
+</code></pre><p>Provavelmente estão depois da linha 115, agora remova as tags de comentários</p>
+<pre tabindex="0"><code>&lt;section class=&quot;post-full-comments&quot;&gt;
+&lt;/section&gt;
+</code></pre><p>Feito isto, insira o código universal do DISQUS para integração</p>
+<pre tabindex="0"><code>&lt;section class=&quot;post-full-comments&quot;&gt;
+
+&lt;div id=&quot;disqus_thread&quot;&gt;&lt;/div&gt;
+&lt;script&gt;
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = '{{url absolute=&quot;true&quot;}}';  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = 'ghost-{{comment_id}}'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://USERNAME.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+&lt;/script&gt;
+&lt;noscript&gt;Please enable JavaScript to view the &lt;a href=&quot;https://disqus.com/?ref_noscript&quot;&gt;comments powered by Disqus.&lt;/a&gt;&lt;/noscript&gt;
+
+&lt;/section&gt;
+</code></pre><p>Troque <strong>USERNAME</strong> pelo seu usuário no <strong>DISQUS</strong>.</p>
+<p>Reinicie o seu GHOST e pronto, comentários funcionando.</p>
+<p>Enjoy!</p>
+<p>[s]
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

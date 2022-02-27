@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>módulo puppetlabs-apache no centos 6 com php54 scl</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>módulo puppetlabs-apache no centos 6 com php54 scl</h1>
+        <div>
+                <time>August 7, 2014</time>
+            </div>
+    </header><p>Se você viu o post anterior sobre pacotes do repositório <a href="http://gutocarvalho.net/octopress/2014/08/07/instalando-php-5-dot-4-com-pacotes-scl-do-centos-6/">SCL</a>, e se você utiliza o Puppet para gerenciar seu apache e php, provavelmente deve estar pensando em como integrar as duas coisas.</p>
+<p>O módulo puppetlabs-apache trabalha com o pacote php padrão do CentOS 6, neste caso esse php encontra-se na versão 5.3.3. Manter os dois PHPs no ambiente não é problema, o conflito só vai ocorrer no carregamento do php para uso do apache, o módulo puppetlabs-apache cria os arquivos /etc/httpd/conf.d/php5.conf e /etc/httpd/conf.d/php5.conf que fazem referência ao PHP 5.3.3 em seu sistema, isso vai conflitar com o arquivo php54.conf que o pacote php54-php cria no mesmo diretório.</p>
+<p>Para resolver essa questão, a primeira coisa a fazer é a atualização do seu módulo puppetlabs-apache do puppet para versão mais recente, esta versão aceita parametrização nos módulos do apache, com ele poderemos passar como parâmetro o nome do pacote do php e o path para o arquivo .so que desejamos utilizar.</p>
+<pre><code>puppet module upgrade puppetlabs-apache
+</code></pre>
+<p>Depois disto remova a linha abaixo na configuração do seu node no puppet</p>
+<pre><code>include apache::mod::php
+</code></pre>
+<p>Agora adicione o bloco de código abaixo no lugar acertando corretamente os valores para os atributos package_name e path.</p>
+<pre tabindex="0"><code>class {'apache::mod::php':
+	package_name =&gt; &quot;php54-php&quot;,
+	path         =&gt; &quot;/opt/rh/php54/root/usr/lib64/httpd/modules/libphp5.so&quot;,
+}
+</code></pre><p>Remova qualquer outro arquivo que carregue o php5 no diretório /etc/httpd/conf.d mantendo apenas php5.conf e php5.load que são gerenciados pelo puppet, rode o puppet no node diretamente.</p>
+<pre><code>puppet agent -t
+</code></pre>
+<p>Com isso seu puppet continua gerenciando os pacotes do apache e do php e você continua utilizando as versão 5.4 do PHP através do repositório SCL do CentOS.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

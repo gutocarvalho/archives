@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Vagrant Boxes com Puppet 4.2.2 Publicadas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Vagrant Boxes com Puppet 4.2.2 Publicadas</h1>
+        <div>
+                <time>September 25, 2015</time>
+            </div>
+    </header><p>Eu uso muito o Vagrant para fazer testes e desenvolver módulos puppet, por anos usei as vagrant-box feitas pela Puppetlabs, elas sempre foram eficientes e confiáveis para trabalhar e fazer os meus testes, mas com o recente lançamento do Puppet 4 percebi que a puppetlabs não estava atualizando suas boxes, portanto, resolvi estudar o packer e criar cada box que eu precisava para homologar módulos puppet.</p>
+<p>O resultado disto foi a criação das seguintes box:</p>
+<pre><code>centos 5, 6 e 7
+ubuntu 12.04 e 14.04
+debian 6, 7 e 8
+</code></pre>
+<p>Essas box tem instalação mínima do OS, são todas 64 bits e vem com alguns pacotes para sysadmins:</p>
+<ul>
+<li>Puppet [ 4.2.2 ]</li>
+<li>VBoxGuest [ 4.3.30 ]</li>
+<li>Packages
+<ul>
+<li>git</li>
+<li>curl</li>
+<li>vim</li>
+<li>wget</li>
+<li>rsync</li>
+<li>screen (com screenrc)</li>
+<li>bind-utils</li>
+<li>nc</li>
+<li>telnet</li>
+<li>puppet-agent</li>
+<li>elinks</li>
+<li>lynx</li>
+<li>bzip2</li>
+<li>unzip</li>
+<li>tcpdump</li>
+<li>ccze</li>
+<li>htop</li>
+<li>traceroute</li>
+</ul>
+</li>
+</ul>
+<p>Quem quiser fazer download basta acessar</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho/
+</code></pre>
+<p>O link direto para cada box é</p>
+<pre tabindex="0"><code>https://atlas.hashicorp.com/gutocarvalho/boxes/centos5x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/centos6x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/centos7x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/debian6x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/debian7x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/debian8x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/ubuntu1204x64
+https://atlas.hashicorp.com/gutocarvalho/boxes/ubuntu1404x64
+</code></pre><p>Coloquei o código de build do packer no github</p>
+<pre tabindex="0"><code>https://github.com/gutocarvalho/packet-debian6
+https://github.com/gutocarvalho/packet-debian7
+https://github.com/gutocarvalho/packet-debian8
+https://github.com/gutocarvalho/packet-ubuntu1204
+https://github.com/gutocarvalho/packet-ubuntu1404
+https://github.com/gutocarvalho/packet-centos5
+https://github.com/gutocarvalho/packet-debian6
+https://github.com/gutocarvalho/packet-debian7
+</code></pre><p>Em breve vou mostrar como fazer build de uma box usando o Packer.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

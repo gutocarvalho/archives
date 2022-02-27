@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Box vagrant para projeto PCP</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Box vagrant para projeto PCP</h1>
+        <div>
+                <time>September 18, 2016</time>
+            </div>
+    </header><p>Criei uma box vagrant para facilitar o uso do PCP.</p>
+<pre><code>https://atlas.hashicorp.com/gutocarvalho/boxes/centos7x64-pcp
+</code></pre>
+<p>Essa box contém o PCP com os pacotes nas seguintes versões</p>
+<ul>
+<li>Pupper Agent 4.6.2</li>
+<li>Mcollective 2.9.0</li>
+<li>Hiera 3.2.1</li>
+<li>Facter 3.4.1</li>
+<li>Puppet Server 2.6.0</li>
+<li>PuppetDB 4.2.2</li>
+<li>R10k 2.4.3</li>
+<li>PostgreSQL 9.5.4</li>
+<li>PuppetBoard 0.2.0</li>
+<li>ActiveMQ 5.14.0</li>
+</ul>
+<p>Recomendo usar o vagrant 1.8.4 e virtualbox 5.0.26.</p>
+<h2 id="1-instalando-a-box">1. Instalando a box</h2>
+<p>Para instalar a box digite o comando abaixo no terminal</p>
+<pre><code>vagrant box add gutocarvalho/centos7x64-pcp
+</code></pre>
+<p>Crie um diretório para o projeto</p>
+<pre><code>mkdir pcp; cd pcp
+</code></pre>
+<p>Crie um arquivo Vagrantfile no diretorio com o conteúdo abaixo</p>
+<pre tabindex="0"><code># -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = &quot;2&quot;
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  if Vagrant.has_plugin?(&quot;vagrant-hosts&quot;)
+    config.vm.provision :hosts do |provisioner|
+      provisioner.add_localhost_hostnames = false
+      provisioner.autoconfigure = true
+      provisioner.sync_hosts = true
+      provisioner.add_host '192.168.250.35', ['puppet']
+      provisioner.add_host '192.168.250.35', ['puppetdb']
+    end
+  end
+
+  config.vm.box = &quot;centos7-pcp&quot;
+
+  # puppet community platform
+
+  config.vm.define &quot;puppetserver&quot; do |puppetserver|
+    puppetserver.vm.hostname = &quot;puppet-pcpm.hacklab&quot;
+    puppetserver.vm.network :private_network, ip: &quot;192.168.250.35&quot;
+    puppetserver.hostsupdater.aliases = [&quot;puppetboard.hacklab&quot;, &quot;puppetexplorer.hacklab&quot;]
+    puppetserver.vm.provider &quot;virtualbox&quot; do |v|
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--cpus&quot;, &quot;2&quot; ]
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;3072&quot; ]
+      v.customize [ &quot;modifyvm&quot;, :id, &quot;--name&quot;, &quot;puppet-pcpm.hacklab&quot; ]
+    end
+  end
+
+end
+</code></pre><p>Instale os seguintes plugins</p>
+<pre><code>vagrant plugin install vagrant-hosts
+vagrant plugin install vagrant-hostsupdater
+</code></pre>
+<p>Inicie o projeto</p>
+<pre><code>vagrant up
+</code></pre>
+<p>Acesse a vm</p>
+<pre><code>vagrant ssh
+</code></pre>
+<p>Divirta-se.</p>
+<h2 id="2-refs">2. refs</h2>
+<p>Box source</p>
+<ul>
+<li><a href="https://gitlab.com/gutocarvalho/packer-centos-pcp">https://gitlab.com/gutocarvalho/packer-centos-pcp</a></li>
+</ul>
+<p>Project PCP</p>
+<ul>
+<li><a href="https://gitlab.com/puppet-br/pcp">https://gitlab.com/puppet-br/pcp</a></li>
+<li><a href="https://gitlab.com/puppet-br/pcp-controlrepo">https://gitlab.com/puppet-br/pcp-controlrepo</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

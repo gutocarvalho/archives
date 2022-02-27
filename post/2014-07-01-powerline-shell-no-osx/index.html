@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Powerline shell no osx</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Powerline shell no osx</h1>
+        <div>
+                <time>July 1, 2014</time>
+            </div>
+    </header><p>Eu já falei da <a href="http://gutocarvalho.net/octopress/2013/01/28/usando-vim-com-powerline/">powerline</a> aqui no blog, mas naquela ocasião era para uso interno no vim, recentemente passei a utilizar a powerline no bash através do projeto <a href="https://github.com/milkbikis/powerline-shell">powerline shell</a>.</p>
+<p>A instalação é rápida e fácil, logue no console e digite</p>
+<pre><code>$ cd ~
+$ git clone https://github.com/milkbikis/powerline-shell
+</code></pre>
+<p>Agora vamos instalar</p>
+<pre><code>$ ./install.py
+</code></pre>
+<p>Pronto, agora vamos criar um link simbólico.</p>
+<pre><code>$ ln -s ~/powerline-shell/powerline-shell.py ~/powerline-shell.py
+</code></pre>
+<p>Feito isto vamos configurar nosso arquivo .bash_profile</p>
+<pre><code>$ vim ~/.bash_profile
+</code></pre>
+<p>Adicione estas linhas ao início do arquivo e comente qualquer configuração da variável PS1 que existir no arquivo.</p>
+<pre tabindex="0"><code>function _update_ps1() {
+	export PS1=&quot;$(~/powerline-shell.py $? 2&gt; /dev/null)&quot;
+	}
+
+export PROMPT_COMMAND=&quot;_update_ps1; $PROMPT_COMMAND&quot;
+</code></pre><p>Recarregue o arquivo</p>
+<pre><code>$ source .bash_profile
+</code></pre>
+<p>Pronto, sua powerline estará funcionando.</p>
+<figure class="center"><img src="/images/posts/2014-07-01/powerline_shell.png"/><figcaption>
+            <h4>[Powerline Shells]</h4>
+        </figcaption>
+</figure>
+
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

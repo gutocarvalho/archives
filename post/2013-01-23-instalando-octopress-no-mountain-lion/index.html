@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando Octopress no Mountain Lion</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando Octopress no Mountain Lion</h1>
+        <div>
+                <time>January 23, 2013</time>
+            </div>
+    </header><h2 id="1-sobre-octopress">1. Sobre octopress</h2>
+<p>O Octopress é um framework para o Jekyll. O Jekyl por sua vez é um gerador de sistes estáticos. Quando usamos o Jekyll diretamente precisamos criar toda a estrutura HTML, CSS, Javascript e configurá-la, com o octopress isso tudo já vem pronto.</p>
+<p>Tanto o Octopress quanto o Jekyll foram escritos em Ruby.</p>
+<p>Podemos instalar o Octopress diretamente em nosso notebook, podemos utilizar git para manter seus arquivos e empurrar estes para um servidor na internet via git ou rsync, simples assim.</p>
+<p>No octopress utilizamos a linguagem markdown para escrever os posts, e tudo é feito pela linha de comando, veja alguns exemplos de manipulação do Octopress.</p>
+<p>Criar um post</p>
+<pre><code>rake new_post['Post sobre Octopress']
+</code></pre>
+<p>Editar um novo post</p>
+<pre><code>vim sources/_posts/2013-01-23-post-sobre-octoprress.markdown
+</code></pre>
+<p>Criar uma página</p>
+<pre><code>rake new_page['howtos']
+</code></pre>
+<p>Editar uma nova página</p>
+<pre><code>vim sources/howtos/index.markdown        
+</code></pre>
+<p>Gerar o site após mudanças em configurações/posts/páginas/tema.</p>
+<pre><code>rake generate
+</code></pre>
+<p>Ver um preview do site no seu notebook</p>
+<pre><code>rake preview
+</code></pre>
+<p>Após rodar o preview acesse</p>
+<pre><code>http://localhost:4000
+</code></pre>
+<p>Para publicar uma mudança em seu site de produção</p>
+<pre><code>rake deploy
+</code></pre>
+<p>Existem duas formas de fazer o deploy, uma via RSYNC e outra via GIT, normalmente o deploy via GIT é utilizado para alimentar o GITHUB PAGES e o RSYNC para enviar para algum outro host, no meu caso dreamhost.</p>
+<h2 id="2-minhas-necessidades">2. Minhas necessidades</h2>
+<p>Recentemente eu reinstalei o meu OSX e precisei preparar todo o ambiente para rodar o octopress novamente, abaixo segue meu roteiro para resolver isto usando o homebrew e RVM.</p>
+<h2 id="3-pré-requisitos">3. Pré-requisitos</h2>
+<p>O octopresss roda em virtualmente qualquer sistema operacional que tenha suporte ruby, porém no meu caso estou usando OSX Mountain Lion.</p>
+<ul>
+<li>instale o último xcode</li>
+<li>instale console tools do xcode</li>
+</ul>
+<p>Partindo do pressuposto de que você já tem o xcode e xcode console tools, vamos prosseguir.</p>
+<h2 id="4-homebrew">4. Homebrew</h2>
+<p>O homebrew é um gerenciador de pacotes para OSX, tal como fink ou macports, porém no momento acho o homebrew mais interessante e com mais opções do que os demais, vale lembrar que se for usar o homebrew, remova antes o fink ou macports para evitar conflitos.</p>
+<h3 id="41-instalando-homebrew">4.1 instalando homebrew</h3>
+<p>Instale o homebrew</p>
+<pre><code>ruby -e &quot;$(curl -fsSkL raw.github.com/mxcl/homebrew/go)&quot;
+</code></pre>
+<h2 id="5-rvm">5. RVM</h2>
+<p>O rvm é uma ferramenta que te permite selecionar a versão do ruby para aquela aplicação que você deseja utilizar, no meu caso eu uso puppet que necessita de um ruby mais antigo, porém também uso o octopress que precisa do ruby mais novo, portando o rvm é uma excelente alternativa para gerenciar este tipo de coisa.</p>
+<h3 id="51-instalando-rvm">5.1 instalando rvm</h3>
+<p>Atualize os índices do homebew</p>
+<pre><code>brew update
+</code></pre>
+<p>Instale o git</p>
+<pre><code>brew install git
+</code></pre>
+<p>Ative o uso de fórmulas externas</p>
+<pre><code>brew tap homebrew/dupes
+</code></pre>
+<p>Instale pacotes necessarios para compilação do ruby</p>
+<pre><code>brew install autoconf automake apple-gcc42
+</code></pre>
+<p>Ajuste seu path no arquivo .bash_profile ou .profile</p>
+<pre><code>export PATH=&quot;/usr/local/sbin:/usr/local/bin:$PATH&quot;
+</code></pre>
+<p>Instale o rvm e a última versão do ruby</p>
+<pre><code>curl -L https://get.rvm.io | bash -s stable --ruby
+</code></pre>
+<p>Instale as dependências para o ruby (recomendando pelo rvm)</p>
+<pre><code>rvm pkg install openssl
+</code></pre>
+<p>Se quiser, instale o ruby 1.8.7</p>
+<pre><code>rvm install 1.8.7 --with-gcc=clang --without-tcl --without-tk
+</code></pre>
+<p>Se quiser, instale o ruby 1.9.2</p>
+<pre><code>rvm install 1.9.2 --with-gcc=clang --without-tcl --without-tk
+</code></pre>
+<p>Defina que o ruby 1.9.3 é o default</p>
+<pre><code>rvm use 1.9.3 --default
+</code></pre>
+<h2 id="6-octopress">6. Octopress</h2>
+<h3 id="61-octopress-minha-primeira-instalação">6.1 octopress, minha primeira instalação</h3>
+<p>Siga estes passos se você deseja instalar o octopress pela primeira vez.</p>
+<p>Faça o clone do octopress via git</p>
+<pre><code>git clone git://github.com/imathis/octopress.git 
+</code></pre>
+<p>Acesse o diretório octopress</p>
+<pre><code>cd octopress
+</code></pre>
+<p>Instale o bundler</p>
+<pre><code>gem install bundler
+</code></pre>
+<p>Rode o bundle para instalar todas as dependências do octopress</p>
+<pre><code>blunde install
+</code></pre>
+<p>Instale o tema default do octopress</p>
+<pre><code>rake install
+</code></pre>
+<h3 id="62-octopress-reinstalei-meu-osx-e-agora">6.2 octopress, reinstalei meu OSX e agora?</h3>
+<p>Se você reinstalou seu OSX e quer fazer seu octopress funcionar novamente, faça o seguinte:</p>
+<p>Acesse seu diretório do octopress</p>
+<pre><code>cd /caminho/para/octopress
+</code></pre>
+<p>Instale o bundler</p>
+<pre><code>gem install bundler
+</code></pre>
+<p>Rode o bundle para instalar as dependências do octopress</p>
+<pre><code>bundle install
+</code></pre>
+<p>Está tudo pronto para voltar a utilizar seu octopress, é só sair blogando.</p>
+<h3 id="63-utilizando-o-octopress">6.3 utilizando o octopress</h3>
+<p>Como configurar</p>
+<pre><code>http://octopress.org/docs/configuring/
+</code></pre>
+<p>O básico para blogar</p>
+<pre><code>http://octopress.org/docs/blogging
+</code></pre>
+<p>Posts com trechos de código</p>
+<pre><code>http://octopress.org/docs/blogging/code/    
+</code></pre>
+<p>Sobre plugins nativos</p>
+<pre><code>http://octopress.org/docs/blogging/plugins/
+</code></pre>
+<p>Tema e personalização deste</p>
+<pre><code>http://octopress.org/docs/theme/
+</code></pre>
+<p>Mais informações em</p>
+<pre><code>http://octopress.org/docs/
+</code></pre>
+<h2 id="7-dicas-soltas">7. Dicas Soltas</h2>
+<p>Eu uso o Mou como editor Markdown para Octopress, é possível alterar o código do octopress para ele abrir o Mou após a criação de um post ou página.</p>
+<p>É perfeitamente possível blogar através do VIM, eventualmente faço isto, porém acho o MOU mais confortável.</p>
+<p>Para comentários eu uso o Disqus.</p>
+<p>Eu uso muito o plugin nativo Codeblock.</p>
+<p>O restante é o padrão do Octopress.</p>
+<p>Eu comecei a migrar os post do Wordpress - quase 500 posts, mas achei cansativo e chato arrumar post a post devido aos problemas de sintaxe markdown do script exitwp, acabei deixando o wordpress no ar e quando estiver com tempo volto a pensar nessa migração.</p>
+<h2 id="8-referências">8. Referências</h2>
+<ul>
+<li><a href="http://stackoverflow.com/questions/11664835/mountain-lion-rvm-install-1-8-7-x11-error">http://stackoverflow.com/questions/11664835/mountain-lion-rvm-install-1-8-7-x11-error</a></li>
+<li><a href="http://www.webdevotion.be/blog/2012/06/05/ruby-rvm-homebrew-xcode43/">http://www.webdevotion.be/blog/2012/06/05/ruby-rvm-homebrew-xcode43/</a></li>
+<li><a href="http://amaras-tech.co.uk/article/182/Mountain_Lion_Setup,_Part_2_Homebrew_%26_RVM">http://amaras-tech.co.uk/article/182/Mountain_Lion_Setup,_Part_2_Homebrew_%26_RVM</a></li>
+<li><a href="http://blog.dojimmy.com/blog/2012/12/07/como-instalar-o-octopress-no-mac-osx-moutain-lion/">http://blog.dojimmy.com/blog/2012/12/07/como-instalar-o-octopress-no-mac-osx-moutain-lion/</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

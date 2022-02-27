@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Convertendo PKCS12 para PEM</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Convertendo PKCS12 para PEM</h1>
+        <div>
+                <time>May 21, 2020</time>
+            </div>
+    </header><h2 id="cenário">Cenário</h2>
+<p>Pedi o certificado do cliente e ele me mandou um aquivo em formato PKCS12, e ainda por cima com senha :)</p>
+<p>Eu preciso usar esse cert em NGINX e sem a senha de preferência.</p>
+<p>Esse é o típico post nota mental para não ter que memorizar esses comandos.</p>
+<h2 id="como-faz-para-separar-tudo">Como Faz para separar tudo?</h2>
+<p>Primeiro vamos extrair a chave privada do arquivo P12 para formato PEM</p>
+<pre><code>openssl pkcs12 -in certificate.p12 -nocerts -out certificate.key
+</code></pre>
+<p>Agora vamos extrair o certificado</p>
+<pre><code>openssl pkcs12 -in certificate.p12 -clcerts -nokeys -out certificate.crt
+</code></pre>
+<p>Agora vamos extrair a cadeia (caso precise)</p>
+<pre><code>openssl pkcs12 -in certificate.p12 -cacerts -nokeys -chain &gt; ca.crt
+</code></pre>
+<p>Para remover a senha da chave execute</p>
+<pre><code>openssl rsa -in certificate.key -out certificate_nopass.key
+</code></pre>
+<p>Concatenando CA com CRT para ter um certificado <em><strong>chained/fullchain</strong></em>.</p>
+<pre><code>cat certificate.crt ca.crt &gt; fullchain.crt
+</code></pre>
+<p>Pronto agora você pode utilizar os arquivos PEM em seus serviços numa boa!</p>
+<h2 id="como-faz-para-checar-tudo">Como faz para checar tudo?</h2>
+<p>A checagem mais simples para ver se tá tudo bem</p>
+<pre><code>openssl verify certificate.crt
+openssl verify certificate.key
+</code></pre>
+<p>Verificando uma chave privada</p>
+<pre><code>openssl rsa -in privateKey.key -check
+</code></pre>
+<p>Verificando um certificado pem</p>
+<pre><code>openssl x509 -in certificate.crt -text -noout
+</code></pre>
+<p>Verificando um arquivo p12</p>
+<pre><code>openssl pkcs12 -info -in certificate.p12
+</code></pre>
+<p>Verificando um certificado já no ar</p>
+<pre><code>openssl s_client -connect mindnotes.sh:443
+</code></pre>
+<h2 id="erros-comuns">Erros comuns</h2>
+<p>Se você estiver tomando esse erro no NGINX</p>
+<pre tabindex="0"><code>Nginx SSL: error:0B080074:x509 certificate routines: X509_check_private_key:key values mismatch
+</code></pre><p>Você provavelmente concatenou o CA com o CRT de forma errada. Para conectenar corretamente siga essa ordem:</p>
+<pre tabindex="0"><code>Your Primary SSL certificate (your_domain_name.crt)
+  -&gt; Your Intermediate certificate 
+    -&gt; Your Root certificate 
+</code></pre><p>A estrutura interna deve ser algo como:</p>
+<pre tabindex="0"><code>-----BEGIN CERTIFICATE-----
+(Your Primary SSL certificate: domain.crt)
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+(Your Intermediate certificate: intermediate.crt)
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+(Your Root certificate: root.crt)
+-----END CERTIFICATE-----
+</code></pre><p>Se concatenar corretamente não haverá problemas com o NGINX ou outro reverse proxy/webserver.</p>
+<h2 id="debugando-os-certificados">Debugando os certificados</h2>
+<p>Se voce ainda assim está tomando erros nos logs do seu NGINX, verifique se a chave privada dá <em><strong>match</strong></em> com o certificado, faça isso usando o openssl.</p>
+<pre tabindex="0"><code># openssl x509 -noout -modulus -in certificate.crt | openssl md5
+(stdin)= 9b728f2acad237e350fc67ce750fa51d
+
+# openssl rsa -noout -modulus -in certificate.key | openssl md5
+(stdin)= 9b728f2acad237e350fc67ce750fa51d
+</code></pre><p>A saída tem que ser a mesma se os certificado estiverem bacanas, se estiver diferente verifique se não pulou algum passo e se está com os arquivos certos.</p>
+<h2 id="refs">Refs</h2>
+<ul>
+<li><a href="http://nginx.org/en/docs/http/configuring_https_servers.html">http://nginx.org/en/docs/http/configuring_https_servers.html</a></li>
+<li><a href="https://www.sslshopper.com/article-most-common-openssl-commands.html">https://www.sslshopper.com/article-most-common-openssl-commands.html</a></li>
+<li><a href="https://www.digicert.com/kb/ssl-support/pem-ssl-creation.htm">https://www.digicert.com/kb/ssl-support/pem-ssl-creation.htm</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

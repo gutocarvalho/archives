@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>#MindNote Instalando RancherOS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>#MindNote Instalando RancherOS</h1>
+        <div>
+                <time>May 5, 2020</time>
+            </div>
+    </header><p>Esse post é pq o HD do tio já tá bem cheio.</p>
+<p>Baixar a ISO daqui:</p>
+<ul>
+<li><a href="https://github.com/rancher/os/releases/">https://github.com/rancher/os/releases/</a></li>
+</ul>
+<p>Não use a ISO &ldquo;autoformat&rdquo;, para ProxMox use a iso abaixo:</p>
+<ul>
+<li>rancheros-proxmoxve.iso</li>
+</ul>
+<h2 id="criando-a-vm">Criando a VM</h2>
+<p>Beleza, procedimento no ProxMox</p>
+<ul>
+<li>Cria a VM</li>
+<li>Boota a VM</li>
+<li>Abre o console no Proxmox</li>
+<li>Define uma senha para o usuário rancher</li>
+<li>Seta o IP na mão (ifconfig eth0&hellip;, route add default gw&hellip;)</li>
+<li>Acessa por SSH, por fora do proxmox, usando a senha</li>
+</ul>
+<h2 id="cloud-init">Cloud Init</h2>
+<p>Crie o arquivo de configuração com <em><strong>vi</strong></em></p>
+<pre><code>/var/lib/rancher/conf/cloud-config.d/user_config.yml
+</code></pre>
+<p>Com o conteúdo similar ao abaixo:</p>
+<pre tabindex="0"><code>hostname: ros01.jac.bsb.br
+rancher:
+  network:
+    interfaces:
+      dns:
+        addresses:
+        - 8.8.8.8
+        - 8.8.4.4
+        nameservers: null
+        search:
+        - jac.bsb.br
+      eth0:
+        address: 51.91.xxx.xxx/xx
+        gateway: 51.91.xxx.xxx
+        dhcp: false
+        mtu: 1500
+      eth1:
+        address: 192.168.122.10/24
+  services_include:
+    open-iscsi: true
+    qemu-guest-agent: true
+    volume-nfs: true
+ssh_authorized_keys:
+- ssh-ed25519 sua-chave-marota-aqui guto@jac.bsb.br
+- ssh-ed25519 sua-chave-marota-aqui dirceu@jac.bsb.br
+- ssh-ed25519 sua-chave-marota-aqui ruan@jac.bsb.br
+- ssh-ed25519 sua-chave-marota-aqui pedro@jac.bsb.br
+</code></pre><p>Quer saber mais sobre essa config?</p>
+<ul>
+<li><a href="https://rancher.com/docs/os/v1.2/en/configuration/">https://rancher.com/docs/os/v1.2/en/configuration/</a></li>
+</ul>
+<h2 id="instalando">Instalando</h2>
+<p>Rode o comando abaixo como root</p>
+<pre><code>ros install -c /var/lib/rancher/conf/cloud-init.d/user-config.yml -d /dev/sda
+</code></pre>
+<p>Reboot, e pronto, RancherOS rodando lindamente.</p>
+<p>Agora crie um template por favor :)</p>
+<p>Nota Mental da Nota Mental, colocar tudo isso em uma role Ansible.</p>
+<h2 id="tem-videzinho-guto">Tem videzinho guto?</h2>
+<p>Tem de um pedaço :)</p>
+<p><a href="https://asciinema.org/a/326818" target="_blank"><img src="https://asciinema.org/a/326818.svg" width="700" /></a></p>
+<p>Enjoy!</p>
+<p>[s]
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

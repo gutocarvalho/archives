@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Octopress e novas fontes</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Octopress e novas fontes</h1>
+        <div>
+                <time>January 25, 2013</time>
+            </div>
+    </header><p>Eu não gosto da fonte padrão do Octopresss, já havia lido que ele usa fontes do Google, pesquisando no repositório <a href="http://www.google.com/webfonts">google webfonts</a>, encontrei uma fonte mais interessante - Oxygen, após alguma pesquisa descobri que é bem fácil alterar as fontes, vamos ao procedimento que eu executei.</p>
+<h2 id="modificando-a-fonte">Modificando a fonte</h2>
+<p>Primeiro edite o arquivo sass/custom/_fonts.scss e insira</p>
+<p>{% codeblock lang:css %}
+$sans: &ldquo;Oxygen&rdquo;, sans-serif;
+$serif: &ldquo;Oxygen&rdquo;, sans-serif;
+$heading-font-family: &lsquo;Oxygen&rsquo;, sans-serif;
+$header-title-font-family: &ldquo;Oxygen&rdquo;, Helvetica, Arial, sans-serif;
+{% endcodeblock %}</p>
+<p>Depois edite o arquivo source/_includes/custom/head.html e modifique o nome da fonte</p>
+<p>{% codeblock lang:html %}</p>
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/cs
+{% endcodeblock %}
+<p>para Oxygen</p>
+<p>{% codeblock lang:html %}
+link href=&ldquo;<a href="http://fonts.googleapis.com/css?family=Oyxgen:regular,italic,bold,bolditalic%22">http://fonts.googleapis.com/css?family=Oyxgen:regular,italic,bold,bolditalic&quot;</a> rel=&ldquo;stylesheet&rdquo; type=&ldquo;text/css&rdquo;&gt;</p>
+<link href="http://fonts.googleapis.com/css?family=Oxygen:regular,italic,bold,bolditalic" rel="stylesheet" type="text/cs
+{% endcodeblock %}
+<p>Rode o generate e preview</p>
+<pre><code>rake generate &amp;&amp; rake preview
+</code></pre>
+<p>Acesse seu site localmente e verifique se a fonte mudou</p>
+<pre><code>http://localhost:4000
+</code></pre>
+<p>Depois de confirmar o mudança, faça o deploy</p>
+<pre><code>rake deploy
+</code></pre>
+<p>Pronto, fontes novas.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

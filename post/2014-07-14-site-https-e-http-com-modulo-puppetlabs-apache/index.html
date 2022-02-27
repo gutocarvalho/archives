@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Site HTTPS e HTTP com modulo puppetlabs-apache</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Site HTTPS e HTTP com modulo puppetlabs-apache</h1>
+        <div>
+                <time>July 14, 2014</time>
+            </div>
+    </header><p>Abaixo um exemplo de como configurar um vhost https e http através do módulo puppetlabs-apache do puppet.</p>
+<pre tabindex="0"><code> apache::vhost { 'piwik.xxx.gov.br-ssl':
+                servername    =&gt; 'piwik.xxx.gov.br',
+                port          =&gt; '443',
+                ssl           =&gt; true,
+                docroot       =&gt; '/var/www/html/piwik',
+                docroot_owner =&gt; 'apache',
+                docroot_group =&gt; 'apache',
+}
+
+apache::vhost { 'piwik.xxx.gov.br-non-ssl':
+                servername    =&gt; 'piwik.xxx.gov.br',
+                port          =&gt; '80',
+                docroot       =&gt; '/var/www/html/piwik',
+                docroot_owner =&gt; 'apache',
+                docroot_group =&gt; 'apache',
+}
+</code></pre><p>Observe que o título da definição foi modificado, no caso de uma definição os títulos devem ser sempre diferentes para podermos aplicar a definição mais de uma vez em um mesmo node.</p>
+<p>Caso você <strong>não</strong> especifice o parâmetro <strong>servername</strong>, o título da definição é utilizado como <strong>servername</strong>, contudo, se deseja oferecer um site tanto em HTTP quanto em HTTPs, é necessário modificar os títulos afim de diferenciar os recursos e declarar o parâmetro <strong>servername</strong> de forma explícita.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

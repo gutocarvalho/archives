@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Conhece o projeto rancher?</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Conhece o projeto rancher?</h1>
+        <div>
+                <time>September 6, 2016</time>
+            </div>
+    </header><p>Rancher é uma plataforma de gerenciamento para containers (funciona com docker).</p>
+<pre><code>http://rancher.com
+</code></pre>
+<p>O gerenciador é todo web/gráfico, com interface bem polida e fácil de usar.</p>
+<p>Posso até dizer que parece um VMWare para Docker.</p>
+<p>O Rancher fala de fábrica Swarm, Kubernetes, Mesos e Cattle (cluster de containers nativo do rancher).</p>
+<p>Ele consegue criar clusters em qualquer uma dessas tecnologias.</p>
+<p>Para criar um cluster você usa a interface web, ele abstrai tudo pro administrador.</p>
+<p>Voce só escolhe qual o tipo de cluster e clica em criar e pronto, cluster rodando, sem dores.</p>
+<p>Ele tem Load Balancer, HA, Discovery e tudo que uma ferramenta corporativa de gerenciamento de containers precisa.</p>
+<p>Olhando por outro aspecto, ele parece até uma AWS nativa rodando na sua infra (ou no seu notebook).</p>
+<p>E tem API para configurar e gerenciar tudo.</p>
+<pre><code>http://docs.rancher.com/rancher/v1.2/en/api/
+</code></pre>
+<p>Ele tem um CLI também.</p>
+<pre><code>http://docs.rancher.com/rancher/v1.2/en/cli/
+</code></pre>
+<p>Eles criaram o RancherOS para voce instalar um SO Rancher dedicado em BareMetal.</p>
+<pre><code>http://rancher.com/rancher-os/
+</code></pre>
+<p>É um OS um tanto quanto diferente, pois tirando o kernel, todo o resto roda em containers.</p>
+<p>Fizemos um meetup de docker aqui em Brasília e escolhemos o Rancher para estudar, subimos o rancher server usando docker 1.12 e criamos um cluster de 8 hosts rancher em menos de 15 minutos, esforço mínimo. Após subir o cluster, gastamos mais 5 minutos para fazer o deploy de um APP wordpress+mysql distribuído com LB + discovery entre esses 8 hosts, só não deu tempo de testar o HA, mas pelo que li é tão fácil quanto.</p>
+<p>Pra mim esse é o projeto que tem mais futuro nesse mundo dos containers</p>
+<p>Se curtiu entre na comunidade ranche-br no telegram</p>
+<pre><code>http://telegram.me/rancherbr
+</code></pre>
+<p><strong>#ficaadica #acompanhe #radar-do-guto</strong></p>
+<p>Obs.1: Nosso teste com o wordpress utilizou persistência simples de banco mysql, sem HA no banco containerizado, nosso foco foi distribuir o frontend entre vários hosts, somente isso, nem entramos no detalhe de compartilhar um volume para servir o wp-content entre todos os containers (usando convoy-nfs ou gluster-fs). Tem documentação farta para fazer esse lab completo com todos esses detalhes, só não deu tempo de fazer tudo isso no meetup. Enfim, é um projeto promissor, recomendo dar uma acompanhada.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

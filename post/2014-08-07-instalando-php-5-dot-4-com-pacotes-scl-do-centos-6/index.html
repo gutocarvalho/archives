@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando PHP 5.4 com pacotes SCL do CentOS 6</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando PHP 5.4 com pacotes SCL do CentOS 6</h1>
+        <div>
+                <time>August 7, 2014</time>
+            </div>
+    </header><p>No CentOS existe um repositório chamado <a href="http://wiki.centos.org/AdditionalResources/Repositories/SCL">SCL</a> (Software Collections) que nos oferece alguns conjuntos de pacotes de softwares em versões mais recentes para instalação em nosso CentOS 6, o PHP 5.4 é um deles.</p>
+<p>Veja as coleções disponíveis no SCL</p>
+<ul>
+<li>Ruby 1.9.3 (ruby193)</li>
+<li>Python 2.7 (python27)</li>
+<li>Python 3.3 (python33)</li>
+<li>PHP 5.4 (php54)</li>
+<li>Perl 5.16.3 (perl516)</li>
+<li>Node.js 0.10 (nodejs010)</li>
+<li>MariaDB 5.5 (mariadb55)</li>
+<li>MySQL 5.5 (mysql55)</li>
+<li>PostgreSQL 9.2 (postgresql92)</li>
+</ul>
+<p>O SCL tem um funcionamento bastante particular, não basta apenas instalar o pacote é necessário saber utilizar o SCL para usar as versões mais novas de sofwares, acompanhe o passo a passo para entender o processo.</p>
+<p>Para instalar esse repositório e habilitá-lo rode o comando abaixo</p>
+<pre><code>yum install centos-release-SCL
+</code></pre>
+<p>Depois de habilitar pesquise pelos pacotes que deseja instalar</p>
+<pre><code>yum search php54
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+============================================================ N/S Matched: php54 =============================================================
+php54.x86_64 : Package that installs php54
+php54-runtime.x86_64 : Package that handles php54 Software Collection.
+php54-apc-panel.noarch : APC control panel
+php54-build.x86_64 : Package shipping basic build configuration
+php54-php.x86_64 : PHP scripting language for creating dynamic web sites
+php54-php-bcmath.x86_64 : A module for PHP applications for using the bcmath library
+php54-php-cli.x86_64 : Command-line interface for PHP
+php54-php-common.x86_64 : Common files for PHP
+php54-php-dba.x86_64 : A database abstraction layer module for PHP applications
+php54-php-devel.x86_64 : Files needed for building PHP extensions
+php54-php-enchant.x86_64 : Enchant spelling extension for PHP applications
+php54-php-fpm.x86_64 : PHP FastCGI Process Manager
+php54-php-gd.x86_64 : A module for PHP applications for using the gd graphics library
+php54-php-imap.x86_64 : A module for PHP applications that use IMAP
+php54-php-intl.x86_64 : Internationalization extension for PHP applications
+php54-php-ldap.x86_64 : A module for PHP applications that use LDAP
+php54-php-mbstring.x86_64 : A module for PHP applications which need multi-byte string handling
+php54-php-mysqlnd.x86_64 : A module for PHP applications that use MySQL databases
+php54-php-odbc.x86_64 : A module for PHP applications that use ODBC databases
+php54-php-pdo.x86_64 : A database access abstraction module for PHP applications
+php54-php-pear.noarch : PHP Extension and Application Repository framework
+php54-php-pecl-apc.x86_64 : APC caches and optimizes PHP intermediate code
+php54-php-pecl-apc-devel.x86_64 : APC developer files (header)
+php54-php-pecl-memcache.x86_64 : Extension to work with the Memcached caching daemon
+php54-php-pgsql.x86_64 : A PostgreSQL database module for PHP
+php54-php-process.x86_64 : Modules for PHP script using system process interfaces
+php54-php-pspell.x86_64 : A module for PHP applications for using pspell interfaces
+php54-php-recode.x86_64 : A module for PHP applications for using the recode library
+php54-php-snmp.x86_64 : A module for PHP applications that query SNMP-managed devices
+php54-php-soap.x86_64 : A module for PHP applications that use the SOAP protocol
+php54-php-tidy.x86_64 : Standard PHP module provides tidy library support
+php54-php-xml.x86_64 : A module for PHP applications which use XML
+php54-php-xmlrpc.x86_64 : A module for PHP applications which use the XML-RPC protocol
+</code></pre><p>Depois podemos instalar o php54 e suas dependências conforme necessidade de seu projeto</p>
+<pre><code>yum install php54.x86_64 php54-php-ldap.x86_64 php54-php-gd.x86_64 php54-php-pear.noarch
+</code></pre>
+<p>Veja que se rodarmos o comando abaixo veremos que o php ainda continua na versão 5.3.</p>
+<pre><code>php -v
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>PHP 5.3.3 (cli) (built: Dec 11 2013 03:29:57)
+Copyright (c) 1997-2010 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2010 Zend Technologies
+</code></pre><p>Para utilizarmos um software SCL precisamos chamá-lo da seguinte forma</p>
+<pre><code>scl enable php54 &quot;php -v&quot;
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>PHP 5.4.16 (cli) (built: Dec 11 2013 16:55:27)
+Copyright (c) 1997-2013 The PHP Group
+Zend Engine v2.4.0, Copyright (c) 1998-2013 Zend Technologies
+</code></pre><p>Contudo, caso deseje que o PHP54 seja realmente o PHP default de sua sessão rode este comando</p>
+<pre><code>source /opt/rh/php54/enable
+</code></pre>
+<p>Agora verifique</p>
+<pre><code>php -v
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>PHP 5.4.16 (cli) (built: Dec 11 2013 16:55:27)
+Copyright (c) 1997-2013 The PHP Group
+Zend Engine v2.4.0, Copyright (c) 1998-2013 Zend Technologies
+</code></pre><p>Isso só vai valer para sua sessão portanto você precisa configurar suas variáveis de ambiente para chamar esse comando durante o logon ou inicialização de algum serviço.</p>
+<p>No caso do apache tem um jeito mais fácil, podemos instalar o pacote abaixo</p>
+<pre><code>yum install php54-php.x86_64
+</code></pre>
+<p>Após instalar o pacote, remova os arquivo <strong>php5.conf</strong> e <strong>php5.load</strong> do diretório /etc/httpd/conf.d mantendo apenas o arquivo php54-php.conf neste diretório, após o ajuste reinicie o apache.</p>
+<pre><code>service httpd restart
+</code></pre>
+<p>Com isso você estará rodando seu site com o php 5.4.16 em seu CentOS 6 com pacotes oficiais.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

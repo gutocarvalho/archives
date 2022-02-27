@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Ativando ActiveSync em Zimbra com Z-PUSH</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Ativando ActiveSync em Zimbra com Z-PUSH</h1>
+        <div>
+                <time>January 25, 2014</time>
+            </div>
+    </header><p>Em um de meus clientes, instalei o Zimbra 7.x versão Community, essa versão funciona muito bem, é uma ferramenta excelente, particularmente a melhor suite de correio livre - IMHO, contudo, ela não possui dois recursos importantes, o primeiro é o sistema granular de BKP de caixas postais, e o segundo é o sistema de acesso mobile através do protocolo ActiveSync. Estes dois recursos só estão presentes na versão paga da ferramenta.</p>
+<p>Sem o ActiveSync só é possível configurar o recebimento e envio de mensagens via IMAP e SMTP em seu dispositivo móvel, a sincronização de agenda, contatos, notas e tarefas não está disponível.</p>
+<p>Este post pretende abordar como habilitar o ActiveSync no Zimbra através do projeto <a href="http://z-push.sourceforge.net/soswp/">Z-PUSH</a> + <a href="http://sourceforge.net/projects/zimbrabackend/">ZimbraBackend</a>.</p>
+<h2 id="1-requisitos">1. Requisitos</h2>
+<ul>
+<li>
+<p>Você precisa criar um domínio para acesso externo, ex: mobile.seudominio.com.br</p>
+</li>
+<li>
+<p>Você precisa de um servidor de APP WEB com suporte a aplicações PHP já que o Z-PUSH foi escrito nesta linguagem.</p>
+</li>
+<li>
+<p>O seu servidor WEB precisa enxergar o servidor Zimbra.</p>
+</li>
+<li>
+<p>Recomenda-se utilização de conexão segura SSL neste serviço.</p>
+</li>
+</ul>
+<h3 id="11-versões">1.1 Versões</h3>
+<ul>
+<li>
+<p>Z-PUSH versão 2.1.1</p>
+</li>
+<li>
+<p>ZimbraBackend release 58.</p>
+</li>
+<li>
+<p>CentOS 6.5 - 64 bits</p>
+</li>
+<li>
+<p>Apache HTTPd 2.2.x como servidor de APP WEB.</p>
+</li>
+<li>
+<p>PHP 5.3.x</p>
+</li>
+</ul>
+<h2 id="2-instalando-e-configurando-httpd-e-php">2. Instalando e configurando HTTPd e PHP</h2>
+<pre><code># yum install httpd php5 php-process
+</code></pre>
+<h3 id="21-configurando-vhost">2.1 Configurando VHOST</h3>
+<p>Crie o arquivo abaixo:</p>
+<pre><code>/etc/httpd/conf.d/mobile.seudominio.com.br.conf
+</code></pre>
+<p>Ajuste o vhost conforme suas necessidades, veja o exemplo abaixo:</p>
+<pre tabindex="0"><code>&lt;VirtualHost *:80&gt;
+  ServerName mobile.seudominio.com.br
+  Alias /Microsoft-Server-ActiveSync /srv/activesync/index.php
+  DocumentRoot /srv/activesync
+  &lt;Directory /srv/activesync&gt;
+    Options All
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+  &lt;/Directory&gt;
+  ErrorLog /var/log/httpd/mobile.seudominio.com.br_error.log
+  ServerSignature Off
+  CustomLog /var/log/httpd/mobile.seudominio.com.br_access.log combined
+  php_flag magic_quotes_gpc off
+  php_flag register_globals off
+  php_flag magic_quotes_runtime off
+  php_flag short_open_tag on
+&lt;/VirtualHost&gt;
+</code></pre><p>Observe que estou usando HTTP puro, contudo, recomendo uso de HTTPS.</p>
+<h3 id="22-criando-diretórios">2.2 Criando diretórios</h3>
+<pre><code># mkdir /srv/activesync
+# mkdir /srv/activesync/state
+# mkdir /var/log/z-push
+</code></pre>
+<h2 id="3-instalando-z-push">3. Instalando Z-PUSH</h2>
+<p>Acesse o diretório tmp</p>
+<pre><code># cd /tmp
+</code></pre>
+<p>Faça o download do projeto</p>
+<pre><code># wget http://zarafa-deutschland.de/z-push-download/final/2.1/z-push-2.1.1-1788.tar.gz
+</code></pre>
+<p>Descompacte o projeto</p>
+<pre><code># tar zxvf z-push-2.1.1-1788.tar.gz
+</code></pre>
+<p>Acesse o diretório do projeto</p>
+<pre><code># cd z-push-2.1.1-1788
+</code></pre>
+<p>Copie os arquivos para o diretório documentroot configurado no vhost</p>
+<pre><code># mv * /srv/activesync/
+</code></pre>
+<h2 id="4-instalando-backend-zimbra-no-z-push">4. Instalando Backend Zimbra no Z-PUSH</h2>
+<p>Acesse o diretório tmp</p>
+<pre><code># cd /tmp
+</code></pre>
+<p>Faça download do ZimbraBackend no site do projeto</p>
+<pre><code># wget http://ufpr.dl.sourceforge.net/project/zimbrabackend/Release58/zimbra58.tgz     
+</code></pre>
+<p>Descompacte o projeto</p>
+<pre><code># tar zxvf zimbra58.tgz
+</code></pre>
+<p>Acesse o diretório do projeto</p>
+<pre><code># cd zimbra58
+</code></pre>
+<p>Mova o diretório z-push-2 para /srv/activesync/backend/</p>
+<pre><code># mv z-push-2 /srv/activesync/backend/zimbra
+</code></pre>
+<h2 id="5-configurando">5. Configurando</h2>
+<h3 id="51-permissões">5.1 Permissões</h3>
+<p>Ajuste owner, group e as permissões de arquivos e diretórios</p>
+<pre><code># chown -R apache:apache /srv/activesync
+# chown -R apache:apache /var/log/z-push
+# find /srv/activesync -type f -exec chmod 664 {} \;
+# find /srv/activesync -type d -exec chmod 775 {} \;
+</code></pre>
+<h3 id="52-z-push">5.2 Z-PUSH</h3>
+<p>Edite o arquivo /srv/activesync/config.php e ajuste as linhas abaixo</p>
+<pre><code>define('TIMEZONE', 'America/Sao_Paulo');
+define('STATE_DIR', '/srv/activesync/state/');
+define('BACKEND_PROVIDER', 'BackendZimbra');
+</code></pre>
+<h3 id="53-zimbra-backend">5.3 Zimbra Backend</h3>
+<p>Edite o arquivo /srv/activesync/backend/zimba/config.php e ajuste as linhas abaixo</p>
+<pre><code> define('ZIMBRA_URL', 'https://ip-ou-dns-do-zimbra');
+ define('ZIMBRA_USER_DIR', 'zimbra');
+ define('ZIMBRA_SYNC_CONTACT_PICTURES', true);
+ define('ZIMBRA_VIRTUAL_CONTACTS',true);
+ define('ZIMBRA_VIRTUAL_APPOINTMENTS',true);
+ define('ZIMBRA_VIRTUAL_TASKS',true);
+ define('ZIMBRA_IGNORE_EMAILED_CONTACTS',true);
+ define('ZIMBRA_HTML',true);
+ define('ZIMBRA_TIMEZONE', 'America/Sao_Paulo');
+ define('ZIMBRA_ENFORCE_VALID_EMAIL', true);
+ define('ZIMBRA_SMART_FOLDERS',true);
+ define('ZIMBRA_RETRIES_ON_HOST_CONNECT_ERROR',5);
+</code></pre>
+<h2 id="6-testando">6. Testando</h2>
+<p>Agora acesse o endereço abaixo para testar a autenticação</p>
+<pre><code>http://mobile.seudominio.com.br/Microsoft-Server-ActiveSync
+</code></pre>
+<p>Após autenticar você ira cair em uma página com os seguintes dados</p>
+<pre tabindex="0"><code>Z-Push - Open Source ActiveSync
+
+Version 2.1.1-1788
+GET not supported
+
+This is the Z-Push location and can only be accessed by Microsoft ActiveSync-capable devices
+
+More information about Z-Push can be found at:
+Z-Push homepage
+Z-Push download page at BerliOS
+Z-Push Bugtracker and Roadmap
+
+All modifications to this sourcecode must be published and returned to the community.
+
+Please see AGPLv3 License for details.
+</code></pre><p>Se essa tela aparecer, sua autenticação funcionou, agora você pode partir para configuração do seu IOS ou Android, basta adicionar uma conta EXCHANGE preenchendo os dados corretamente.</p>
+<h2 id="8-verificando-logs">8. Verificando logs</h2>
+<p>Você pode acompanhar sua conexão pelos logs.</p>
+<pre><code># tail -f /var/log/z-push/z-push.log /var/log/z-push/z-push-error.log
+</code></pre>
+<h2 id="9-amarrando-as-pontas">9. Amarrando as pontas</h2>
+<p>Os passos são simples e o Z-PUSH implementa muito bem o ActiveSync. O mais interessante disso tudo é que você poderá desabilitar o IMAP e SMTP externo uma vez que você poderá enviar e receber mensagens utilizando ACTIVESYNC, além disto, sua agenda, contatos, notas e tarefas estarão disponíveis para sincronização em seu dispositivo móvel.</p>
+<h2 id="7-referências">7. Referências</h2>
+<ul>
+<li><a href="http://www.bluhm-de.com/installing-z-push-for-zimbra-8-on-centos-6">http://www.bluhm-de.com/installing-z-push-for-zimbra-8-on-centos-6</a></li>
+<li><a href="http://aubreykloppers.wordpress.com/2012/10/16/z-push-and-zimbrabackend-the-zimbra-companion-for-mobility/">http://aubreykloppers.wordpress.com/2012/10/16/z-push-and-zimbrabackend-the-zimbra-companion-for-mobility/</a></li>
+<li><a href="http://b3n.org/setup-your-own-activesync-server-with-zimbra-and-z-push/">http://b3n.org/setup-your-own-activesync-server-with-zimbra-and-z-push/</a></li>
+<li><a href="http://www.andreabalboni.com/cms/microsoft-active-sync-vmware-zimbra-8-z-push-backend-zimbra/">http://www.andreabalboni.com/cms/microsoft-active-sync-vmware-zimbra-8-z-push-backend-zimbra/</a></li>
+<li><a href="http://blog.iwayvietnam.com/tuanta/2013/03/12/setup-z-push-with-zimbra-to-synchronize-emails-calendar-and-contacts-with-mobile-devices/">http://blog.iwayvietnam.com/tuanta/2013/03/12/setup-z-push-with-zimbra-to-synchronize-emails-calendar-and-contacts-with-mobile-devices/</a></li>
+</ul>
+<p>No próximo post irei abordar como fazer o BKP granular de caixas postais com alguns scripts.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

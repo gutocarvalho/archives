@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Criando módulo Saltstack</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Criando módulo Saltstack</h1>
+        <div>
+                <time>September 28, 2012</time>
+            </div>
+    </header><p>Eu já mostrei como instalar o Salt manualmente, agora vou compartilhar com vocês o módulo que criei para instalá-lo via puppet em todo o nosso parque de servidores.</p>
+<h3 id="criando-o-módulo">Criando o módulo</h3>
+<p>crie o diretório</p>
+<pre><code>mkdir saltstack
+</code></pre>
+<p>entre no diretório</p>
+<pre><code>cd saltstack
+</code></pre>
+<p>crie o subdir files</p>
+<pre><code>mkdir files
+</code></pre>
+<p>crie o subdir manifests</p>
+<pre><code>mkdir manifests
+</code></pre>
+<p>entre no subdir manifests</p>
+<pre><code>cd manifests
+</code></pre>
+<p>crie o subdir classes</p>
+<pre><code>mkdir classes
+</code></pre>
+<p>entre no subdir classes</p>
+<pre><code>cd classes
+</code></pre>
+<p>crie o arquivo salt-master.pp</p>
+<pre><code>vim salt-master.pp
+</code></pre>
+<p>insira os seguinte conteúdo</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>class salt-master {</p>
+<pre><code>if $lsbdistcodename == 'squeeze' {
+
+	package { &quot;salt-master&quot;:
+		ensure =&gt; present,
+	}
+
+	file { &quot;/etc/salt/master&quot;:
+		ensure  =&gt; present,
+		mode    =&gt; 644,
+		owner   =&gt; root,
+		group   =&gt; root,
+		source  =&gt; &quot;puppet:///salt/master&quot;,
+		require =&gt; Package['salt-master'],
+		notify  =&gt; Service['salt-master'],
+	}
+
+	service { &quot;salt-master&quot;:
+		ensure     =&gt; running,
+		enable     =&gt; true,
+		hasstatus  =&gt; true,
+		hasrestart =&gt; true,
+		require    =&gt; [ Package['salt-master'], File[&quot;/etc/salt/master&quot;] ],
+	}
+}
+</code></pre>
+<p>}</p>
+<p>{% endcodeblock %}</p>
+<p>crie o arquivo salt-minion.pp com o conteúdo abaixo</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>class salt-minion {</p>
+<pre><code>if $lsbdistcodename == 'squeeze' {
+
+	package { &quot;salt-minion&quot;:
+		ensure =&gt; present,
+	}
+
+	file { &quot;/etc/salt/minion&quot;:
+		ensure  =&gt; present,
+		mode    =&gt; 644,
+		owner   =&gt; root,
+		group   =&gt; root,
+		source  =&gt; &quot;puppet:///salt/minion&quot;,
+		require =&gt; Package['salt-minion'],
+		notify  =&gt; Service['salt-minion'],
+	}
+
+	service { &quot;salt-minion&quot;:
+		ensure     =&gt; running,
+		enable     =&gt; true,
+		hasstatus  =&gt; true,
+		hasrestart =&gt; true,
+		require    =&gt; [ Package['salt-minion'], File[&quot;/etc/salt/minion&quot;] ],
+	}
+}
+</code></pre>
+<p>}</p>
+<p>{% endcodeblock %}</p>
+<p>suba um nível</p>
+<pre><code>cd ..
+</code></pre>
+<p>crie o arquivo init.pp</p>
+<pre><code>vim init.pp
+</code></pre>
+<p>insira o conteúdo abaixo</p>
+<pre><code>import &quot;classes/*.pp&quot;
+</code></pre>
+<p>coloque os arquivos de configuração master e minion no diretório files.</p>
+<h3 id="declarando-módulo-no-sitepp">Declarando módulo no site.pp</h3>
+<p>Após a construção do módulo precisamos de alguma forma carregá-lo, após isto poderemos incluir suas classes nas configurações dos nodes.</p>
+<p>O arquivo /etc/puppet/manifests/site.pp é o arquivo em que você precisa carregar os módulos, neste arquivo você poderá colocar uma linha como a abaixo:</p>
+<pre><code>import &quot;saltstack&quot;
+</code></pre>
+<p>Isso será suficiente para o carregamento do módulo.</p>
+<h4 id="declarando-classes-em-nodes">Declarando classes em nodes</h4>
+<p>Declarando a classe salt-master ao node master</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>node &ldquo;master&rdquo; {
+include salt-master
+}</p>
+<p>{% endcodeblock %}</p>
+<p>Declarando a classe salt-minion ao node minion</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>node &ldquo;master&rdquo; {
+include salt-master
+}</p>
+<p>{% endcodeblock %}</p>
+<h4 id="amarrando-as-pontas">Amarrando as pontas</h4>
+<p>Este módulo é simples, porém é o suficiente para instalarmos o servidor salt-master e também o salt-minion em nossos nodes, com isso poderemos executar comandos nos nodes em tempo real, algo que faz muita falta no puppet.</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

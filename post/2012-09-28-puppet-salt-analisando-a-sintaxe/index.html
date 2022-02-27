@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Comparando a sintaxe com Salt</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Comparando a sintaxe com Salt</h1>
+        <div>
+                <time>September 28, 2012</time>
+            </div>
+    </header><p>Estive estudando a sintaxe do Salt, abaixo mostro como declarar um pacote, um serviço e um arquivo na DSL do Puppet e na SLS (YAML) do Salt, apenas com objetivo de comparar suas diferenças.</p>
+<h3 id="declarando-no-puppet">Declarando no Puppet</h3>
+<p>{% codeblock lang:puppet %}</p>
+<p>package { &ldquo;openssh-server&rdquo;:
+ensure  =&gt; installed
+}</p>
+<p>service { &ldquo;ssh&rdquo;:
+ensure  =&gt; running,
+enable  =&gt; true,
+require =&gt; Package[&ldquo;openssh-sever&rdquo;]
+}</p>
+<p>file { &ldquo;/etc/ssh/sshd_config&rdquo;:
+mode    =&gt; 644,
+owner   =&gt; root,
+group   =&gt; root,
+source  =&gt; &ldquo;puppet:///files/httpd.conf&rdquo;,
+require =&gt; Package[&ldquo;openssh-server&rdquo;]
+notify  =&gt; Service[&ldquo;ssh&rdquo;]
+}</p>
+<p>{% endcodeblock %}</p>
+<h3 id="declarando-no-salt">Declarando no Salt</h3>
+<p>{% codeblock lang:python %}</p>
+<p>openssh-server:
+pkg.installed</p>
+<p>sshd:
+service.running:
+- require:
+- pkg: openssh-client
+- pkg: openssh-server
+- file: /etc/ssh/sshd_config</p>
+<p>/etc/ssh/sshd_config:
+file.managed:
+- user: root
+- group: root
+- mode: 644
+- source: salt://ssh/sshd_config
+- require:
+- pkg: openssh-server
+- watch:
+- file: /etc/ssh/sshd_config</p>
+<p>{% endcodeblock %}</p>
+<p>Veja que é bem parecido, o watch do salt faz a mesma coisa que o notify do puppet, caso o arquivo sofra alguma modificação ele faz um resfresh no serviço.</p>
+<p>E sigo estudando.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Vagrant 1.8.5 ssh retrying bugfix</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Vagrant 1.8.5 ssh retrying bugfix</h1>
+        <div>
+                <time>September 24, 2016</time>
+            </div>
+    </header><p>O Vagrant 1.8.5 tem um bug crítico em guests linux, o vagrant simplesmente não consegue terminar o vagrant up por causa de um bug na geração do arquivo authorized_keys que contém as chaves permitidas para acesso ssh por chaves no guest. O problema é que o vagrant está gerando o arquivo com a permissão errada e o subsistema ssh — neste casos — ignora o arquivo por questões de segurança.</p>
+<p>Você provavelmente está tendo uma saíde similar após atualizar para o 1.8.5</p>
+<pre tabindex="0"><code>centos: Waiting for machine to boot. This may take a few minutes...
+    centos: SSH address: 127.0.0.1:2222
+    centos: SSH username: vagrant
+    centos: SSH auth method: private key
+    centos: Warning: Remote connection disconnect. Retrying...
+    centos:
+    centos: Vagrant insecure key detected. Vagrant will automatically replace
+    centos: this with a newly generated keypair for better security.
+    centos:
+    centos: Inserting generated public key within guest...
+    centos: Removing insecure key from the guest if it's present...
+    centos: Key inserted! Disconnecting and reconnecting using new SSH key...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+    centos: Warning: Authentication failure. Retrying...
+
+</code></pre><p>A solução é simples edite o arquivo public_key.rb</p>
+<pre><code>/opt/vagrant/embedded/gems/gems/vagrant-1.8.5/plugins/guests/linux/cap/public_key.rb    
+</code></pre>
+<p>Procure a linha</p>
+<pre><code>mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys
+</code></pre>
+<p>Adicione abaixo dela</p>
+<pre><code>chmod 0600 ~/.ssh/authorized_keys
+</code></pre>
+<p>Salve, e suba a VM novamente, isso deve resolver o problema.</p>
+<h2 id="refs">Refs</h2>
+<p>No vagrant 1.8.6 isto estará resolvido, mais info sobre o bug abaixo</p>
+<ul>
+<li><a href="https://github.com/mitchellh/vagrant/issues/7610">https://github.com/mitchellh/vagrant/issues/7610</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

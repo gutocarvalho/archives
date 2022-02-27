@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando Mcollective em Debian Squeeze com Ambiente Puppet</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando Mcollective em Debian Squeeze com Ambiente Puppet</h1>
+        <div>
+                <time>February 7, 2013</time>
+            </div>
+    </header><h2 id="1-sobre-o-marionette-collective">1. Sobre o Marionette Collective</h2>
+<p>O Mcollective é um framework que te permite trabalhar com orquestração de servidores ou execução paralela de tarefas em seus nodes.</p>
+<p>Em essência, orquestração significa invocar ações em paralelo em todo o seu parque de servidores de uma forma direta, eficiente e além disto em tempo real.</p>
+<h2 id="2-entendendo-a-necessidade">2. Entendendo a necessidade</h2>
+<p>Vamos supor que por alguma razão você precise rodar algum comando em todos os seus servidores, seja para atualizar um pacote, seja para desligar um serviço, seja para remover um usuário ou aplicar uma regra e firewall, enfim, por qualquer que seja a razão.</p>
+<p>Sabemos que o puppet permite esse tipo de abordagem, porém não te permite fazer isto em tempo real, com o puppet você precisar criar um manifest, declarar a classe de seu manifest para seus nodes e esperar que os agentes consultem o servidor, recebam o catálogo e iniciem a aplicação das mudanças declaradas no manifest. Isto pode levar minutos ou horas dependendo do tamanho do seu parque e de como os agentes estão configurados.</p>
+<p>Se sua necessidade é executar algo em tempo real, de forma paralela, o mcollective é a ferramenta certa para fazer isto em seu parque de servidores.</p>
+<h2 id="3-objetivos-deste-artigo">3. Objetivos deste artigo</h2>
+<p>Aqui pretendo abordar a instalação do Mcollective em ambiente Debian.</p>
+<h2 id="4-ambiente">4. Ambiente</h2>
+<p>2 VMs' Virtualbox - Debian Squeeze - 64 Bits</p>
+<pre><code>vm1: 192.168.56.50 puppet.hacklab (puppet master)
+vm2: 192.168.56.51 debian.hacklab (puppet agent )
+</code></pre>
+<h2 id="5-pre-reqs">5 Pre-Reqs</h2>
+<h3 id="51-repositório-debian">5.1 Repositório debian</h3>
+<p>Nas duas VM&rsquo;s adicione os repositórios abaixo ao seu sources.list</p>
+<p>Edite o arquivo</p>
+<pre><code>vim /etc/apt/sources.list
+</code></pre>
+<p>Adicione as linhas ao final do arquivo</p>
+<pre><code>deb http://apt.puppetlabs.com squeeze main
+deb http://www.rabbitmq.com/debian/ testing main
+</code></pre>
+<p>Salve as alterações</p>
+<pre><code>:wq
+</code></pre>
+<p>Atualize os índices</p>
+<pre><code>aptitude update
+</code></pre>
+<p>Pronto, agora você poderá instalar o mcollective usando o aptitude.</p>
+<h3 id="52-ambiente-puppet">5.2 Ambiente Puppet</h3>
+<p>Nas duas VM&rsquo;s é necessário que já exista um ambiente Puppet instalado e rodando em modo cliente/servidor, não vou entrar em detalhes pois já cobri esse processo de forma completa em minha <a href="http://gutocarvalho.net/dokuwiki/doku.php/puppetmaster">wiki</a>.</p>
+<pre><code>vm1: puppet.hacklab (puppet master)
+vm2: debian.hacklab (puppet agent )
+</code></pre>
+<p>Ressalto que é importante ter o puppet funcionando nas VM&rsquo;s para podermos utilizar o agente puppet, package e service do Mcollective.</p>
+<h2 id="6-configurando-vm1-puppet-master">6. Configurando VM1 (puppet master)</h2>
+<h3 id="61-instalando-rabbitmq">6.1 Instalando RabbitMQ</h3>
+<h4 id="611-sobre-o-rabbitmq">6.1.1 Sobre o RabbitMQ</h4>
+<p>O Mcollective (MCO) depende de algum sistema de mensageria, é possível utilizar tanto o ApacheMQ quanto o RabbitMQ, ambos tem suporte ao protocolo STOMP, necessário para o funcionamento do MCO.</p>
+<p>Neste estudo vou utilizar o RabbitMQ, mas é possível - e até recomendado - utilizar o ActiveMQ.</p>
+<h4 id="612-instalando-o-activemq">6.1.2 Instalando o ActiveMQ</h4>
+<p>Instale o rabbitmq 3.0.2 (vigente neste momento)</p>
+<pre><code>aptitude install rabbitmq-server
+</code></pre>
+<p>Edite o arquivo /etc/rabbitmq/rabbitmq.config e coloque apenas o conteúdo abaixo, limpe o resto</p>
+<pre tabindex="0"><code>[
+  {rabbitmq_stomp, [{tcp_listeners, [{&quot;0.0.0.0&quot;, 6163},
+                                     {&quot;::1&quot;,       6163}]}]}
+].
+</code></pre><p>Edite o arquivo /etc/default/rabbitmq-server e descomente a linha abaixo</p>
+<pre><code>ulimit -n 1024
+</code></pre>
+<p>reinicie o serviço</p>
+<pre><code>/etc/init.d/rabbitmq-server restart
+</code></pre>
+<p>Verfique o status do serviço</p>
+<pre><code>/etc/init.d/rabbitmq-server status
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Status of node rabbit@puppet ...
+[{pid,7390},
+ {running_applications,[{rabbit,&quot;RabbitMQ&quot;,&quot;3.0.2&quot;},
+                        {mnesia,&quot;MNESIA  CXC 138 12&quot;,&quot;4.4.14&quot;},
+                        {os_mon,&quot;CPO  CXC 138 46&quot;,&quot;2.2.5&quot;},
+                        {sasl,&quot;SASL  CXC 138 11&quot;,&quot;2.1.9.2&quot;},
+                        {stdlib,&quot;ERTS  CXC 138 10&quot;,&quot;1.17&quot;},
+                        {kernel,&quot;ERTS  CXC 138 10&quot;,&quot;2.14&quot;}]},
+ {os,{unix,linux}},
+ {erlang_version,&quot;Erlang R14A (erts-5.8) [source] [rq:1] [async-threads:30] [kernel-poll:true]\n&quot;},
+ {memory,[{total,12888616},
+          {connection_procs,1344},
+          {queue_procs,2688},
+          {plugins,0},
+          {other_proc,4592340},
+          {mnesia,28704},
+          {mgmt_db,0},
+          {msg_index,7020},
+          {other_ets,363324},
+          {binary,3680},
+          {code,6394787},
+          {atom,796661},
+          {other_system,698068}]},
+ {vm_memory_high_watermark,0.4},
+ {vm_memory_limit,157546905},
+ {disk_free_limit,1000000000},
+ {disk_free,2638680064},
+ {file_descriptors,[{total_limit,924},
+                    {total_used,3},
+                    {sockets_limit,829},
+                    {sockets_used,1}]},
+ {processes,[{limit,1048576},{used,121}]},
+ {run_queue,0},
+ {uptime,5}]
+...done.
+</code></pre><p>Crie um usuário para o mcollective</p>
+<pre><code>rabbitmqctl add_user mcollective senhapuppet
+</code></pre>
+<p>Especifique as permissões para o usuário do mcollective</p>
+<pre><code>rabbitmqctl set_permissions -p / mcollective &quot;^amq.gen-.*&quot; &quot;.*&quot; &quot;.*&quot;
+</code></pre>
+<p>Remova o usuário guest</p>
+<pre><code>rabbitmqctl delete_user guest
+</code></pre>
+<p>Habilite os plugins stomp e amqp</p>
+<pre><code>rabbitmq-plugins enable rabbitmq_stomp
+rabbitmq-plugins enable amqp_client
+</code></pre>
+<h3 id="62-instalando-mcollective">6.2 Instalando MCollective</h3>
+<p>Instale a biblioteca stomp para ruby</p>
+<pre><code>aptitude install libstomp-ruby
+</code></pre>
+<p>Instale os pacotes mcollective da puppetlabs</p>
+<pre><code>aptitude install mcollective mcollective-client
+</code></pre>
+<p>Configure o arquivo /etc/mcollective/server.cfg conforme abaixo</p>
+<pre tabindex="0"><code>topicprefix = /topic/
+main_collective = mcollective
+collectives = mcollective
+libdir = /usr/share/mcollective/plugins
+logfile = /var/log/mcollective.log
+loglevel = info
+daemonize = 1
+
+# Plugins
+securityprovider = psk
+plugin.psk = hacklab
+
+connector = stomp
+plugin.stomp.host = 192.168.56.50
+plugin.stomp.port = 6163
+plugin.stomp.user = mcollective
+plugin.stomp.password = senhapuppet
+
+# Facts
+factsource = yaml
+plugin.yaml = /etc/mcollective/facts.yaml
+
+</code></pre><p>Configure o arquivo /etc/mcollective/client.cfg conforme abaixo</p>
+<pre tabindex="0"><code>topicprefix = /topic/
+main_collective = mcollective
+collectives = mcollective
+libdir = /usr/share/mcollective/plugins
+logger_type = console
+loglevel = warn
+
+# Plugins
+securityprovider = psk
+plugin.psk = hacklab
+
+connector = stomp
+plugin.stomp.host = 192.168.56.50
+plugin.stomp.port = 6163
+plugin.stomp.user = mcollective
+plugin.stomp.password = senhapuppet
+
+# Facts
+factsource = yaml
+plugin.yaml = /etc/mcollective/facts.yaml
+</code></pre><p>Reinicie o mcollective</p>
+<pre><code>/etc/init.d/mcollective restart
+</code></pre>
+<p>Faça o teste de ping em nodes ativos usando o mco</p>
+<pre><code>mco ping
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>puppet.hacklab                           time=89.34 ms
+---- ping statistics ----
+1 replies max: 89.34 min: 89.34 avg: 89.34
+</code></pre>
+<p>Faça o teste de find em nodes ativos usando o mco</p>
+<pre><code>mco find
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>puppet.hacklab
+</code></pre>
+<p>Podemos ver que o MCO está funcionando corretamente, por hora detectando apenas um node.</p>
+<h2 id="7-configurando-vm2-puppet-agent">7. Configurando VM2 (puppet agent)</h2>
+<p>Para instalar o Mcollective na VM2, siga as referências da seção 1.2 e tenha os repositórios devidamente configurados.</p>
+<p>Após a instalação e a configuração do mcollective, faça o teste de ping em nodes ativos com mco</p>
+<pre><code>mco ping
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>debian.hacklab                           time=188.49 ms
+puppet.hacklab                           time=191.91 ms
+---- ping statistics ----
+2 replies max: 191.91 min: 188.49 avg: 190.20 
+</code></pre><p>Faça uma busca por nodes ativos com o mco</p>
+<pre><code>mco find
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>puppet.hacklab
+debian.hacklab
+</code></pre><p>Solicite o inventário de uma máquina</p>
+<pre><code>mco inventory debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Inventory for debian.hacklab:
+
+   Server Statistics:
+                      Version: 2.2.2
+                   Start Time: Wed Feb 06 14:39:55 -0200 2013
+                  Config File: /etc/mcollective/server.cfg
+                  Collectives: mcollective
+              Main Collective: mcollective
+                   Process ID: 1744
+               Total Messages: 19
+      Messages Passed Filters: 18
+            Messages Filtered: 1
+             Expired Messages: 0
+                 Replies Sent: 17
+         Total Processor Time: 0.52 seconds
+                  System Time: 0.27 seconds
+
+   Agents:
+      discovery       puppet          rpcutil        
+
+   Data Plugins:
+      agent           fstat           puppet         
+      resource                                       
+
+   Configuration Management Classes:
+      apt                            apt::params                   
+      debian.hacklab                 hostname                      
+      hosts                          linux-server                  
+      openssh-server                 puppet-agent                  
+      repos                          resolv                        
+      salt-minion                    settings                      
+      usuarios                       utils                         
+
+   Facts:
+      mcollective =&gt; 1
+</code></pre><p>Podemos ver que o MCO está funcionando corretamente e detectando os dois nodes.</p>
+<h2 id="8-agentes-para-mcollective">8. Agentes para Mcollective</h2>
+<p>O Mcollective possui vários agentes que nos ajudam a manipular os nodes de nosso parque de forma direta, aqui vou abordar a instalação e utilização de alguns destes agentes.</p>
+<p>Instale os pacotes em ambos os nodes</p>
+<pre><code>aptitude install mcollective-puppet-agent mcollective-puppet-client mcollective-package-agent mcollective-package-client mcollective-service-agent mcollective-service-client
+</code></pre>
+<p>Reinicie o mcollective em ambos os nodes</p>
+<pre><code>/etc/init.d/mcollective restart
+</code></pre>
+<h3 id="81-agente-puppet">8.1 Agente puppet</h3>
+<h4 id="811-runoncerunall">8.1.1 runonce/runall</h4>
+<p>Após instalar, podemos mandar executar o puppet em um node</p>
+<pre><code>mco puppet runonce -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>* [ ============================================================&gt; ] 1 / 1
+
+Finished processing 1 / 1 hosts in 112.56 ms
+</code></pre><p>Podemos mandar executar o agente em todos os nodes</p>
+<pre><code>mco puppet runonce -v
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+puppet.hacklab                          : Puppet is currently applying a catalog, cannot run now
+    {:summary=&gt;&quot;Puppet is currently applying a catalog, cannot run now&quot;}
+
+debian.hacklab                          : OK
+    {:summary=&gt;&quot;Signalled the running Puppet Daemon&quot;}
+
+---- rpc stats ----
+           Nodes: 2 / 2
+     Pass / Fail: 1 / 1
+      Start Time: Wed Feb 06 18:08:20 -0200 2013
+  Discovery Time: 2013.47ms
+      Agent Time: 43.72ms
+      Total Time: 2057.18ms
+</code></pre><p>Existe ainda o parâmetro <strong>runall</strong> onde você pode especificar a quantidade de ações simultâneas que serão executadas, ou seja, quantidade de agentes que serão executados de forma paralela.</p>
+<pre><code>mco puppet runall 10
+</code></pre>
+<p>Neste caso ele vai executar o agente em todos os nodes, rodando de 10 em 10, essa pode ser um estratégia para evitar esgotamento dos recursos do servidor em parques muito grandes, desta forma, ao invés de deixar o agente ligado e consultando o servidor a cada N minutos, você pode usar o MCO para rodar o agente de forma controlada em todos os seus nodes.</p>
+<h4 id="812-enabledisable">8.1.2 enable/disable</h4>
+<p>Desabilitando puppet em um node</p>
+<pre><code>mco puppet disable -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+Summary of Enabled:
+
+   disabled = 1
+
+Finished processing 1 / 1 hosts in 126.27 ms
+</code></pre><p>Habilitando puppet em um node</p>
+<pre><code>mco puppet enable -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+Summary of Enabled:
+
+   enabled = 1
+
+Finished processing 1 / 1 hosts in 91.71 ms    
+</code></pre><p>Desabilitando puppet em todos os nodes</p>
+<pre><code>mco rpc puppet disable message=&quot;doing some hand hacking&quot;
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Enabled:
+
+   disabled = 2
+
+Finished processing 2 / 2 hosts in 201.09 ms
+</code></pre><p>Habilitando puppet em todos os nos nodes</p>
+<pre><code>mco rpc puppet enable
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Enabled:
+
+   enabled = 2
+
+Finished processing 2 / 2 hosts in 45.02 ms
+</code></pre><h4 id="813-summary">8.1.3 summary</h4>
+<p>Solicitando o relatório last run</p>
+<pre><code>mco puppet summary
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Summary statistics for 2 nodes:
+
+                  Total resources: ▇▁▁▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 62.0   max: 66.0  
+            Out Of Sync resources: ▇▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 0.0    max: 2.0   
+                 Failed resources: ▇▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 0.0    max: 2.0   
+                Changed resources: ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 0.0    max: 0.0   
+  Config Retrieval time (seconds): ▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 0.7    max: 1.5   
+         Total run-time (seconds): ▇▁▁▁▁▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁  min: 4.4    max: 12.5  
+    Time since last run (seconds): ▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇  min: 791.0  max: 1.5k  
+</code></pre><h4 id="814-count">8.1.4 count</h4>
+<p>Solicitando contagem dos nodes habilitados, desabiliados e em execução</p>
+<pre><code>mco puppet count
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Total Puppet nodes: 2
+
+          Nodes currently enabled: 2
+         Nodes currently disabled: 0
+
+Nodes currently doing puppet runs: 0
+          Nodes currently stopped: 2
+
+       Nodes with daemons started: 2
+    Nodes without daemons started: 0
+       Daemons started but idling: 2
+</code></pre><h4 id="815-stats">8.1.5 stats</h4>
+<p>Solicitando status dos agentes</p>
+<pre><code>mco puppet status
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 2 / 2
+
+   debian.hacklab: Currently idling; last completed run 30 minutes 34 seconds ago
+   puppet.hacklab: Currently applying a catalog; last completed run 6 hours 37 minutes 18 seconds ago
+
+Summary of Applying:
+
+    true = 1
+   false = 1
+
+Summary of Daemon Running:
+
+   running = 2
+
+Summary of Enabled:
+
+   enabled = 2
+
+Summary of Idling:
+
+    true = 1
+   false = 1
+
+Summary of Status:
+
+               idling = 1
+   applying a catalog = 1
+
+
+Finished processing 2 / 2 hosts in 67.61 ms
+</code></pre><h3 id="82-agente-service">8.2 Agente service</h3>
+<h4 id="821-agente-service-stop">8.2.1 agente service: stop</h4>
+<p>Parando um serviço em um node específico</p>
+<pre><code>mco rpc service stop service=ssh -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+Summary of Service Status:
+
+   stopped = 1
+
+Finished processing 1 / 1 hosts in 1166.06 ms
+</code></pre><p>Parando um serviço em todos os nodes</p>
+<pre><code>puppet@root ~]# mco rpc service stop service=ssh
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Service Status:
+
+   stopped = 2
+
+Finished processing 2 / 2 hosts in 2546.92 ms
+</code></pre><h4 id="822-plugin-service-start">8.2.2 plugin service: start</h4>
+<p>Iniciando o serviço em um node específico</p>
+<pre><code>mco rpc service start service=ssh -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+Summary of Service Status:
+
+   running = 1
+
+Finished processing 1 / 1 hosts in 1204.95 ms
+</code></pre><p>Iniciando um serviço em todos os nodes</p>
+<pre><code>mco rpc service start service=ssh
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Service Status:
+
+   running = 2
+
+Finished processing 2 / 2 hosts in 3271.52 ms
+</code></pre><h4 id="823-plugin-service-restart">8.2.3 plugin service: restart</h4>
+<p>Reiniciando um serviço em um node específico</p>
+<pre><code>mco rpc service restart service=ssh -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+
+Summary of Service Status:
+
+   running = 1
+
+Finished processing 1 / 1 hosts in 1015.66 ms
+</code></pre><p>Reiniciando um serviço em todos os nodes</p>
+<pre><code>mco rpc service restart service=ssh
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Service Status:
+
+   running = 2
+
+Finished processing 2 / 2 hosts in 5466.57 ms
+</code></pre><h3 id="83-agente-package">8.3 Agente package</h3>
+<h4 id="831-agente-package-install">8.3.1 agente package: install</h4>
+<p>Instalando o pacote em um node específico</p>
+<pre><code>mco rpc package install package=htop -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+debian.hacklab                           Unknown Request Status
+   Package is already installed
+
+Summary of Ensure:
+
+   0.8.3-1 = 1
+
+Finished processing 1 / 1 hosts in 856.85 ms
+</code></pre><p>Instalando um pacote em todos os nodes</p>
+<pre><code>mco rpc package install package=htop
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Ensure:
+
+   0.8.3-1 = 2
+
+Finished processing 2 / 2 hosts in 4972.04 ms
+</code></pre><h4 id="832-plugin-package-uninstall">8.3.2 plugin package: uninstall</h4>
+<p>Removendo um pacote de um node específico</p>
+<pre><code>mco rpc package uninstall package=htop -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+Summary of Ensure:
+
+   absent = 1
+
+Finished processing 1 / 1 hosts in 7515.24 ms
+</code></pre><p>Removendo um pacote em todos os nodes</p>
+<pre><code>mco rpc package uninstall package=htop
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Ensure:
+
+   absent = 2
+
+Finished processing 2 / 2 hosts in 4230.82 ms
+</code></pre><h4 id="833-plugin-package-status">8.3.3 plugin package: status</h4>
+<p>Verificando o status de um pacote em um node específico</p>
+<pre><code>mco rpc package status package=htop -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code> * [ ============================================================&gt; ] 1 / 1
+
+debian.hacklab                           
+       Arch: nil
+    desired: install
+     Ensure: 0.8.3-1
+      Epoch: nil
+      error: ok
+       Name: htop
+     Output: nil
+   Provider: :apt
+    Release: nil
+     status: installed
+    Version: nil
+
+Summary of Arch:
+
+     No aggregate summary could be computed
+
+Summary of Ensure:
+
+   0.8.3-1 = 1
+
+Finished processing 1 / 1 hosts in 391.55 ms
+</code></pre><p>Verificando o status de um pacote em todos os nodes</p>
+<pre><code>mco rpc package status package=htop
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+debian.hacklab                           
+       Arch: nil
+    desired: install
+     Ensure: 0.8.3-1
+      Epoch: nil
+      error: ok
+       Name: htop
+     Output: nil
+   Provider: :apt
+    Release: nil
+     status: installed
+    Version: nil
+
+puppet.hacklab                           
+       Arch: nil
+    desired: install
+     Ensure: 0.8.3-1
+      Epoch: nil
+      error: ok
+       Name: htop
+     Output: nil
+   Provider: :apt
+    Release: nil
+     status: installed
+    Version: nil
+
+Summary of Arch:
+
+     No aggregate summary could be computed
+
+Summary of Ensure:
+
+   0.8.3-1 = 2
+
+Finished processing 2 / 2 hosts in 174.41 ms
+</code></pre><h4 id="834-plugin-package-update">8.3.4 plugin package: update</h4>
+<p>Atualizando um pacote em um node específico</p>
+<pre><code>mco rpc package update package=facter -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>
+ * [ ============================================================&gt; ] 1 / 1
+
+Summary of Ensure:
+
+   1.6.17-1puppetlabs1 = 1
+
+
+Finished processing 1 / 1 hosts in 11307.56 ms
+</code></pre><p>Atualizando um pacote em todos os nodes</p>
+<pre><code>mco rpc package update package=htop
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+Summary of Ensure:
+
+   0.8.3-1 = 2
+
+Finished processing 2 / 2 hosts in 2999.96 ms
+</code></pre><h3 id="84-agente-facter-facts">8.4 Agente facter facts</h3>
+<p>O Mcollective possui suporte a mostrar certos fatos do sistema, mas se quisermos utilizar os fatos do facter, precisamos fazer alguns ajustes na configuração e adicionar um plugin manualmente, isto é necessário pois infelizmente o plugin <strong>facter facts</strong> não está empacotado para o debian.</p>
+<p>Acesse do diretório tmp</p>
+<pre><code>cd /tmp
+</code></pre>
+<p>Faça o clone do repo mcollective-plugins</p>
+<pre><code>git clone https://github.com/puppetlabs/mcollective-plugins.git
+</code></pre>
+<p>Copie o plugin para o diretório do mcollective</p>
+<pre><code>cp mcollective-plugins/facts/facter/facter_facts.rb /usr/share/mcollective/plugins/mcollective/facts/
+</code></pre>
+<p>Ajuste o arquivo client.cfg e server.cfg do mcollective, remova ou comente o trecho abaixo</p>
+<pre tabindex="0"><code># Facts
+factsource = yaml
+plugin.yaml = /etc/mcollective/facts.yaml
+</code></pre><p>E insira o seguinte no lugar</p>
+<pre tabindex="0"><code># Facts
+factsource = facter
+</code></pre><p>Após alterar, reinicie o mcollective</p>
+<pre><code>/etc/init.d/mcollective restart
+</code></pre>
+<p>Consulte o fato virtual em um node específico</p>
+<pre><code>mco facts virtual  -v -I debian.hacklab
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Report for fact: virtual
+
+        virtualbox                              found 1 times
+
+            debian.hacklab
+
+
+---- rpc stats ----
+           Nodes: 1 / 1
+     Pass / Fail: 1 / 0
+      Start Time: Wed Feb 06 20:57:39 -0200 2013
+  Discovery Time: 0.00ms
+      Agent Time: 136.37ms
+      Total Time: 136.37ms    
+</code></pre><p>Consulte o fato ipaddress do facter em todos os nodes</p>
+<pre><code>mco facts ipaddress -v
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+Report for fact: ipaddress
+
+        192.168.56.50                           found 1 times
+
+            puppet.hacklab
+
+        192.168.56.51                           found 1 times
+
+            debian.hacklab
+
+---- rpc stats ----
+           Nodes: 2 / 2
+     Pass / Fail: 2 / 0
+      Start Time: Wed Feb 06 20:52:29 -0200 2013
+  Discovery Time: 2007.25ms
+      Agent Time: 54.72ms
+      Total Time: 2061.97ms
+</code></pre><p>Consulte o fato kernelversion do facter em todos os nodes</p>
+<pre><code>mco facts kernelversion -v
+</code></pre>
+<p>Acompanhe a saída:</p>
+<pre tabindex="0"><code>Discovering hosts using the mc method for 2 second(s) .... 2
+Report for fact: kernelversion
+
+        2.6.32                                  found 2 times
+
+            debian.hacklab
+            puppet.hacklab
+
+
+---- rpc stats ----
+           Nodes: 2 / 2
+     Pass / Fail: 2 / 0
+      Start Time: Wed Feb 06 20:52:47 -0200 2013
+  Discovery Time: 2008.67ms
+      Agent Time: 59.92ms
+      Total Time: 2068.59ms
+</code></pre><p>Podemos ver que o MCO está conseguindo trazer os fatos do facter corretamente.</p>
+<h2 id="9-amarrando-as-pontas">9. Amarrando as pontas</h2>
+<p>Essa foi uma instalação básica do Mcollective em ambiente debian - usando RabbitMQ, além disto, apresentei alguns comandos iniciais usando o agente/client puppet criado pela Puppetlabs para o MCO.</p>
+<p>Mas não pense que é só isto, ele é muito mais poderoso, existem diversos outros agentes para utilizar e você pode construir seus próprios agentes usando RPC se achar necessário, e ainda existem os plugins em ruby, ele é muito extensível.</p>
+<p>Vale comentar que apesar de ter utilizado o RabbitMQ, o criador do MCO recomenda o uso do ActiveMQ a partir da versão 2.x.x, aparentemente alguns dos recursos desta versão só irão funcionar com o ActiveMQ. Em breve espero tratar o uso do ActiveMQ também.</p>
+<p>Preciso explicar que esse post apenas agrupa o que eu estudei até o momento, a partir daqui é hora de aprofundar ainda mais.</p>
+<h2 id="10-referências">10. Referências</h2>
+<p><strong>Plugins Github</strong> <br></p>
+<ul>
+<li><a href="https://github.com/puppetlabs/mcollective-plugins">https://github.com/puppetlabs/mcollective-plugins</a></li>
+<li><a href="https://github.com/puppetlabs/mcollective-puppet-agent#readme">https://github.com/puppetlabs/mcollective-puppet-agent#readme</a></li>
+</ul>
+<p><strong>Introdução ao MCO</strong> <br></p>
+<ul>
+<li><a href="https://puppetlabs.com/mcollective/introduction/">https://puppetlabs.com/mcollective/introduction/</a></li>
+<li><a href="http://docs.puppetlabs.com/mcollective/reference/basic/gettingstarted_debian.html">http://docs.puppetlabs.com/mcollective/reference/basic/gettingstarted_debian.html</a></li>
+<li><a href="http://docs.puppetlabs.com/mcollective/reference/basic/gettingstarted.html">http://docs.puppetlabs.com/mcollective/reference/basic/gettingstarted.html</a></li>
+<li><a href="http://docs.puppetlabs.com/mcollective/reference/basic/configuration.html">http://docs.puppetlabs.com/mcollective/reference/basic/configuration.html</a></li>
+</ul>
+<p><strong>Construindo Agentes e Clientes com SimpleRPC</strong> <br></p>
+<ul>
+<li><a href="http://docs.puppetlabs.com/mcollective/simplerpc/">http://docs.puppetlabs.com/mcollective/simplerpc/</a></li>
+</ul>
+<p><strong>Slides MCO</strong> <br></p>
+<ul>
+<li><a href="http://www.slideshare.net/PuppetLabs/presentation-16281121">http://www.slideshare.net/PuppetLabs/presentation-16281121</a></li>
+</ul>
+<p><strong>RabbitMQ</strong> <br></p>
+<ul>
+<li><a href="http://www.rabbitmq.com/stomp.html">http://www.rabbitmq.com/stomp.html</a></li>
+</ul>
+<p>O livro <strong>Pro Puppet</strong> da Puppetlabs também foi uma ótima referência de estudo.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

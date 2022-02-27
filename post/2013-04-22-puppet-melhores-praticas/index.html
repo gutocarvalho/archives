@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Melhores Práticas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Melhores Práticas</h1>
+        <div>
+                <time>April 22, 2013</time>
+            </div>
+    </header><h2 id="1-melhores-práticas">1. Melhores Práticas</h2>
+<p>Neste post vou agrupar algumas dicas aprendidas no dia-a-dia em produção, são dicas que me ajudaram, espero que lhe seja útil também.</p>
+<h2 id="2-organizando-o-sitepp">2. Organizando o site.pp</h2>
+<p>Evite deixar o arquivo site.pp lotado de código, use o recurso <strong>import</strong>, separe as configurações em arquivos para ficar mais organizado.</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetmanifestssitepp">/etc/puppet/manifests/site.pp</h1>
+<h1 id="importando-manifests-em-diretórios">importando manifests em diretórios</h1>
+<p>import &ldquo;nodes/<em>.pp&rdquo;      # importando manifest com declaração de nodes
+import &ldquo;classes/</em>.pp&rdquo;    # importando classes simples</p>
+<h1 id="importando-manifests">importando manifests</h1>
+<p>import &ldquo;filebucket.pp&rdquo;   # importando configurações do filebucket
+import &ldquo;providers.pp&rdquo;    # importando configurações globais de providers
+import &ldquo;globals.pp&rdquo;      # importando configuraçoes globais variadas
+import &ldquo;extdata.pp&rdquo;      # importando configurações de extlookup</p>
+<p>{% endcodeblock %}</p>
+<p>Sempre que houver alguma alteração em um manifest importado no site.pp, será necessário reiniciar o puppetmaster ou apache (se estiver usando passenger).</p>
+<h3 id="11-arquivo-filebucketpp">1.1 Arquivo filebucket.pp:</h3>
+<p>Neste arquivo eu normalmente insiro configurações do filebucket.</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="define-the-bucket">Define the bucket</h1>
+<p>filebucket { &lsquo;main&rsquo;:
+server =&gt; puppet,
+path   =&gt; false,</p>
+<h1 id="due-to-a-known-issue-path-must-be-set-to-false-for-remote-filebuckets">Due to a known issue, path must be set to false for remote filebuckets.</h1>
+<p>}</p>
+<h1 id="specify-it-as-the-default-target">Specify it as the default target</h1>
+<p>File { backup =&gt; main }
+{% endcodeblock %}</p>
+<h3 id="12-arquivo-providerspp">1.2 Arquivo providers.pp:</h3>
+<p>Neste arquivo normalmente insiro configurações acerca de providers.</p>
+<p>{% codeblock lang:puppet %}
+case $operatingsystem {
+&lsquo;Debian&rsquo;: {
+Package { provider =&gt; &lsquo;aptitude&rsquo; }
+}
+&lsquo;RedHat&rsquo;: {
+case $operatingsystemrelease {
+&lsquo;4&rsquo;    : {
+Package { provider =&gt; &lsquo;up2date&rsquo; }
+}
+}
+}
+}
+{% endcodeblock %}</p>
+<h3 id="13-arquivo-extdatapp">1.3 Arquivo extdata.pp:</h3>
+<p>Neste arquivo determino o escopo da busca para external data.</p>
+<p>{% codeblock lang:puppet %}
+$extlookup_datadir = &ldquo;/etc/puppet/manifests/extdata&rdquo;
+$extlookup_precedence = [&ldquo;host/%{fqdn}&rdquo;, &ldquo;host/%{hostname}&rdquo;, &ldquo;domain/%{domain}&rdquo;, &ldquo;env/%{environment}&rdquo;, &ldquo;common&rdquo;]
+{% endcodeblock %}</p>
+<p>Apesar do recurso extlookup não ser muito utilizado depois da criação do HIERA,
+ainda tenho módulos que utilizam esse tipo de configuração.</p>
+<h3 id="14-arquivo-globalspp">1.4 Arquivo globals.pp:</h3>
+<p>Neste arquivo coloco configurações globais, normalmente variáveis
+que possam ser de interesse de vários módulos.</p>
+<p>{% codeblock lang:puppet %}
+$dnssearch = [ &lsquo;dominio&rsquo;, &lsquo;dominio.com.br&rsquo;, ]
+$nameservers = [ &lsquo;172.16.1.1&rsquo;, ]
+$zabbixserver = &lsquo;192.168.20.134&rsquo;
+$baculaserver = &lsquo;192.168.20.135&rsquo;
+{% endcodeblock %}</p>
+<p>Lembre-se de declarar corretamente as variáveis de topo de escopo, veja o exemplo abaixo:</p>
+<pre><code>$::dnsseearch
+$::nameservers
+$::zabbixserver
+$::baculaserver
+</code></pre>
+<h3 id="15-diretório-classes">1.5 Diretório classes</h3>
+<p>Neste diretório costumo colocar classes simples, normalmente classes organizacionais que contém outras classes, ou mesmo classes <strong>base</strong> como a classe linux-server que é carregada em todos os nodes linux sem exceção.</p>
+<p>Exemplo de manifest classes/linux-server.pp (classe organizacional):</p>
+<p>{% codeblock lang:puppet %}
+class linux-server {</p>
+<pre><code>    include hosts             # configura arquivo hosts
+    include mailaliases       # configura aliases de correio local
+    include utils             # instala pacotes dos sysadmins
+    include aptrepos          # configura repositórios apt
+    include rcfiles           # empurra screenrc e bashrc do root
+    include vimeditor         # instala e configura vim e vimrc
+    include ntp               # instala e cofigura ntp server
+    include locale            # configura locale
+    include timezone          # configure timezone
+    include users             # cria usuários dos sysadmins
+    include suoders           # configura sudoers
+    include ssh:server        # instala e configura ssh server
+    include snmp::server      # instala e configura snmp server
+    include zabbix::agent     # instala e configura zabbix agent
+    include puppet::agent     # configura puppet agent
+    include bacula::agent     # instala e configura bacula agent
+    include postfix::local    # instala e configura postfix local
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Exemplo de manifest classes/utils.pp (classe simples):</p>
+<p>{% codeblock lang:puppet %}
+class utils {</p>
+<h1 id="declarando-que-o-tzdata-tem-que-estar-sempre-em-sua-ultima-versao">declarando que o tzdata tem que estar sempre em sua ultima versao</h1>
+<p>package { &lsquo;tzdata&rsquo;: ensure =&gt; latest }</p>
+<h1 id="declarando-que-os-seguintes-pacotes-devem-estar-presentes-sysadmin-packages">declarando que os seguintes pacotes devem estar presentes (sysadmin packages)</h1>
+<p>package { [ &lsquo;screen&rsquo;,
+&lsquo;lynx&rsquo;,
+&lsquo;elinks&rsquo;,
+&lsquo;rsync&rsquo;,
+&lsquo;telnet&rsquo;,
+&lsquo;ftp&rsquo;,
+&lsquo;wget&rsquo;,
+&lsquo;bzip2&rsquo;,
+&lsquo;unzip&rsquo;,
+&lsquo;traceroute&rsquo;,
+&lsquo;tcpdump&rsquo;,
+&lsquo;iptraf&rsquo;,
+&lsquo;ccze&rsquo;,
+&lsquo;htop&rsquo;,
+&lsquo;less&rsquo;,
+&lsquo;dnsutils&rsquo;,
+&lsquo;nmap&rsquo;, ]:
+ensure  =&gt; installed,
+}
+}
+{% endcodeblock %}</p>
+<p>Considero uma classe simples algo que tem um manifest e no máximo um arquivo estático ou dinâmico (template), qualquer coisa maior recomendo construir um módulo, fica mais organizado.</p>
+<p>Minhas classes simples utilizam os diretórios abaixo:</p>
+<pre><code>/etc/puppet/files      # arquivos estáticos
+/etc/puppet/templates  # arquivos dinâmicos
+</code></pre>
+<h3 id="16-diretório-nodes">1.6 Diretório nodes</h3>
+<p>No diretório nodes costumo criar manifests separados para agrupar declarações de nodes em um mesmo contexto, fica mais organizado,
+fácil de entender e administrar.</p>
+<p>Exemplo de manifest nodes/apache.pp:</p>
+<p>{% codeblock lang:puppet %}
+node &ldquo;apache01.dominio&rdquo; {
+include apache2
+include php5
+include aplicacao
+}
+node &ldquo;apache02.dominio&rdquo; {
+include apache2
+include php5
+include aplicacao
+}
+node &ldquo;apache03.dominio&rdquo; {
+include apache2
+include php5
+include aplicacao
+}
+{% endcodeblock %}</p>
+<p>Exemplo de manifest nodes/haproxy.pp:</p>
+<p>{% codeblock lang:puppet %}
+node &ldquo;haproxy01.dominio&rdquo; {
+include haproxy
+include haproxy::httpmode::phppool
+include haproxy::httmode::phppool
+}
+node &ldquo;haproxy02.dominio&rdquo; {
+include haproxy
+include haproxy::tcpmode::imap
+include haproxy::tcpmode::smtp
+}
+{% endcodeblock %}</p>
+<h2 id="2-puppetconf">2 Puppet.conf</h2>
+<p>Algumas configurações importantes no puppet.conf dos agentes</p>
+<h3 id="21-runinterval">2.1 runinterval</h3>
+<p>O parâmetro <strong>runinterval</strong> define o intervalo entre as checagens que o agente faz ao servidor puppet, neste exemplo ele fará a checagem a cada 3600 segundos ou 60 minutos.</p>
+<pre><code>runinterval=3600
+</code></pre>
+<h3 id="22-splay--splaylimit">2.2 splay &amp; splaylimit</h3>
+<p>Podemos utilizar o splay para evitar que todos os agentes solicitem o catálogo ao mesmo tempo.</p>
+<p>Com esse recurso ativo, o agente vai entrar em <strong>sleep</strong> quando chegar no momento de consultar o servidor. O agente será acionado dentro da
+janela <strong>splaylimit</strong> de forma <strong>randômica</strong>, isto é fundamental para aliviar
+a carga no puppetmaster em um cenário com muitos nodes.</p>
+<p>Veja um exemplo de configuração de splay:</p>
+<pre><code>splay=true
+splaylimit=1800
+runinterval=3600
+</code></pre>
+<p>No exemplo acima o <strong>splay</strong> está ligado e o limit está definido para 1800, logo ele vai trabalhar em uma janela de 1800 segundos após o tempo do <strong>runinterval</strong> ter se esgotado, com isto,
+o tempo máximo entre checagens poder checar até 5400 segundos ou 90 minutos, lembrando que isso é o tempo máximo uma vez que os acionamentos são randômicos.</p>
+<h2 id="3-módulos">3. Módulos</h2>
+<h3 id="31-pense-em-bibliotecas">3.1 Pense em bibliotecas</h3>
+<p>Pense em módulos como se fossem bibliotecas, quando for construir um módulo tente ao máximo construí-lo de forma que se alguém colocar este módulo no diretório /etc/puppet/modules tudo funcione de primeira, sem necessidade de alteração de código, permitindo
+que alguma funcionalidade nova seja agregada ao seu ambiente
+de forma simples e direta.</p>
+<h3 id="32-carregamento-do-módulo">3.2 Carregamento do módulo</h3>
+<p>Construa módulos que tenham capacidade de serem lidos pelo auto-loader, isto significa que eles devem ter a estrutura recomendada
+pela puppetlabs.</p>
+<p>Módulo que não é carregado pelo auto-loader (jeito antigo):</p>
+<pre><code># /etc/puppet/modules/modulename/init.pp
+import &quot;classes/*.pp&quot;
+import &quot;definitions/*.pp&quot;
+</code></pre>
+<p>Módulo que é carregado pelo auto-loader (jeito certo):</p>
+<pre><code># /etc/puppet/modules/modulename/init.pp
+class modulename {}
+</code></pre>
+<p>Se você construir um módulo incompatível com o auto-loader, você precisa fazer o import no arquivo site.pp</p>
+<pre><code>import modulename
+</code></pre>
+<p>Se não fizer isso, o módulo não será carregado, por isto, procure seguir sempre as recomendações e crie módulos compatíveis com o auto-loader.</p>
+<h3 id="33-namespace">3.3 Namespace</h3>
+<p>Ao criar classes em módulos siga a nomenclatura abaixo:</p>
+<pre><code>nome_do_modulo
+nome_do_modulo::nome_da_classe
+nome_do_modulo::nome_do_diretorio::nome_da_classe
+</code></pre>
+<p>Veja o exemplo do módulo apache:</p>
+<p>{% codeblock lang:puppet %}</p>
+<h1 id="etcpuppetlabspuppetmodulesapachemanifests">/etc/puppetlabs/puppet/modules/apache/manifests</h1>
+<pre><code># init.pp
+  class apache { }
+# ssl.pp
+  class apache::ssl { }
+# vhost.pp
+  define apache::vhost () { }
+# params/confs.pp
+  class apache::params::confs { }
+</code></pre>
+<p>{% endcodeblock %}</p>
+<p>Essa estrutura em escopo torna o nome das classes do módulo única, diferenciando dos demais módulos, evitando conflitos e problemas de carregamento, siga sempre esse modelo.</p>
+<h3 id="34-forge-e-github">3.4 Forge e Github</h3>
+<p>Não comece do zero, pesquise e reutilize código existente no Puppet Forge e Github.</p>
+<h3 id="35-documentação">3.5 Documentação</h3>
+<p>Escreva um README detalhado, não deixe de preencher os metadados do seu módulo, crie a documentação de suas classes e definições usando
+RDoc Markup.</p>
+<p>Use os comandos <strong>puppet module</strong> e <strong>puppet doc</strong> para lhe ajudar com a documentação.</p>
+<h2 id="4-estilo-de-código">4. Estilo de código</h2>
+<p>Acesse a página <a href="http://docs.puppetlabs.com/guides/style_guide.html">style guide</a>, ou o meu post <a href="http://gutocarvalho.net/octopress/2013/04/20/puppet-style-guide">guia de estilos</a> para aprender a escrever seus manifests de forma mais eficiente.</p>
+<h3 id="41-puppet-parser-validate">4.1 Puppet parser validate</h3>
+<p>Para validar a sintaxe de código em um manifest você pode utilizar o comando puppet parser, veja abaixo o exemplo:</p>
+<pre><code>puppet parser validate manifest.pp
+</code></pre>
+<h3 id="42-puppet-lint">4.2 Puppet-lint</h3>
+<p>Use o <a href="http://puppet-lint.com">puppet lint</a> para verificar se o seu manifest está com a estrutura de acordo com o <a href="http://docs.puppetlabs.com/guides/style_guide.html">style guide</a> do Puppet.</p>
+<h2 id="5-enc-external-node-classifier">5. ENC (External node classifier)</h2>
+<p>Instale um ENC em seu ambiente, isto te permite acompanhar o ciclo de vida de seus node, e além disto, oferece controles para associar
+classes parametrizadas a nodes ou grupos de nodes.</p>
+<p>Os ENCs oferecem visualizações de status do seus nodes, é possível visualizar quando ocorreu uma mudança, é possível visualizar erros
+decorrentes de mudanças, é possível extrair dados (fatos) dos nodes.</p>
+<p>Os ENCs mais conhecidos são Puppet Dashboard e Foreman, o que possui
+mais recursos é o Foreman.</p>
+<h2 id="6-repositório-puppetlabs">6. Repositório Puppetlabs</h2>
+<p>Recomendo a utilização de pacotes do repositório oficial da Puppetlabs. Eles oferecem repositórios para Debian, Ubuntu, RHEL, Centos e derivados EL (Enterprise Linux).</p>
+<p>Repositório APT</p>
+<pre><code>apt.puppetlabs.com
+</code></pre>
+<p>Repositório YUM</p>
+<pre><code>yum.puppetlabs.com
+</code></pre>
+<h2 id="7-passenger">7. Passenger</h2>
+<p>O pacote puppetmaster por default usa um servidor web embutido chamado  &lsquo;webrick&rsquo;, este servidor web deve ser utilizado apenas para fins de desenvolvimento e testes, ele não suportará mais do que 25
+conexões simultâneas, e se suportar irá alocar grande quantidade
+de recursos de seu servidor, gerando extrema lentidão e alto
+load. Em resumo o puppetmaster usando webrick não escala.</p>
+<p>Em ambientes de produção é recomendando utilizar o pacote puppetmaster-passenger que já integra o puppetmaster ao Apache2
+com mod-passenger, com isto, sua capacidade e robustez serão equivalentes a capacidade do apache2, este por sua vez é um servidor web reconhecidamente eficaz, rápido e escalável.</p>
+<p>O passenger pode ser utilizado inclusive para rodar o puppet-dashboard.</p>
+<h2 id="8-orquestrador-e-mq-message-queue">8. Orquestrador e MQ (Message Queue)</h2>
+<p>É importante ter um orquestrador funcionando, eventualmente pode surgir a necessidade de rodar algum comando de forma paralela e
+em tempo real em seus nodes, e você não pode ficar na mão nesse
+momento.</p>
+<p>O orquestrador que recomendo é o Marionette Collective (Mcollective ou MCO).</p>
+<p>O Mcollective depende de um sistema MQ para funcionar, recomendo
+o ActiveMQ. É possível utilizar o RabbitMQ, porém o criador do MCO
+não é muito fã desse projeto, e algumas features do MCO só vão
+funcionar com ActiveMQ.</p>
+<p>Veja o post <a href="http://gutocarvalho.net/octopress/2013/02/07/instalando-mcollective-em-debian-squeeze-com-ambiente-puppet/">Intalando o Mcollective em Debian Squeeze</a> para aprender a instalar e configurar este orquestrador.</p>
+<h2 id="9-manuteção-em-puppet-dashboard">9. Manuteção em Puppet Dashboard</h2>
+<p>Se você está utilizando o ENC Puppet Dashboard, tome cuidado como crescimento do banco, se você não configurar o MYSQL corretamente
+ou não levar em conta espaço em disco, pode ter alguma surpresa
+depois de alguns meses, além da lentidão, um disk full pode para
+seu ENC e será trabalhoso resolver o problema.</p>
+<p>A puppetlabs oferece um <a href="http://docs.puppetlabs.com/dashboard/manual/1.2/maintaining.html">manual</a> com dados e comandos para fazer manutenção na base do dashboard, isto é muito útil e pode
+te livrar de um grande problema.</p>
+<h3 id="91-otimização-da-base">9.1 Otimização da base</h3>
+<p>Para otimizar a sua base, basta rodar o comando abaixo na VM do ENC dentro do diretório do dashboard.</p>
+<pre><code>sudo -u puppet-dashboard rake RAILS_ENV=production db:raw:optimize
+</code></pre>
+<h3 id="92-limpeza-da-base">9.2 Limpeza da base</h3>
+<p>Para limpar a base e manter os dados dos últimos 30 dias, basta rodar o comando abaixo no diretório do dashboard.</p>
+<pre><code>sudo -u puppet-dashboard rake RAILS_ENV=production reports:prune upto=1 unit=mon
+</code></pre>
+<h3 id="93-limpeza-agendada">9.3 Limpeza agendada</h3>
+<p>Para inserir uma rotina de limpeza mensal do banco no cron, use o comando abaixo dentro do diretório do dashboard.</p>
+<pre><code>sudo -u puppet-dashboard rake cron:cleanup
+</code></pre>
+<h2 id="10-ambiente-puppet">10. Ambiente Puppet</h2>
+<p>Dicas gerais:</p>
+<ul>
+<li>Se possível instale o PuppetMaster em uma VM dedicada.</li>
+<li>Se possível instale o ENC em uma VM dedicada.</li>
+<li>Se possível separe o banco do ENC em uma VM dedicada.</li>
+<li>Se possível instale o Orquestrador + MQ em uma VM dedicada.</li>
+</ul>
+<p>Não vejo necessidade de rodar o Puppet, ENC ou Orquestrador em máquinas físicas, seu consumo de I/O e recursos não justifica isto, já o banco do ENC é interessante rodar em uma máquina física ligada
+a um STORAGE com uma LUN em um RAID GROUP com discos rápidos.</p>
+<h3 id="101-características">10.1 Características</h3>
+<h4 id="1011-puppetmaster">10.1.1 PuppetMaster</h4>
+<p>Para atender até 1000 nodes.</p>
+<ul>
+<li>4 Processadores</li>
+<li>6 Gigas de RAM</li>
+<li>BARRA com 30 GB</li>
+<li>/VAR  com 120 GB (no caso de ter storeconfig ligado)</li>
+<li>Distribuição 64 Bits</li>
+<li>Recomendo Debian</li>
+</ul>
+<h4 id="1012-enc-app-web-sem-banco">10.1.2 ENC (app web sem banco)</h4>
+<p>Para atender até 1000 nodes.</p>
+<ul>
+<li>2 Processadores</li>
+<li>4 Gigas de RAM</li>
+<li>BARRA com 30 GB</li>
+<li>/VAR  com 60 GB</li>
+<li>Distribuição 64 Bits</li>
+<li>Recomendo Debian</li>
+</ul>
+<p>ENCs: Puppet Dashboard ou Foreman</p>
+<p>Dá para colocar o PuppetDB na mesma máquina - se for o caso.</p>
+<h4 id="1013-enc-banco">10.1.3 ENC BANCO</h4>
+<p>Para armazenar dados de até 1000 nodes.</p>
+<ul>
+<li>4 Processadores</li>
+<li>6 Gigas de RAM</li>
+<li>BARRA com 30 GB</li>
+<li>/VAR  com 300 GB</li>
+<li>Distribuição 64 Bits</li>
+<li>Recomendo Debian</li>
+</ul>
+<h4 id="1014-orquestrador-e-mq">10.1.4 ORQUESTRADOR e MQ</h4>
+<p>Para orquestrar até 1000 nodes.</p>
+<ul>
+<li>2 Processadores</li>
+<li>4 Gigas de RAM</li>
+<li>BARRA com 30 GB</li>
+<li>/VAR  com 30 GB</li>
+<li>Distribuição 64 Bits</li>
+<li>Recomendo Debian</li>
+</ul>
+<p>ActiveMQ/RabbitMQ, Mcollective Client/Server.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

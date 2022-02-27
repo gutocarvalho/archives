@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Entenda o bug shellshock</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Entenda o bug shellshock</h1>
+        <div>
+                <time>September 30, 2014</time>
+            </div>
+    </header><h3 id="1-shellshock-ou-bash-bug">1. ShellShock ou Bash Bug?</h3>
+<p>Eu estava PuppetConf'2014 quando esse bug foi noticiado no dia 24 de Setembro, havia um grande número de especialistas no evento e teve muita gente preocupada, lendo e acessando seus servidores para tentar entender, checar e mitigar o problema.</p>
+<p>O shellshock, bashdoor ou bashbug é um bug gravíssimo que foi encontrado no shell <strong>bash</strong> pelo especialista <a href="http://stephane.chazelas.free.fr/">Stephane Schazelas</a>, o bug está presente em diversos sistemas operacionais Linux e Unix.</p>
+<h3 id="2-shell">2. Shell?</h3>
+<p>O shell é um interpretador de comandos que permite que nós usuários e também que programas acessem serviços e recursos do sistema operacional Unix/Linux.</p>
+<p>O bash é apenas um dos diversos tipos de shell (interpretadores de comandos) existentes, porém, ele é o mais comum e está presente em praticamente todo sistema operacional Unix e Linux.</p>
+<h3 id="3-impacto">3. Impacto</h3>
+<p>O bug foi encontrado desde a versão 1.14 até a versão 4.3, em resumo todas as releases dos últimos 22 anos são afetadas já que a versão 1.14 foi lançada em 1992.</p>
+<p>O alcance desse bug está na casa dos milhões de servidores (*NIX) no planeta, incluindo ai nessa lista, computadores pessoais MACS (OSX) e até os seguros sistemas *BSD.</p>
+<p>Ok, mas onde o bash é utilizado em meu sistema operacional? em que momento ele é carregado?</p>
+<h3 id="4-entendendo-o-problema">4. Entendendo o problema</h3>
+<p>Sempre que criamos um usuário no UNIX ou LINUX normalmente o shell bash é associado a essa conta, com isto, é possível se conectar ao sistema operacional utilizando ssh e telnet, por exemplo.</p>
+<p>Quando instalamos algum sistema ou serviço, este também pode utilizar o bash para executar algo ou para definir alguma variável de ambiente necessária para seu funcionamento.</p>
+<p>É possível inclusive rodar comandos remotamente no bash utilizando ssh.</p>
+<h3 id="5-como-exploram-a-falha">5. Como exploram a falha?</h3>
+<p>A vulnerabilidade permite que atacantes executem código arbitrário em determinadas situações e condições, normalmente via rede.</p>
+<p>Utilizando algumas strings e variáveis de ambiente eles conseguem escalar privilégios de um usuário normal e acessar recursos protegidos.</p>
+<h4 id="51-exploits">5.1 Exploits</h4>
+<p>Alguns posts sobre exploits criados para explorar o shellshock</p>
+<ul>
+<li>
+<p><a href="https://www.alienvault.com/open-threat-exchange/blog/attackers-exploiting-shell-shock-cve-2014-6721-in-the-wild">https://www.alienvault.com/open-threat-exchange/blog/attackers-exploiting-shell-shock-cve-2014-6721-in-the-wild</a></p>
+</li>
+<li>
+<p><a href="https://isc.sans.edu/diary/Shellshock%3A+A+Collection+of+Exploits+seen+in+the+wild/18725">https://isc.sans.edu/diary/Shellshock%3A+A+Collection+of+Exploits+seen+in+the+wild/18725</a></p>
+</li>
+<li>
+<p><a href="http://www.fireeye.com/blog/uncategorized/2014/09/shellshock-in-the-wild.html">http://www.fireeye.com/blog/uncategorized/2014/09/shellshock-in-the-wild.html</a></p>
+</li>
+</ul>
+<p>Já existe inclusive um malware/botnet chamado WOPBOT explorando sites vulneráveis.</p>
+<ul>
+<li><a href="http://www.itnews.com.au/News/396197,first-shellshock-botnet-attacks-akamai-us-dod-networks.aspx">http://www.itnews.com.au/News/396197,first-shellshock-botnet-attacks-akamai-us-dod-networks.aspx</a></li>
+</ul>
+<h3 id="6-quais-os-principais-serviços-afetados">6. Quais os principais serviços afetados?</h3>
+<ul>
+<li>Apache HTTP que utiliza CGI Scripts (mod_cgi e mod_cgid).</li>
+<li>Servidores OpenSSH com ForceCommand</li>
+<li>Dhclient</li>
+<li>CUPS</li>
+</ul>
+<p>Por hora são esses, mas qualquer serviço que dependa do bash está potencialmente afetado.</p>
+<h3 id="7-bugs-conhecidos">7. Bugs conhecidos</h3>
+<p>O primeiro bug relatado foi o CVE-2014-6271, este teve um fix publicado que não foi completo e mais problemas foram detectados, com isso, foram registradas novas falhas, são elas: CVE-2014-6277, CVE-2014-6278, CVE-2014-7169, CVE-2014-7186 e CVE-2014-7187.</p>
+<p>O CVE é uma das maiores e mais respeitadas base de dados de segurança que contém dados do tipo vulnerability (erros de implementação em softwares) e exposure (falhas de configuração ou de uso de software), quando um bug é encontrado normalmente é registrado no CVE primeiro.</p>
+<h4 id="71-cve-2014-6271">7.1 CVE-2014-6271</h4>
+<p>Este foi o primeiro bug encontrado, para verificar se seu bash está exposto a este bug, rode o comando abaixo em uma sessão sem privilégios</p>
+<pre><code>env x='() { :;}; echo vulnerable' bash -c &quot;echo this is a test&quot;
+</code></pre>
+<p>Se aparecer a mensagem &ldquo;vulnerable&rdquo; você precisa atualizar seu bash.</p>
+<ul>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271</a></li>
+</ul>
+<h4 id="72-cve-2014-7169">7.2 CVE-2014-7169</h4>
+<p>Esse bug permite que o atacante crie ou modifique arquivos além de ler arquivos que ele não teria privilégios, e também pode acessar partes protegidas do sistema, esse bug existe por correções incompletas no CVE-2014-(6271, 6277 e 6278).</p>
+<p>Para testar se seu bash está vulnerável a este bug rode o comando abaixo em um sessão comum:</p>
+<pre><code>env X='() { (a)=&gt;\' sh -c &quot;echo date&quot;; cat echo
+</code></pre>
+<p>Se a data e hora - saída do comando date - retornar após a execução, seu sistema está vulnerável.</p>
+<ul>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7169">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7169</a></li>
+</ul>
+<h4 id="73-outros-relacionados">7.3 Outros relacionados</h4>
+<p>Já corrigidos</p>
+<ul>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6277">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6277</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6278">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6278</a></li>
+</ul>
+<p>Ainda sem correções até o momento (2014-10-01)</p>
+<ul>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7186">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7186</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7187">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7187</a></li>
+</ul>
+<h3 id="8-testando-meu-servidor">8. Testando meu servidor</h3>
+<h4 id="81-http-check">8.1 HTTP Check</h4>
+<p>Você pode acessar essa URL e testar se seu site está vulnerável, ele usa alguns exploits HTTP para fazer a verificação</p>
+<ul>
+<li><a href="http://shellshock.brandonpotter.com">http://shellshock.brandonpotter.com</a></li>
+</ul>
+<p>O gutocarvalho.net está limpo ;)</p>
+<h4 id="82-redhat-http-check">8.2 RedHat HTTP Check</h4>
+<p>Se você tem conta na RHN pode fazer o teste pela ferramenta da fabricante</p>
+<ul>
+<li><a href="https://access.redhat.com/labs/shellshock/">https://access.redhat.com/labs/shellshock/</a></li>
+</ul>
+<h3 id="9-informações-de-fornecedores">9. Informações de fornecedores</h3>
+<p>Alguns links para sites de fornecedores e organizações.</p>
+<h4 id="91-redhat">9.1 Redhat</h4>
+<p>Artigos</p>
+<ul>
+<li>
+<p><a href="https://securityblog.redhat.com/2014/09/24/bash-specially-crafted-environment-variables-code-injection-attack/">https://securityblog.redhat.com/2014/09/24/bash-specially-crafted-environment-variables-code-injection-attack/</a></p>
+</li>
+<li>
+<p><a href="https://securityblog.redhat.com/2014/09/26/frequently-asked-questions-about-the-shellshock-bash-flaws/">https://securityblog.redhat.com/2014/09/26/frequently-asked-questions-about-the-shellshock-bash-flaws/</a></p>
+</li>
+</ul>
+<p>Alertas</p>
+<ul>
+<li><a href="https://access.redhat.com/announcements/1210053">https://access.redhat.com/announcements/1210053</a></li>
+<li><a href="https://access.redhat.com/articles/1200223">https://access.redhat.com/articles/1200223</a></li>
+</ul>
+<p>Sobre malwares que exploram o shellshock</p>
+<ul>
+<li><a href="https://access.redhat.com/articles/1213683">https://access.redhat.com/articles/1213683</a></li>
+</ul>
+<h4 id="92-debian">9.2 Debian</h4>
+<ul>
+<li><a href="https://www.debian.org/security/2014/dsa-3032">https://www.debian.org/security/2014/dsa-3032</a></li>
+<li><a href="https://www.debian.org/security/2014/dsa-3035">https://www.debian.org/security/2014/dsa-3035</a></li>
+</ul>
+<h4 id="93-ubuntu">9.3 Ubuntu</h4>
+<ul>
+<li><a href="http://www.ubuntu.com/usn/usn-2362-1/">http://www.ubuntu.com/usn/usn-2362-1/</a></li>
+<li><a href="http://www.ubuntu.com/usn/usn-2363-1/">http://www.ubuntu.com/usn/usn-2363-1/</a></li>
+<li><a href="http://www.ubuntu.com/usn/usn-2364-1/">http://www.ubuntu.com/usn/usn-2364-1/</a></li>
+</ul>
+<h4 id="94-suse">9.4 Suse</h4>
+<ul>
+<li><a href="https://www.suse.com/support/shellshock/">https://www.suse.com/support/shellshock/</a></li>
+<li><a href="https://www.suse.com/support/update/announcement/2014/suse-su-20141260-1.html">https://www.suse.com/support/update/announcement/2014/suse-su-20141260-1.html</a></li>
+<li><a href="https://www.suse.com/support/update/announcement/2014/suse-su-20141259-1.html">https://www.suse.com/support/update/announcement/2014/suse-su-20141259-1.html</a></li>
+</ul>
+<h4 id="95-apple">9.5 Apple</h4>
+<ul>
+<li><a href="http://support.apple.com/kb/DL1769?viewlocale=en_US&amp;locale=en_US">http://support.apple.com/kb/DL1769?viewlocale=en_US&amp;locale=en_US</a></li>
+<li><a href="http://support.apple.com/kb/HT1222">http://support.apple.com/kb/HT1222</a></li>
+</ul>
+<p>Leia e se informe, se tiver suporte comercial (RHEL/SLES) abra um ticket e peça apoio na verificação de seu parque.</p>
+<p>Se preocupe principalmente com os seus servidores na DMZ.</p>
+<h3 id="10-atualizando-seu-servidor-manualmente">10. Atualizando seu servidor manualmente</h3>
+<p>Aqui vão as dicas para você atualizar o bash no braço!</p>
+<h4 id="101-redhatcentos">10.1 Redhat/Centos</h4>
+<pre><code>yum install bash
+</code></pre>
+<h4 id="102-debian">10.2 Debian</h4>
+<pre><code>aptitude install bash
+</code></pre>
+<h4 id="103-suse-12">10.3 Suse 12</h4>
+<pre><code>zypper in -t patch SUSE-SLE-SERVER-12-2014-59
+</code></pre>
+<h4 id="104-apple-mac-osx">10.4 Apple MAC OSX</h4>
+<pre><code>Aceite a atualização, apenas isto.
+</code></pre>
+<h3 id="11-atualizando-o-bash-com-ferramentas-inteligentes">11. Atualizando o bash com ferramentas inteligentes</h3>
+<h4 id="111-puppet--mcollective">11.1 Puppet + Mcollective</h4>
+<p>Caso você tenha puppet em seu ambiente, você pode colocar o código abaixo em uma classe comum a todos os nodes</p>
+<pre><code>package { 'bash': ensure =&gt; latest }
+</code></pre>
+<p>Depois disto aguarde o agente pegar o novo catálogo e aplicar as mudanças.</p>
+<p>Caso você tenha o mcollective em seu parque, após o ajuste na classe, acione o puppet em todos os nodes via plugin para não ter que esperar pelos agentes.</p>
+<pre><code>mco puppet agent runonce
+</code></pre>
+<h4 id="112-mcollective">11.2 Mcollective</h4>
+<p>Se você tem Mcollective mas não tem puppet, tudo bem, dá para rodar o seguinte comando</p>
+<pre><code>mco package update bash
+</code></pre>
+<p>Esse comando vai forçar a atualização do pacote bash em todos os nodes com o mcollective.</p>
+<p>Mesmo que você tenha especificado e declarado no puppet que o bash deve ser estar sempre na última versão, esse comando é valido como uma outra garantia para que o pacote seja atualizado.</p>
+<h3 id="12-recomendações">12. Recomendações</h3>
+<h4 id="121-devo-reiniciar-meus-servidores-afetados">12.1 Devo reiniciar meus servidores afetados?</h4>
+<p>Olha se você tem janela e condições para isto, e principalmente se seu problema for relacionado a seu servidor de aplicações web, reiniciar vai descarregar completamente da memória as versões antigas do bash :)</p>
+<p>Caso você não tenha janela, após atualizar, mate as sessões remotas para forçar os usuários a recarregarem o screen/tmux/afins e reinicie os serviços que dependem do bash, já vai resolver.</p>
+<h4 id="122-o-selinux-ajuda-a-diminuir-o-problema">12.2 O SELINUX ajuda a diminuir o problema?</h4>
+<p>Um dos especialistas em SELINUX testou um exploit HTTP contra o SELINUX e fez um <a href="http://danwalsh.livejournal.com/71122.html">post</a> explicando como o SELINUX se comportou e como diminui o estrago que o exploit poderia ter causado ao sistema que recebeu o teste.</p>
+<h4 id="123-posso-definir-outro-shell-como-padrão">12.3 Posso definir outro shell como padrão?</h4>
+<p>Pode, mas cada sistema operacional oferece uma forma diferente de fazer isto, recomendo por exemplo o ZSH, ele é um excelente shell, você definir o ZSH como shell padrão dos usuários até resolverem essa questão do bash.</p>
+<p>Na parte de serviços é necessário fazer testes para ver se o serviço consegue utilizar um shell diferente do BASH, recomendo subir uma VM e testar antes de qualquer mudança.</p>
+<p>Vale mencionar que no Debian o shell padrão é o dash, logo o problema para usuários debian é um pouco menor, mas o bash vem instalado no sistema, então é bom atualizar.</p>
+<h3 id="13-amarrando-as-pontas">13. Amarrando as pontas</h3>
+<p>Há alguns meses abordamos aqui o terrível bug <a href="http://gutocarvalho.net/octopress/2014/04/10/entenda-o-bug-heartbleed/">Heartbleed</a>, mas tenho que dizer que dizer que o shellshock não fica atrás em importância e impacto, tem muita gente na web inclusive considerando o shellshock maior que o heartbleed devido a presença do bash em praticamente qualquer sistema operacional *NIX.</p>
+<p>Eu ainda vou esperar, é muito cedo para comparar, nenhum estrago grande foi detectado ou divulgado até o momento.</p>
+<p>Contudo, não perca tempo, pesquise e defina a melhor estratégia para atualizar o seu parque o quanto antes, mas não se afobe, faça com calma para fazer direito.</p>
+<p>E não pare de estudar pois nem todos os bugs foram corrigidos até o final deste post (2014-10-01), continue acompanhando, lendo e checando o seu ambiente.</p>
+<p>Converse com suas equipes de segurança para que eles verifiquem junto a fornecedores de appliances se tem novas ACLs ou RULES para bloquear as botnets e exploits HTTP e considere ativá-los como mais uma camada de segurança.</p>
+<h3 id="14-referências">14. Referências</h3>
+<p>CVE</p>
+<ul>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7169">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7169</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6277">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6277</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6278">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6278</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7186">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7186</a></li>
+<li><a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7187">http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7187</a></li>
+</ul>
+<p>MISC</p>
+<ul>
+<li>
+<p><a href="http://www.theverge.com/2014/9/24/6840697/worse-than-heartbleed-todays-bash-bug-could-be-breaking-security-for">http://www.theverge.com/2014/9/24/6840697/worse-than-heartbleed-todays-bash-bug-could-be-breaking-security-for</a></p>
+</li>
+<li>
+<p><a href="http://www.theverge.com/2014/9/25/6843669/bash-shellshock-network-worm-could-cause-internet-meltdown">http://www.theverge.com/2014/9/25/6843669/bash-shellshock-network-worm-could-cause-internet-meltdown</a></p>
+</li>
+<li>
+<p><a href="http://arstechnica.com/security/2014/09/bug-in-bash-shell-creates-big-security-hole-on-anything-with-nix-in-it/">http://arstechnica.com/security/2014/09/bug-in-bash-shell-creates-big-security-hole-on-anything-with-nix-in-it/</a></p>
+</li>
+<li>
+<p><a href="http://arstechnica.com/apple/2014/09/apple-patches-shellshock-bash-bug-in-os-x-10-9-10-8-and-10-7/">http://arstechnica.com/apple/2014/09/apple-patches-shellshock-bash-bug-in-os-x-10-9-10-8-and-10-7/</a></p>
+</li>
+<li>
+<p><a href="http://arstechnica.com/apple/2014/09/apple-patches-shellshock-bash-bug-in-os-x-10-9-10-8-and-10-7/">http://arstechnica.com/apple/2014/09/apple-patches-shellshock-bash-bug-in-os-x-10-9-10-8-and-10-7/</a></p>
+</li>
+<li>
+<p><a href="https://www.digitalocean.com/community/tutorials/how-to-protect-your-server-against-the-shellshock-bash-vulnerability">https://www.digitalocean.com/community/tutorials/how-to-protect-your-server-against-the-shellshock-bash-vulnerability</a></p>
+</li>
+<li>
+<p><a href="http://www.techradar.com/news/internet/bash-vulnerability-could-be-worst-ever-1266830">http://www.techradar.com/news/internet/bash-vulnerability-could-be-worst-ever-1266830</a></p>
+</li>
+<li>
+<p><a href="http://www.techradar.com/us/news/computing/apple/apple-majority-of-os-x-users-are-safe-from-bash-bug-1267048">http://www.techradar.com/us/news/computing/apple/apple-majority-of-os-x-users-are-safe-from-bash-bug-1267048</a></p>
+</li>
+<li>
+<p><a href="http://www.techradar.com/news/computing/apple/apple-releases-bash-bug-patch-for-os-x-1267228">http://www.techradar.com/news/computing/apple/apple-releases-bash-bug-patch-for-os-x-1267228</a></p>
+</li>
+<li>
+<p><a href="http://blog.cloudflare.com/inside-shellshock/">http://blog.cloudflare.com/inside-shellshock/</a></p>
+</li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

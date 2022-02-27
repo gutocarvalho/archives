@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Configuração em Trio</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Configuração em Trio</h1>
+        <div>
+                <time>October 29, 2012</time>
+            </div>
+    </header><p>Existe uma estrutura que gosto de chamar de &lsquo;configuração em trio&rsquo; que é a base para automatizar vários tipos de serviços comuns em ambientes linux/unix, eu costumo utilizar esse modelo em classes que crio dentro e fora de módulos, é eficiente e prático, basta combinar três resource types (trio) e dois meta-parâmetros, são eles:</p>
+<p>Resource Types</p>
+<ul>
+<li>package</li>
+<li>service</li>
+<li>file</li>
+</ul>
+<p>MetaParameters</p>
+<ul>
+<li>require</li>
+<li>notify</li>
+</ul>
+<h3 id="1-exemplo-conceitual">1. Exemplo Conceitual</h3>
+<p>Antes de um exemplo real, vamos primeiro entender um modelo conceitual.</p>
+<h4 id="11-requisitos-do-modelo-conceitual">1.1 Requisitos do modelo conceitual</h4>
+<p>Se formos traduzir o código em requisitos teríamos uma lista como esta abaixo:</p>
+<ul>
+<li>Um pacote deve ser declarado como presente/instalado</li>
+<li>O serviço relacionado ao pacote deve estar habilitado</li>
+<li>O serviço relacionado ao pacote deve estar rodando</li>
+<li>O serviço relacionado ao pacote aceita comando restart em seu init script</li>
+<li>O serviço relacionado ao pacote aceita comando status em seu init script</li>
+<li>O serviço depende do objeto que declara o arquivo de configuração</li>
+<li>Um arquivo de configuração do serviço deve ser declarado como presente</li>
+<li>O arquivo de configuração depende do objeto que instala o pacote</li>
+<li>O arquivo deve pertencer ao usuário root</li>
+<li>O arquivo deve pertecer ao grupo root</li>
+<li>O arquivo deve ter permissão 644</li>
+<li>O arquivo de configuração deve notificar o serviço caso ocorra mudança na origem</li>
+</ul>
+<p>É uma lista densa e complicada, vamos traduzir isto para código puppet.</p>
+<h4 id="12-solução-para-modelo-conceitual">1.2 Solução para modelo conceitual</h4>
+<p>{% codeblock lang:puppet %}</p>
+<pre><code># declarando pacote
+
+package { 'pacote':
+    	ensure =&gt; installed,
+}
+  
+# declarando arquivo de configuracao
+ 
+file { 'pacote.conf':
+	ensure  =&gt; present,
+	path    =&gt; &quot;/etc/pacote/pacote.conf&quot;,
+	source  =&gt; &quot;/root/puppet/pacote.conf&quot;,
+	owner   =&gt; 'root',
+	group   =&gt; 'root',
+	mode    =&gt; 644,
+	require =&gt; Package['pacote'],
+	notify  =&gt; Service['servico'],
+}       	
+
+# declarando servico
+ 
+service { 'servico':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['pacote.conf'],
+}
+</code></pre>
+<p>{% endcodeblock %}</p>
+<p>Veja que a tradução dos requisitos em código oferece uma visualização e um entendimento bem mais claro.</p>
+<h3 id="2-exemplo-real">2. Exemplo Real</h3>
+<p>Agora vamos para dois exemplos do mundo real, o primeiro acerca do serviço Postfix e o segundo acerca do serviço NTP. Perceba que a base é a mesma, fiz só alguns pequenos ajustes.</p>
+<h4 id="21-postfix">2.1 Postfix</h4>
+<p>{% codeblock lang:puppet %}</p>
+<pre><code># declarando pacote
+
+package { 'postfix':
+	ensure =&gt; present,
+}
+
+# declarando serviço
+ 
+service { 'postfix':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['/etc/postfix/main.cf'],
+}
+
+# declarando arquivo de configuração
+ 
+file { '/etc/postfix/main.cf':
+	source  =&gt; '/root/puppet/main.cf',
+	owner   =&gt; 'root',
+	group   =&gt; 'root',
+	mode    =&gt; 644,
+	require =&gt; Package['postfix'],
+	notify  =&gt; Service['postfix'],
+}
+</code></pre>
+<p>{% endcodeblock %}</p>
+<h4 id="21-ntp">2.1 NTP</h4>
+<p>{% codeblock lang:puppet %}</p>
+<pre><code># declarando pacote
+
+package { 'ntp':
+    	ensure =&gt; present,
+}
+
+# declarando serviço
+ 
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['/etc/ntp.conf'],
+}
+ 
+# declarando arquivo de configuração
+ 
+file { '/etc/ntp.conf':
+	source  =&gt; '/root/puppet/ntp.conf',
+	owner   =&gt; 'root',
+	group   =&gt; 'root',
+	mode    =&gt; 644,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+}
+</code></pre>
+<p>{% endcodeblock %}</p>
+<h3 id="3-conclusão">3. Conclusão</h3>
+<p>O modelo aplica-se a muitas demandas de automatização de serviços, e a partir dele podemos evoluir o código até atender todas das necessidades e requisitos.</p>
+<p>Em caso de uso de puppet <strong>cliente/servidor</strong> haveria uma pequena mudança no parâmetro source do resource type <strong>file</strong>.</p>
+<p>Mudaríamos de</p>
+<pre><code>source  =&gt; '/root/puppet/ntp.conf',
+</code></pre>
+<p>para</p>
+<pre><code>source  =&gt; 'puppet:///files/ntp/ntp.conf'
+</code></pre>
+<p>se estivermos criando uma classe simples com arquivos armazenados em /etc/puppet/files, agora se fosse um módulo, seria algo como</p>
+<pre><code>source  =&gt; 'puppet:///modules/ntp/ntp.conf'
+</code></pre>
+<p>e o arquivo estaria provavelmente em /etc/puppet/modules/ntp/files.</p>
+<p>Fica a dica para puppetizar suas configurações ;)</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

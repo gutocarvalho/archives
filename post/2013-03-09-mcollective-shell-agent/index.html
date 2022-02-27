@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Mcollective Shell Agent</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Mcollective Shell Agent</h1>
+        <div>
+                <time>March 9, 2013</time>
+            </div>
+    </header><h2 id="1-sobre-o-marionette-collective">1. Sobre o Marionette Collective</h2>
+<p>O Mcollective é um framework que te permite trabalhar com orquestração de servidores ou execução paralela de tarefas em seus nodes.</p>
+<p>Em essência, orquestração significa invocar ações em paralelo em todo o seu parque de servidores de uma forma direta, eficiente e além disto em tempo real.</p>
+<h2 id="2-agente-shell">2. Agente Shell</h2>
+<p>No post anterior, apresentei alguns agentes do Mcollective que executam ações pontuais, no entanto, não é possível através destes agentes rodar comandos arbitários em nossos nodes.</p>
+<p>O próprio criador do Mcollective (<a href="http://www.devco.net/">R.I.Pienaar</a>) não recomenda que sejam escritos plugins para execução de comandos arbitrários, e ele tem razão, é perigoso e você não conseguirá prever a saída do comando no outro lado.</p>
+<p>Porém, eventualmente precisamos fazer isto, e neste caso existem alguns plugins disponíveis no GITHUB, aqui neste post vou mostrar como instalar um plugin que contém um agente para execução de comandos em ambiente shell.</p>
+<h3 id="21-instalando-o-agente">2.1 Instalando o agente</h3>
+<p>Partindo do pressuposto de que você já tem o Mcollective rodando, vamos apenas instalar o agente shell e ver como ele funciona. Aqui neste post vou usar o agente escrito por <a href="https://github.com/phobos182/mcollective-plugins/">Jeremy Caroll</a>.</p>
+<p>Faça download do arquivo shell.rb</p>
+<pre><code>wget https://raw.github.com/phobos182/mcollective-plugins/master/agent/shell/shell.rb
+</code></pre>
+<p>Faça download do arquivo shell.ddl</p>
+<pre><code>wget https://raw.github.com/phobos182/mcollective-plugins/master/agent/shell/shell.ddl
+</code></pre>
+<p>Mova os arquivos para o diretório agent do mcollective</p>
+<pre><code>mv shell.rb shell.ddl /usr/share/mcollective/plugins/mcollective/agent
+</code></pre>
+<p>Agora faça download do arquivo de aplicação shell.rb (é outro arquivo)</p>
+<pre><code>wget https://raw.github.com/phobos182/mcollective-plugins/master/agent/shell/application/shell.rb
+</code></pre>
+<p>Mova o arquivo para o diretório application do mcollective</p>
+<pre><code>mv shell.rb /usr/share/mcollective/plugins/mcollective/application
+</code></pre>
+<p>Agora reinicie o agente.</p>
+<pre><code>/etc/init.d/mcollective restart
+</code></pre>
+<p>Instale os arquivos em todos os nodes que deseja utilizar o agente shell.</p>
+<h3 id="22-utilizando-o-agente">2.2 Utilizando o agente</h3>
+<p>A utilização é bastante simples, observe a sintaxe:</p>
+<pre><code>mco shell &lt;comando&gt;
+</code></pre>
+<p>Vamos a um exemplo</p>
+<pre><code>mco shell uptime
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Do you really want to send this command unfiltered? (y/n): y
+Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+[puppet.hacklab] exit=0:
+[debian.hacklab] exit=0:
+</code></pre><p>Veja que o comando foi executado em dois nodes, mas repare que apenas fomos informados disto, caso deseje ver a saída, será necessário adicionar um parâmetro.</p>
+<pre><code>mco shell uptime --verbose
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Do you really want to send this command unfiltered? (y/n): y
+Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+[puppet.hacklab] exit=0:  13:56:48 up 28 min,  2 users,  load average: 0.00, 0.00, 0.00
+[debian.hacklab] exit=0:  13:56:44 up 28 min,  2 users,  load average: 0.00, 0.00, 0.00
+</code></pre><h3 id="23-exemplos-de-uso-do-agente">2.3 Exemplos de uso do agente</h3>
+<h4 id="231-lendo-arquivo-etcissue">2.3.1 Lendo arquivo /etc/issue</h4>
+<p>Vamos usar o cat para ler o conteúdo do arquivo issue</p>
+<pre><code>mco shell &quot;cat /etc/issue&quot; --verbose
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Do you really want to send this command unfiltered? (y/n): y
+Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+[debian.hacklab] exit=0: Debian GNU/Linux 6.0 \n \l
+
+[puppet.hacklab] exit=0: Debian GNU/Linux 6.0 \n \l
+</code></pre><h4 id="232-rodando-comando-df">2.3.2 Rodando comando df</h4>
+<p>Vamos rodar o comando df -h para ver dados de uso das partições e disco.</p>
+<pre><code>mco shell &quot;df -h&quot; --verbose
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Do you really want to send this command unfiltered? (y/n): y
+Discovering hosts using the mc method for 2 second(s) .... 2
+
+ * [ ============================================================&gt; ] 2 / 2
+
+[puppet.hacklab] exit=0: Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda1             3.8G  2.1G  1.6G  57% /
+tmpfs                 188M     0  188M   0% /lib/init/rw
+udev                  184M  124K  184M   1% /dev
+tmpfs                 188M     0  188M   0% /dev/shm
+
+[debian.hacklab] exit=0: Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda1             3.8G 1002M  2.6G  28% /
+tmpfs                 125M     0  125M   0% /lib/init/rw
+udev                  121M  124K  120M   1% /dev
+tmpfs                 125M     0  125M   0% /dev/shm
+</code></pre><h2 id="3-amarrando-as-pontas">3. Amarrando as pontas</h2>
+<p>O criador do Mcollective (<a href="http://www.devco.net/">R.I.Pienaar</a>) recomenda que você escreva seus agentes usando simpleRPC, agentes que executem tarefas pontais, agentes no quais você tem controle, agentes nos quais você pode confiar, agentes nos quais você conhece o risco de utilizar em sua infra, e tenho que dizer que eu concordo com isto, portanto, use esse agente ssh por sua conta e risco ;)</p>
+<p>Eu assumo o risco pois o que preciso fazer com ele é bem simples, mas cada caso é um caso.</p>
+<h3 id="31-exemplificando-os-riscos">3.1 Exemplificando os riscos</h3>
+<p>Só para você ter uma ideia de tragédias possíveis, imagine o risco potencial de alguém rodar - sem querer - algo como abaixo:</p>
+<pre><code>mco shell &quot;rm -rf /&quot;
+</code></pre>
+<p>Isto simplesmente apagaria todo o seu parque, é muito poder para pouca segurança. Espero que este exemplo tenha sido suficientemente claro :)</p>
+<h3 id="31-facilitando-a-instalação">3.1 Facilitando a instalação</h3>
+<p>Eu escrevi dois módulos para Puppet que facilitam a instalação do Mcollective e dos agentes, segue abaixo os links.</p>
+<p><a href="https://github.com/gutocarvalho/puppet-mcollective-debian">https://github.com/gutocarvalho/puppet-mcollective-debian</a></p>
+<p><a href="https://github.com/gutocarvalho/puppet-rabbitmq-debian">https://github.com/gutocarvalho/puppet-rabbitmq-debian</a></p>
+<p>O agente SSH já está incluso no módulo.</p>
+<h2 id="4-referências">4. Referências</h2>
+<ul>
+<li><a href="http://www.devco.net">http://www.devco.net</a></li>
+<li><a href="https://github.com/phobos182/mcollective-plugins">https://github.com/phobos182/mcollective-plugins</a></li>
+<li><a href="https://github.com/puppetlabs/mcollective-plugins">https://github.com/puppetlabs/mcollective-plugins</a></li>
+<li><a href="https://puppetlabs.com/mcollective/introduction">https://puppetlabs.com/mcollective/introduction</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>MYSQL TMPDIR em TMPFS com SELINUX ativado</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>MYSQL TMPDIR em TMPFS com SELINUX ativado</h1>
+        <div>
+                <time>August 29, 2014</time>
+            </div>
+    </header><p>Eu sou daqueles caras teimosos que insiste em usar o SELINUX ao invés de desligar ele após a instalação do servidor :)</p>
+<p>Eis que estava montando um servidor MYSQL para o Zabbix no CentOS 6.5 e resolvi criar um diretório temporário para o MYSQL em um TMPFS para obter uma melhor performance do Zabbix.</p>
+<p>Basicamente fiz o seguinte</p>
+<pre><code>service mysqld stop
+</code></pre>
+<p>Criei o diretório</p>
+<pre><code>mkdir /mytmp
+</code></pre>
+<p>No my.cnf coloquei o seguinte</p>
+<pre><code>tmpdir=/mytmp
+</code></pre>
+<p>No fstab coloquei o seguinte</p>
+<pre><code>tmpfs			/mytmp			tmpfs  rw,uid=mysql,gid=mysql,size=1g,nr_inodes=10k,mode=0775 0 0
+</code></pre>
+<p>Montei o tmpfs</p>
+<pre><code>mount /mytmp
+</code></pre>
+<p>Iniciei o mysql</p>
+<pre><code>service mysqld start
+</code></pre>
+<p>Porém, quando eu iniciava o MYSQL, os seguintes erros apareciam no LOG</p>
+<pre><code>/usr/libexec/mysqld: Can't create/write to file '/tmpfs/ibbBLVnW' (Errcode: 13)
+140829 12:23:42  InnoDB: Error: unable to create temporary file; errno: 13
+140829 12:23:42 [ERROR] Plugin 'InnoDB' init function returned error.
+140829 12:23:42 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+</code></pre>
+<p>O sintoma do lado da aplicação era um <strong>access denied</strong> na conexão com o banco, os desavisados podem perder muito tempo tentando acertar permissões mas não é esse o problema, isto ocorria pois o MySQL não conseguia escrever no ponto de montagem TMPFS, veja o erro no detalhe</p>
+<pre><code>/usr/libexec/mysqld: Can't create/write to file '/tmpfs/ibbBLVnW' (Errcode: 13)
+</code></pre>
+<p>Sabendo que o SELINUX estava ligado fui olhar no <strong>/var/log/audit/audit.log</strong></p>
+<pre><code>cat /var/log/audit/*.log |grep mysql|grep -v zabbix|grep tmpfs
+</code></pre>
+<p>Encontrei então a seguinte informação</p>
+<pre><code>type=AVC msg=audit(1408993827.194:10192): avc:  denied  { write } for  pid=28603 comm=&quot;mysqld&quot; name=&quot;/&quot; dev=tmpfs ino=708243 scontext=unconfined_u:system_r:mysqld_t:s0 tcontext=unconfined_u:object_r:default_t:s0 tclass=dir
+</code></pre>
+<p>No log acima é possível ver que o MYSQL tentou escrever em um diretorio da raiz que montava um TMPFS e não conseguiu devido ao contexto do diretório, tive então que checar o contexto do diretório, para isto eu rodei o comando abaixo</p>
+<pre><code>ls -Z /|grep mytmp
+</code></pre>
+<p>A saída recebida foi esta</p>
+<pre><code>drwxr-xr-x. root  root  unconfined_u:object_r:default_t:s0 mytmp
+</code></pre>
+<p>Veja que o conexto acima está com o tipo <strong>default_t</strong>, e neste caso, quando o SELINUX está ativo, o mysql não consegue escrever no diretório.</p>
+<p>Para resolver a questão foi necessário ajustar o contexto do diretório para <strong>mysqld_db_t</strong>, só assim o mysql terá condições de escrever dentro dele.</p>
+<p>Usei o semanage para definir o contexto default do diretório</p>
+<pre><code>semanage fcontext -a -t mysqld_db_t &quot;/mytmp(/.*)?&quot;
+</code></pre>
+<p>E depois rodei um restorecon para corrigir o contexto do diretório</p>
+<pre><code>restorecon -Rv /mytmp/
+</code></pre>
+<p>Acompanhe a saída do restorecon</p>
+<pre><code>restorecon reset /mytmp context unconfined_u:object_r:tmp_t:s0-&gt;unconfined_u:object_r:mysqld_db_t:s0
+</code></pre>
+<p>Feito isto, iniciei o MYSQL sem erros no log.</p>
+<p>Os erros na aplicação também foram solucionados.</p>
+<p>O processo é o mesmo se deseja colocar o diretório DATA do MYSQL em outro local em um servidor com SELINUX ativado.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

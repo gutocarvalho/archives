@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Usando VIM com Powerline no Mountain Lion</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Usando VIM com Powerline no Mountain Lion</h1>
+        <div>
+                <time>January 28, 2013</time>
+            </div>
+    </header><h2 id="sobre-a-powerline-para-o-vim">Sobre a Powerline para o VIM</h2>
+<p>A Powerline é um daqueles plugins essenciais para o VIM, ele personaliza a statusline  deixando com um visual bem mais agradável e polido, facilitando a leitura e o entendimento dos modos de operação do VIM. A powerline foi criada pelo <a href="https://github.com/Lokaltog">Kim Silkebækken</a> e está disponível no Github.</p>
+<p>Veja um exemplo retirado do site <a href="http://www.spifftastic.net/">spifftastic.net</a>.</p>
+<figure class="center"><img src="/images/posts/2013-01-28/powerline-ruby.png"/><figcaption>
+            <h4>[Powerline Normal Mode]</h4>
+        </figcaption>
+</figure>
+
+<p>Conheci a Powerline através de um amigo (Magnun Leno) e desde então sempre uso esse plugin no VIM.</p>
+<p>Eu estou usando diretamente no VIM, a maioria das pessoas no mundo OSX prefere usá-la no MacVim, a configuração é muito similar por isso não vou entrar em detalhes do MacVim. Abaixo veja algumas screenshots do vim-powerlone em meu notebook pessoal.</p>
+<figure class="center"><img src="/images/posts/2013-01-28/powerline-normal-mode.png"/><figcaption>
+            <h4>[Powerline Normal Mode]</h4>
+        </figcaption>
+</figure>
+
+<figure class="center"><img src="/images/posts/2013-01-28/powerline-insert-mode.png"/><figcaption>
+            <h4>[Powerline Insert Mode]</h4>
+        </figcaption>
+</figure>
+
+<figure class="center"><img src="/images/posts/2013-01-28/powerline-visual-mode.png"/><figcaption>
+            <h4>[Powerline Visual Mode]</h4>
+        </figcaption>
+</figure>
+
+<figure class="center"><img src="/images/posts/2013-01-28/powerline-replace-mode.png"/><figcaption>
+            <h4>[Powerline Replace Mode]</h4>
+        </figcaption>
+</figure>
+
+<p>Note que ele apresenta o modo do VIM (Normal, Inserção, Visual, Substituição, etc…), mostra o nome do arquivo que está sendo editado, o tipo do arquivo (unix), a codificação (utf-8), o filetype (puppet), o percentual lido, a linha e a posição do caracter na linha.</p>
+<h2 id="prereqs">PreReqs</h2>
+<ul>
+<li>OSX Mountain Lion;</li>
+<li>Homebrew instalado em seu OSX;</li>
+<li>iTerm2 instalado e usando terminal em modo xterm-256color;</li>
+<li>Conhecimentos básicos sobre vim e vimrc;</li>
+</ul>
+<h2 id="instalando-vundle">Instalando Vundle</h2>
+<p>Para instalar o powerline vamos usar o vundle que é um gerenciador de pacotes para o vim, primeiro faça o clone do vundle com o comando abaixo:</p>
+<pre><code>git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+</code></pre>
+<p>Depois ajuste seu .vimrc para usar o vundle</p>
+<pre tabindex="0"><code>&quot;vundle
+set nocompatible
+filetype off
+
+set rtp+=~/.vim/bundle/vundle/
+call vundle#rc()
+
+&quot; let Vundle manage Vundle
+&quot; required! 
+Bundle 'gmarik/vundle'
+
+ &quot; My Bundles here:
+ &quot;
+Bundle 'Lokaltog/vim-powerline'
+
+ &quot; original repos on github
+ &quot; Bundle 'tpope/vim-rails.git'
+
+ &quot; non github repos
+ &quot; Bundle 'git://git.wincent.com/command-t.git'
+ 
+filetype plugin on
+filetype plugin indent on
+</code></pre><p>Pronto, a configuração do vundle já foi adicionada, inclusive já mencionei que desejamos instalar o vim-powerline na lista de bundles, agora abra o vim e vamos pedir para o vundle instalar os plugins.</p>
+<pre><code>:BundleInstall
+</code></pre>
+<h2 id="configurando-a-powerline">Configurando a Powerline</h2>
+<p>Agora abra seu arquivo .vimrc e adicione as linhas abaixo:</p>
+<pre tabindex="0"><code>set laststatus=2
+set encoding=utf-8
+let g:Powerline_symbols = 'fancy'
+</code></pre><p>Isso é suficiente para configurar e ativar a powerline, porém, ao abrir o Vim você verá que ela não está bonita como nas screenshost acima, isso acontece pois é necessário fazer um patch na fonte do OSX para ter aquele visual polido.</p>
+<h2 id="instalando-fontes-no-osx">Instalando fontes no OSX</h2>
+<h3 id="fontes-que-já-receberam-patchs">Fontes que já receberam patchs</h3>
+<p>Existem diversas fontes já preparadas para powerline, basta procurar no github.</p>
+<p>Para facilitar, escolha uma fonte com patch a partir do site abaixo:</p>
+<pre><code>https://github.com/Lokaltog/powerline-fonts
+</code></pre>
+<p>Para este exemplo eu fiz o download da fonte Menlo.</p>
+<pre><code>wget https://github.com/Lokaltog/powerline-fonts/blob/master/Menlo/Menlo%20Regular%20for%20Powerline.otf
+</code></pre>
+<p>Depois de fazer download, rode o comando abaixo</p>
+<pre><code>open Menlo+Regular+for+Powerline.otf
+</code></pre>
+<p>Quando a fonte abrir, clique em instalar fonte.</p>
+<p>Configure a fonte nova como opção default em seu iTerm2, reinicie o iTerm2.</p>
+<p>Abra o Vim e veja se a powerline está funcionando com o visual correto.</p>
+<h3 id="fontes-sem-patchs">Fontes sem patchs</h3>
+<p>Caso deseje aplicar um patch em uma fonte específica, primeiro verifique se você tem o fontforge instalado rodando o comando abaixo:</p>
+<pre tabindex="0"><code>$ fontforge -version
+Copyright (c) 2000-2011 by George Williams.
+Executable based on sources from 13:48 GMT 22-Feb-2011-D.
+Library based on sources from 13:48 GMT 22-Feb-2011.
+fontforge 20110222
+libfontforge 20110222
+</code></pre><p>Caso ele não esteja instalado, atualize os índices do homebrew</p>
+<pre><code>brew update
+</code></pre>
+<p>Instale o fontforge</p>
+<pre><code>brew install fontforge --use-clang
+</code></pre>
+<p>Faça o patch da sua fonte</p>
+<pre><code>fontforge -script ~/.vim/bundle/vim-powerline/fontpatcher/fontpatcher CONSOLA.TTF 
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>Copyright (c) 2000-2012 by George Williams.
+ Executable based on sources from 14:57 GMT 31-Jul-2012-D.
+ Library based on sources from 14:57 GMT 31-Jul-2012.
+The following table(s) in the font have been ignored by FontForge
+  Ignoring 'DSIG' digital signature table
+</code></pre><p>Veja a fonte criada</p>
+<pre><code>-rw-r--r--  1 gutocarvalho  staff  96584 28 Jan 19:40 CONSOLA-Powerline.TTF
+-r--r--r--  1 gutocarvalho  staff  98520 28 Jan 19:39 CONSOLA.TTF
+</code></pre>
+<p>Após fazer o patch, clique duas vezes na fonte gerada e instale em seu OSX.</p>
+<p>Configure a fonte nova como opção default em seu iTerm2, reinicie o iTerm2.</p>
+<p>Abra o vim e veja se a powerline está funcionando com o visual correto.</p>
+<h2 id="amarrando-as-pontas">Amarrando as pontas</h2>
+<p>Esse plugin é um grande utilitário para o VIM ou MACVIM, recomendo para UNIX e LINUX.</p>
+<p>No Linux não é necessário aplicar patch nas fontes.</p>
+<p>O vim-powerline está congelado, seu criador está desenvolvendo um novo projeto para substituí-lo chamado apenas de <a href="https://github.com/Lokaltog/powerline">powerline</a>, este foi todo escrito em python, no momento ainda é beta.</p>
+<h2 id="referências">Referências</h2>
+<ul>
+<li><a href="https://github.com/Lokaltog/vim-powerline/blob/develop/doc/Powerline.txt">https://github.com/Lokaltog/vim-powerline/blob/develop/doc/Powerline.txt</a></li>
+<li><a href="https://github.com/Lokaltog/vim-powerline">https://github.com/Lokaltog/vim-powerline</a></li>
+<li><a href="https://github.com/gmarik/vundle">https://github.com/gmarik/vundle</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Resource Type File e Múltiplos Sources</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Resource Type File e Múltiplos Sources</h1>
+        <div>
+                <time>January 25, 2013</time>
+            </div>
+    </header><p>Há alguns dias um amigo (Elcimar Freitas) me disse que havia criado uma classe usando o modelo em trio, porém ele queria que certas máquinas recebessem arquivos personalizados, em um primeiro momento ele estava pensando em usar condicionais ou case para resolver o problema, o que é realmente possível, porém, não é muito prático, acabei dando uma dica que aprendi com o mago @dscobral - vulgo gandalf. Aqui neste post vamos resolver o problema dentro do recurso File, acompanhe a explicação e a solução.</p>
+<h3 id="estudando-o-problema">Estudando o problema</h3>
+<p>Veja abaixo um exemplo típico de configuração em trio:</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>class ntp {</p>
+<pre><code>package { 'ntp':
+	ensure =&gt; present
+}
+
+file { '/etc/ntp.conf':
+	ensure  =&gt; present,
+	mode    =&gt; 644,
+	owner   =&gt; root,
+	group   =&gt; root,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+	source  =&gt; &quot;puppet:///files/ntp/ntp.conf&quot;
+}
+
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['/etc/ntp.conf'],
+}
+</code></pre>
+<p>}</p>
+<p>{% endcodeblock %}</p>
+<p>Poderíamos utilizar tratamento condicional para enviar diferentes arquivos para diferentes nodes, veja um exemplo abaixo:</p>
+<p>{% codeblock lang:puppet %}
+class ntp {</p>
+<pre><code>if $fqdn == 'servidor1.hacklab' {
+	$ntpfile = &quot;ntp.conf.servidor1&quot;
+}
+elsif $fqdn == &quot;servidor2.hacklab&quot; {
+	$ntpfile = &quot;ntp.conf.servidor2&quot;
+}
+else {
+	$ntpfile = &quot;ntp.conf&quot;
+}
+
+package { 'ntp':
+	ensure =&gt; present
+}
+
+file { '/etc/ntp.conf':
+	ensure  =&gt; present,
+	mode    =&gt; 644,
+	owner   =&gt; root,
+	group   =&gt; root,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+	source  =&gt; &quot;puppet:///files/ntp/${ntpfile}&quot;
+}
+
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['/etc/ntp.conf'],
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Ou então poderíamos utilizar o case para tratar a mesma questão de forma diferente, veja o exemplo abaixo:</p>
+<p>{% codeblock lang:puppet %}
+class ntp {</p>
+<pre><code>case $fdqn {
+	servidor1.hacklab: { $ntpfile = &quot;ntp.conf.servidor1&quot; }
+	servidor2.hacklab: { $ntpfile = &quot;ntp.conf.servidor2&quot; }
+	default:	   { $ntpfile = &quot;ntp.conf&quot; }
+}
+
+package { 'ntp':
+	ensure =&gt; present
+}
+
+file { '/etc/ntp.conf':
+	ensure  =&gt; present,
+	mode    =&gt; 644,
+	owner   =&gt; root,
+	group   =&gt; root,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+	source  =&gt; &quot;puppet:///files/ntp/${ntpfile}&quot;
+}
+
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['/etc/ntp.conf'],
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Daria até para usar seletores, abaixo mais um exemplo:</p>
+<p>{% codeblock lang:puppet %}
+class ntp {</p>
+<pre><code>package { 'ntp':
+	ensure =&gt; present
+}
+
+file { 'ntp.conf':
+	ensure  =&gt; present,
+	mode    =&gt; 644,
+	owner   =&gt; root,
+	group   =&gt; root,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+	source    =&gt; $fqdn ? {
+		'sevidor1.hacklab'   =&gt; 'puppet:///files/ntp/ntp.conf.servidor1',
+		'servidor2.hacklab'  =&gt; 'puppet:///files/ntp/ntp.conf.servidor1',
+		 default             =&gt; 'puppet:///files/ntp/ntp.conf',
+	},
+
+}
+
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['ntp.conf'],
+}
+</code></pre>
+<p>}</p>
+<p>{% endcodeblock %}</p>
+<h3 id="solucionando-o-problema">Solucionando o problema</h3>
+<p>Porém nos três casos teríamos que escrever muitas linhas caso fosse necessário ter arquivos diferentes para vários servidores, seria repetitivo e cansativo, e nós utilizamos o puppet justamente para evitar o trabalho repetitivo.</p>
+<p>Se lermos com cuidado o manual de resource types, ou se você tiver a sorte de ter um gandalf (@dcsobral) fazendo mentoria de puppet contigo, você poderá encontrar a solução dentro do resource type file, veja como fica a solução mais elegante - na minha opinião.</p>
+<p>{% codeblock lang:puppet %}
+class ntp {</p>
+<pre><code>package { 'ntp':
+	ensure =&gt; present
+}
+
+file { 'ntp.conf':
+	ensure  =&gt; present,
+	mode    =&gt; 644,
+	owner   =&gt; root,
+	group   =&gt; root,
+	require =&gt; Package['ntp'],
+	notify  =&gt; Service['ntp'],
+	source  =&gt; [
+               &quot;puppet:///files/ntp/ntp.conf.${fqdn}&quot;,
+               &quot;puppet:///files/ntp/ntp.conf&quot;,
+               ],
+}
+
+service { 'ntp':
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; File['ntp.conf'],
+}
+</code></pre>
+<p>}</p>
+<p>{% endcodeblock %}</p>
+<p>Observe que dentro de source eu declarei que se houver um arquivo chamado ntp.conf.nomedamaquina.dominio, ele vai usar esse arquivo, do contrário, se não existir algum arquivo com $fqdn no nome, ele passa para a próxima opção que seria o arquivo ntp.conf padrão.</p>
+<p>Com este tipo de configuração podemos ter dezenas de arquivos de configuração no diretório /etc/puppet/files/ntp, cada um terminando com o nome da máquina a que se destina, isso seria entendido pelo source e processado na ordem determinada.</p>
+<p>Eu chamo isso de múltiplos sources, veja mais um exemplo retirado do site da puppetlabs:</p>
+<p>{% codeblock lang:puppet %}</p>
+<p>file { &ldquo;/etc/nfs.conf&rdquo;:
+source =&gt; [
+&ldquo;puppet:///modules/nfs/conf.$host&rdquo;,
+&ldquo;puppet:///modules/nfs/conf.$operatingsystem&rdquo;,
+&ldquo;puppet:///modules/nfs/conf&rdquo;
+]
+}
+{% endcodeblock %}</p>
+<p>No exemplo acima podem existir arquivos terminando com o nome da máquina, sistema operacional ou então a opção final é o arquivo padrão.</p>
+<p>Dá para ver que existem muitas formas de se fazer a mesma coisa, o desafio é encontrar a mais eficiente para sua necessidade.</p>
+<p>Eu normalmente uso CASE e SELETORES quando tenho que tratar nomes - diferentes - de pacotes em distros linux distintas, ou mesmo PATH para um arquivo de configuração que é diferente no Debian e no CENTOS, nestes casos são muito úteis de fato.</p>
+<h3 id="referências">Referências</h3>
+<ul>
+<li><a href="http://docs.puppetlabs.com">http://docs.puppetlabs.com</a></li>
+<li><a href="http://gutocarvalho.net/dokuwiki/doku.php?id=puppet_serverless#case">http://gutocarvalho.net/dokuwiki/doku.php?id=puppet_serverless#case</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Apache modproxy permission denied</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Apache modproxy permission denied</h1>
+        <div>
+                <time>July 1, 2014</time>
+            </div>
+    </header><p>Estava eu configurando um proxy para o jboss utilizando o apache httpd e me deparei com um erro chato de permission denied nos logs, algo bastante incomum.</p>
+<pre><code>Tue Jul 01 11:50:08 2014] [error] (13)Permission denied: proxy: AJP: attempt to connect to 10.10.2.106:5009 (10.10.2.106) failed
+</code></pre>
+<p>No JBOSS estava tudo normal, nada de errado nos logs, conseguia entrar na aplicação diretamente, então iniciei um pente fino no /var/log e ao analisar o log de audit percebi que era algo relacionado ao selinux, sim ele está ligado em meus servidores</p>
+<pre><code>type=SYSCALL msg=audit(1404226208.904:588): arch=c000003e syscall=42 success=no exit=-13 a0=e a1=7f6f107d5460 a2=10 a3=7fff72be7030 items=0 ppid=12161 pid=12285 auid=503 uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=11 comm=&quot;httpd&quot; exe=&quot;/usr/sbin/httpd&quot; subj=unconfined_u:system_r:httpd_t:s0 key=(null)
+</code></pre>
+<p>Após alguma pesquisa entendi que com selinux ligado, é necessário ativar um boleano para permitir que o apache se conecte a outro host da minha rede, mesmo que seja localmente, então executei o comando</p>
+<pre><code>setsebool httpd_can_network_connect 1
+</code></pre>
+<p>Após o comando o proxy comecou a funcionar, mas para definir que essa configuração é permamante devemos utilizar a flag -P</p>
+<pre><code>setsebool -P httpd_can_network_connect 1
+</code></pre>
+<p>Fica a dica!</p>
+<h2 id="referências">Referências</h2>
+<ul>
+<li><a href="http://sysadminsjourney.com/content/2010/02/01/apache-modproxy-error-13permission-denied-error-rhel/">http://sysadminsjourney.com/content/2010/02/01/apache-modproxy-error-13permission-denied-error-rhel/</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

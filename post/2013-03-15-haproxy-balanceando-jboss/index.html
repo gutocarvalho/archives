@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>HAPROXY balanceando JBOSS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>HAPROXY balanceando JBOSS</h1>
+        <div>
+                <time>March 15, 2013</time>
+            </div>
+    </header><p>Este post estava encostado há algum tempo, finalmente consegui tempo para publicá-lo.</p>
+<p>Há alguns meses um leitor me pediu ajuda com o HAPROXY, ele disse que havia visto em minha wiki alguns exemplos de uso, mas queria algo mais focado no JBOSS, este leitor tinha uma necessidade específica e resolvi ajudá-lo, mesmo não sendo especialista e não conhecendo a fundo a ferramenta.</p>
+<p>Abaixo segue o roteiro completo de nossos estudos e descobertas.</p>
+<h2 id="1-sobre-o-haproxy">1. Sobre o HAPROXY</h2>
+<p>O <a href="http://haproxy.1wt.eu/">HAProxy</a> é uma solução - opensource - que oferece recursos de High Availbility, Load Balance e PROXY para aplicações baseadas em TCP e HTTP. Ele foi particularmente desenhado e pensado para web sites com grande carga que necessitam de persistência ou processamentos específicos na camada de aplicação (layer7). Ele suporta milhares de conexões em hardwares muito modestos. É uma ferramenta fácil de instalar, configurar, operar e principalmente fácil de integrar aos ambientes e arquiteturas existentes.</p>
+<p>Existem casos documentados de ambientes HAPROXY atendendo demandas que geravam de 3 a 6 Gibabits de tráfego - por segundo. Existem <a href="http://haproxy.1wt.eu/10g.html">testes</a> de laboratório feitos pelo criador da ferramenta demonstram que ele chegou a atender cerca de 106 mil requisições HTTP por segundo, e encaminhar (HTTP FORWARD) cerca de 40 mil requisições por segundo para backends internos.</p>
+<p>Mas quem usa o HAPROXY?</p>
+<p>AMAZON, TWITTER, REDDIT, FARMVILLE, GITHUB, TUMBLR, DISQUS, FEDORA, REDHAT CLOUD, STACKOVERFLOW.</p>
+<p>* Dados retirados de <a href="http://haproxy.1wt.eu/they-use-it.html">http://haproxy.1wt.eu/they-use-it.html</a></p>
+<h2 id="2-haproxy">2. HAPROXY</h2>
+<h3 id="21-instalando">2.1 Instalando</h3>
+<p>A instalação é bastante simples, vou mostrar como instalar no Debian e CentOS.</p>
+<p>No Debian</p>
+<pre><code>aptitude install haproxy
+</code></pre>
+<p>No CentOS</p>
+<pre><code>yum install haproxy
+</code></pre>
+<p>Se preferir compile - recomendado - a última versão disponível, basta fazer o download dos sources no site do <a href="http://haproxy.1wt.eu/download/1.4/src/">haproxy</a>.</p>
+<h3 id="22-cenário">2.2 Cenário</h3>
+<p>O leitor queria balancear uma aplicação de ensino a distância, tipo moodle, porém a ferramenta foi escrita em Java. Em seu ambiente ele tinha dois servidores bem robustos rodando JBOSS, e um servidor mais modesto em standby, estes por sua vez, sustentavam a aplicação de EAD.</p>
+<h3 id="23-configuração">2.3 Configuração</h3>
+<p>O arquivo de configuração tem o nome de haproxy.cfg, ele normalmente está no diretório /etc/haproxy.</p>
+<p>A configuração proposta foi a seguinte:</p>
+<pre tabindex="0"><code>global
+	log 127.0.0.1   local0
+	log 127.0.0.1   local1 notice info
+	maxconn 25000   # numero maximo de conexoes que ele vai atender
+	user haproxy
+	group haproxy
+	daemon
+	nbproc  2 # numero de processadores
+
+defaults
+     contimeout      5000
+     clitimeout      50000
+     srvtimeout      50000
+     retries  3
+
+listen  sistema    0.0.0.0:80
+ 
+     log     global
+     mode    http
+     option httplog
+     option dontlognull
+     option redispatch
+     option forwardfor
+     option httpclose
+     option forceclose
+     option persist
+     stats enable
+     stats auth admin:proinfo
+     stats uri /haproxy_stats
+     stats realm HAProxy\ Statistics
+     cookie  SERVERID insert indirect nocache
+     balance roundrobin
+     server  app01 10.1.1.1:8080 cookie A weight 1 maxconn 5000 inter 2s rise 2 fall 3 check
+     server  app02 10.1.1.2:8080 cookie B weight 1 maxconn 5000 inter 2s rise 2 fall 3 check
+     server  app03 10.1.1.3:8080 cookie B weight 1 maxconn 5000 inter 2s rise 2 fall 3 check backup
+</code></pre><h4 id="231-section-global">2.3.1 section global</h4>
+<p>A seção global do arquivo de configurações define algumas configurações globais, são elas:</p>
+<pre tabindex="0"><code>log              =&gt; configurações de log
+maxconn          =&gt; número máximo global de conexões que ele vai atender
+user             =&gt; usuário que vai rodar o serviço
+group            =&gt; grupo
+daemon           =&gt; forma de funcionamento, no caso standalone
+nbproc           =&gt; número de processadores
+</code></pre><h4 id="232-section-defaults">2.3.2 section defaults</h4>
+<p>A seção defaults define algumas configurações padrão para os listeners e backends.</p>
+<pre tabindex="0"><code>contimeout       =&gt; tempo máximo que o servidor aguarda para um conexão ser estabelecida
+clitimeout       =&gt; tempo máximo de inatividade no lado do cliente
+srvtimeout       =&gt; tempo máximo de inatividade no lado do servidor
+retries          =&gt; qts vezes o clt ainda deve tentar se conectar após uma falha
+</code></pre><h4 id="233-section-listen">2.3.3 section listen</h4>
+<p>Está seção define as portas que o HAPROXY vai abrir e escutar, além disto é aqui que fazemos todas as configurações de balanceamento. Abaixo a explicação de cada parâmetro:</p>
+<pre><code> log                                      =&gt; confs de log, no caso confs do global
+
+ mode    http                             =&gt; modo de funcionamento (http ou tcp )
+
+ option httplog                           =&gt; habilita log http
+ option dontlognull                       =&gt; não loga conexões de checagem, ajuda a evitar log poluído
+ option redispatch                        =&gt; limpar o cookie caso o backend caia
+ option forwardfor                        =&gt; para empurrar o ip do cliente para o backend
+ option httpclose                         =&gt; ajuda a fechar conexões que já deveriam ter sido encerradas
+ option forceclose                        =&gt; ajuda a fechar conexões que já deveriam ter sido encerradas
+ option persist                           =&gt; habilitando persistentica
+
+ stats enable                             =&gt; habilita estatísticas
+ stats auth admin:password                =&gt; usuário/senha para acessar stats
+ stats uri /haproxy_stats                 =&gt; url das estatísticas
+ stats realm HAProxy\ Statistics          =&gt; realm de autenticação
+
+ cookie  SERVERID insert indirect nocache =&gt; injeta cookie na conexao
+ 
+ balance roundrobin                       =&gt; tipo de balanceamento
+</code></pre>
+<h5 id="2331-parâmetro-cookie">2.3.3.1 parâmetro cookie</h5>
+<pre><code>SERVERID   =&gt; nome do cookie que será inserido, caso necessário
+indirect   =&gt; não insere cookie se o cliente já tiver um cookie válido
+insert     =&gt; insere um cookie para controle de persistência de sessão caso seja necessário
+nocache    =&gt; se cookie for inserido (insert) orienta a não fazer cache
+</code></pre>
+<h5 id="2332-parâmetro-balancer-e-server">2.3.3.2 parâmetro balancer e server</h5>
+<p>Veja abaixo que a configuração de balanceamento possui três backends com diversos parâmetros definidos para eles.</p>
+<pre><code> server  sistema_01 10.1.1.1:8080 cookie A weight 1 maxconn 5000 inter 2s rise 2 fall 3 check
+ server  sistema_02 10.1.1.2:8080 cookie B weight 1 maxconn 5000 inter 2s rise 2 fall 3 check
+ server  sistema_03 10.1.1.3:8080 cookie C weight 1 maxconn 5000 inter 2s rise 2 fall 3 check backup
+</code></pre>
+<p>Vamos entender agora para que serve cada parâmetro:</p>
+<pre><code>check     =&gt; verifica se a porta está aberta no servidor do pool
+cookie    =&gt; nome do cookie que será injetado no lado do cliente
+backup    =&gt; essa maquina só vai entrar se uma instância do pool estiver fora
+inter     =&gt; significa que ele fará checagens no backend a cada 2 segundos
+rise      =&gt; significa que a maquina só volta para o pool se tiver 2 checagens positivas
+fall      =&gt; significa que a maquina só sairá do pool se tiver pelo menos 3 checagens negativas
+maxconn   =&gt; número máximo de conexões que a instância deve receber
+weight    =&gt; peso que a instância terá no pool, quando maior mais conexões vão para ele
+</code></pre>
+<h4 id="24-estatísticas">2.4 Estatísticas</h4>
+<p>Para acessar as estatísticas habilitadas na configuração proposta, basta apontar seu navegador para o endereço abaixo:</p>
+<pre><code>http://ip-do-servidor-haproxy/haproxy_stats
+</code></pre>
+<p>Através desta ferramenta de estatística, você terá dados completos sobre o balanceamento.</p>
+<p>* Vai pedir o usuário e senha definidos na configuração.</p>
+<h4 id="25-entendendo-a-configuração">2.5 Entendendo a configuração</h4>
+<p>Abaixo explico em 6 passos rápidos a configuração criada.</p>
+<ol>
+<li>A configuração <strong>option persist</strong> força o acesso a um servidor do balanceamento que esteja demorando a responder, em caso de servidores que atendem muitas requisições isso é importante, as vezes ele não está fora só está lento.</li>
+<li>Estamos injetando um cookie (<strong>cookie  SERVERID insert indirect nocache</strong>) com nome SERVERID para organizar o balanceamento e manter a persistência de sessão. Quando um cliente chega, o haproxy injeta um cookie SERVERID=A/B/C para ele, assim quando ele voltar a conectar, vai trazer a informação do cookie (SERVERID=A) e a partir disto cair no mesmo servidor que ele iniciou a conexão, assim ele mantém a persistência na sessão.</li>
+<li>É muito bom ter a persistência configurada, porém se uma máquina do balanceamento sair do ar, alguns clientes não irão conseguir fazer flush no cookie, com isso eles ficarão perdidos, com o <strong>option REDISPATCH</strong> isso é resolvido, o cookie é resetado caso o backend tenha sido removido do balanceamento e a partir daí a requisição vai para o próximo servidor disponível.</li>
+<li>O <strong>option forwardfor</strong> é utilizado para empurrar o IP do cliente para o backend ao invés de empurrar o IP do HAPROXY, isso é bom quando queremos gerar estatísticas usando ferramentas como AWSTATS, estas ferramentas normalmente fazem leitura dos logs dos backends.</li>
+<li>O <strong>option httpclose</strong> e <strong>option forceclose</strong> são utilizados para fechar conexões. Algumas vezes alguns servidores ao receberem o <strong>httpclose</strong>, mesmo assim ainda mantém a conexão aberta com o cliente, deixando ela cair por timeout, isso pode ocasionar centenas e as vezes milhares de conexões desnecessárias esperando timeout, esses dois parâmetros resolvem isto, fechando a conexão assim que o servidor terminar de responder.</li>
+<li>Configuramos 3 backends, 2 ativos e um em standby (backup), esse último só entrará no balanceamento caso um dos backends principais seja removido por alguma razão, essa máquina é mais modesta, por isto está em modo backup.</li>
+</ol>
+<h2 id="3-amarrando-as-pontas">3. Amarrando as pontas</h2>
+<p>Segundo o leitor, até hoje o balanceamento está funcionando redondinho, e ele por sinal está bastante feliz.</p>
+<p>Tive que ler bastante para ajudá-lo na configuração, isso me ajudou a desenferrujar no HAPROXY, e olha que havia um bom tempo em que eu não usava ele para algo, finalmente surgiu uma boa oportunidade.</p>
+<p>O HAPROXY ainda tem centenas de recursos para conhecer, alguns muito interessantes para PROXY e LOAD BALANCER, ele tem suporte a ACLs para redirecionamentos especiais, podemos construir regras fantásticas usando ACLs.</p>
+<p>Outra questão sensacional é o balanceamento TCP, posso virtualmente criar um balanceamento na camada 4 utilizando apenas esta ferramenta, com isso posso balancear IMAP, POP, SMTP e qualquer outra aplicação que atenda clientes utilizando uma porta TCP.</p>
+<p>Logo podemos dizer que com o HAPROXY você pode construir seu próprio SWITCH de conteúdo.</p>
+<p>Se quiser criar um ambiente com HA para seu HAPROXY recomendo o uso do KEEPALIVED. Acesse o site do <a href="http://andyleonard.com/2011/02/01/haproxy-and-keepalived-example-configuration/">Andy Leonard</a> para ler um bom tutorial sobre esse assunto.</p>
+<p>Eu já vi casos de uso do NGINX para fazer proxy reverso e o HAPROXY para balanceamento, afinal ele é especializado nisto.</p>
+<p>Já vi cenários com NGINX + HAPROXY + VARNISH (PROXY =&gt; BALANCEAMENTO =&gt; CACHE).</p>
+<p>A grande vantagem do HAPROXY na minha opinião é que ele é uma ferramenta especializada em balanceamento, diferente de outras ferramentas que também fazem balanceamento, mas não são especializadas nisto. O HAPROXY é incrivelmente performatico e usa poucos recursos do servidor (MEM/PROC) para fazer seu trabalho.</p>
+<p>Eu particularmente gosto muito desta ferramenta e das possibilidades que ela me oferece, recomendo de olhos fechados.</p>
+<p>* Caso alguém que conheça melhor a ferramenta tenha visto algo errado, por favor nos avise e ajude melhorar este estudo, como eu já disse, sou um admirador da ferramenta mas não um grande conhecedor :)</p>
+<h2 id="4-referências">4. Referências</h2>
+<ul>
+<li><a href="http://haproxy.1wt.eu/">http://haproxy.1wt.eu/</a></li>
+<li><a href="https://code.google.com/p/haproxy-docs">https://code.google.com/p/haproxy-docs</a></li>
+<li><a href="http://gutocarvalho.net/dokuwiki/doku.php/haproxy_exemplos">http://gutocarvalho.net/dokuwiki/doku.php/haproxy_exemplos</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Criando instalador USB do MacOS Sierra</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Criando instalador USB do MacOS Sierra</h1>
+        <div>
+                <time>September 12, 2016</time>
+            </div>
+    </header><p>Para quem leu o último artigo e ficou curioso sobre como criar um instalador do Sierra para o MacOS, segue um tutorial em pt_BR para te ajudar.</p>
+<h2 id="requisitos">Requisitos</h2>
+<p>É requisito desse tutorial ter o App que instala o MacOS Sierra em seu sistema, esse instalador deve aparecer no Launchpad ou no diretório de aplicativos.</p>
+<p>Se você quiser baixar a versão GM use o link abaixo</p>
+<pre><code>https://beta.apple.com/sp/betaprogram/guide
+</code></pre>
+<p>É necessário ter um dispositivo USB.</p>
+<h2 id="1-dispostivo-usb">1. Dispostivo USB</h2>
+<p>Reserve um dispositivo USB de 16 GB para utilizar como instalador, de preferência USB 3 — quanto mais rápido melhor.</p>
+<p>Se existem arquivos importantes copie para outro local pois o processo de criação do instalador irá apagar todos os dados do USB Stick.</p>
+<h2 id="2-rename-no-dispositivo">2. Rename no dispositivo</h2>
+<p>Insira seu USB Stick e liste os dispositivo conectados no terminal</p>
+<pre><code>diskutil list
+</code></pre>
+<p>Depois de identificar o nome do seu dispositivo faça o rename</p>
+<pre><code>sudo diskutil rename &quot;GUTO 16G&quot; SierraInstaller
+</code></pre>
+<p>O comando acima foi um exemplo, troque &ldquo;GUTO 16G&rdquo; pelo nome real do seu dispositivo</p>
+<h2 id="3-criando-o-instalador">3. Criando o instalador</h2>
+<p>Este é o processo que irá criar o instalador</p>
+<h3 id="31-gm-build">3.1 GM Build</h3>
+<p>Se estiver usando a versão GM rode o comando abaixo no seu terminal</p>
+<pre><code>sudo /Applications/Install\ macOS\ Sierra.app/Contents/Resources/createinstallmedia --volume /Volumes/SierraInstaller --applicationpath /Applications/Install\ macOS\ Sierra.app --nointeraction &amp;&amp;say Done
+</code></pre>
+<p>A versão GM já é um build fechado, muito próximo do que será apresentado no dia 20, apenas pequenas correções serão adicionadas até dia 20 na versão definitiva.</p>
+<h3 id="32-public-beta-build">3.2 Public Beta Build</h3>
+<p>Se estiver usando a versão Public Beta, rode o comando abaixo no terminal</p>
+<pre><code>sudo /Applications/Install\ macOS\ Sierra\ Public\ Beta.app/Contents/Resources/createinstallmedia --volume /Volumes/SierraInstaller --applicationpath /Applications/Install\ macOS\ Sierra\ Public\ Beta.app --nointeraction &amp;&amp;say Done
+</code></pre>
+<h3 id="33-developer-preview-beta-build">3.3 Developer Preview Beta Build</h3>
+<p>Se estiver usando a versão Developer Preview Beta, rode o comando abaixo no terminal</p>
+<pre><code>sudo /Applications/Install\ 10.12\ Developer\ Preview.app/Contents/Resources/createinstallmedia --volume /Volumes/SierraInstaller --applicationpath /Applications/Install\ 10.12\ Developer\ Preview.app --nointeraction &amp;&amp;say Done
+</code></pre>
+<h2 id="4-processo-de-criação">4. Processo de criação</h2>
+<p>Após rodar o comando você terá uma saída similar a esta</p>
+<pre tabindex="0"><code>Erasing Disk: 0%… 10%… 20%… 30%…100%…
+Copying installer files to disk…
+Copy complete.
+Making disk bootable…
+Copying boot files…
+Copy complete.
+Done.
+</code></pre><p>Isso pode demorar dependendo da velocidade do seu USB Stick.</p>
+<h2 id="5-instalando-via-usb">5. Instalando via USB</h2>
+<p>Após a criação do instalador, você verá no Finder o instalador disponível como dispositivo externo, agora você só precisa reiniciar segurando OPTION e escolher o instalador USB na hora do boot.</p>
+<h3 id="refs">Refs</h3>
+<ul>
+<li><a href="http://osxdaily.com/2016/06/15/make-macos-sierra-beta-usb-boot-drive/">http://osxdaily.com/2016/06/15/make-macos-sierra-beta-usb-boot-drive/</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

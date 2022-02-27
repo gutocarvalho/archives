@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Time machine via console</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Time machine via console</h1>
+        <div>
+                <time>June 1, 2013</time>
+            </div>
+    </header><p>Estive pesquisando sobre como deletar manualmente backups antigos do time machine e descobri o comando tmutil, ele pode ser utilizado para realizar essa tarefa via console, mas não é só isto, o tmutil permite manipular de forma direta o time machine, veja abaixo alguns comandos interessantes.</p>
+<p>Para listar os backups existentes em seu disco</p>
+<pre><code>tmutil listbackups
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>/Volumes/GutoWD1TB/Backups.backupdb/kaiten/2013-04-02-085203
+/Volumes/GutoWD1TB/Backups.backupdb/kaiten/2013-04-02-134033
+/Volumes/GutoWD1TB/Backups.backupdb/kaiten/2013-04-19-125352
+</code></pre><p>Para saber qual o backup mais recente</p>
+<pre><code>tmutil latestbackup
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>/Volumes/GutoWD1TB/Backups.backupdb/kaiten/2013-04-19-125352
+</code></pre>
+<p>Para habilitar backups automáticos</p>
+<pre><code>tmutil enable
+</code></pre>
+<p>Para desabilitar backups automáticos</p>
+<pre><code>tmutil disable
+</code></pre>
+<p>Para habilitar snapshots locais do time machine (no mesmo disco)</p>
+<pre><code>tmutil enablelocal
+</code></pre>
+<p>Para desabilitar snapshots locais do time machine</p>
+<pre><code>tmutil disablelocal
+</code></pre>
+<p>Para iniciar um backup manualmente</p>
+<pre><code>tmutil startbackup
+</code></pre>
+<p>Para interromper um backup em progresso</p>
+<pre><code>tmutil stopbackup
+</code></pre>
+<p>Para criar um snapshot local (no mesmo disco)</p>
+<pre><code>tmutil snapshot
+</code></pre>
+<p>Para deletar todos os backups de um dispositivo</p>
+<pre><code>tmutil delete /Volumes/drive_name/Backups.backupdb/old_mac_name
+</code></pre>
+<p>Para deletar um snapshot específico de um dispositivo específico</p>
+<pre><code>tmutil delete /Volumes/drive_name/Backups.backupdb/mac_name/YYYY-MM-DD-hhmmss
+</code></pre>
+<p>Para associar um disco ao time machine</p>
+<pre><code>tmutil setdestination /Volumes/backupdrive
+</code></pre>
+<p>Para associar um ponto de montagem afp via rede ao time machine</p>
+<pre><code>tmutil setdestination afp://user:password@server-address/directory
+</code></pre>
+<p>Para adicionar um diretório a lista de exclusão</p>
+<pre><code>tmutil addexclusion /Downloads
+</code></pre>
+<p>Para remover um diretório da lista de exclusão</p>
+<pre><code>tmutil removeexclusion /Downloads
+</code></pre>
+<p>Para comparar os arquivos de backup com os arquivos atuais em seu disco</p>
+<pre><code>tmutil compare
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>- 181B                          /Volumes/GutoWD1TB/Backups.backupdb/kaiten/2013-06-01-201328/OSX/.com.apple.backupd.mvlist.plist
++ 0B                            /.dbfseventsd
+!         (mtime)               /.DocumentRevisions-V100/.cs
+! 12.0M   (size, mtime)         /.DocumentRevisions-V100/.cs/ChunkStorage/0/0/0/18
+! 2.4M    (size, mtime)         /.DocumentRevisions-V100/.cs/ChunkStoreDatabase-wal
+!         (mtime)               /.DocumentRevisions-V100/ChunkTemp
+!         (mtime)               /.DocumentRevisions-V100/PerUID/501/110/com.apple.documentVersions
++ 1.2K                          /.DocumentRevisions-V100/PerUID/501/110/com.apple.documentVersions/B849E3FA-CBC3-4E33-8859-E278C049B78A.markdown
+! 2.7M    (size, mtime)         /.DocumentRevisions-V100/db-V1/db.sqlite-wal
+!         (mtime)               /.DocumentRevisions-V100/staging
+</code></pre><p>Entenda as legendas</p>
+<pre><code>+ significa arquivo novo
+- significa arquivo removido
+! significa arquivo modificado
+</code></pre>
+<p>Para comparar apenas o tamanho dos arquivos do backup com os atuais em disco</p>
+<pre><code>tmutil -s
+</code></pre>
+<p>Para comparar arquivos do disco com um backup mais antigo</p>
+<pre><code>tmutil compare /Volumes/TimeMachineDriveName/Backups.backupdb/mac_name/AAAA-MM-DD-hhmmss
+</code></pre>
+<p>Para saber mais</p>
+<pre><code>tmutil --help
+tmutil help &lt;verb&gt;
+man tmutil
+</code></pre>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

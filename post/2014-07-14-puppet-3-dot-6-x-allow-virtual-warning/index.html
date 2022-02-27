@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet 3.6.x allow_virtual warning</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet 3.6.x allow_virtual warning</h1>
+        <div>
+                <time>July 14, 2014</time>
+            </div>
+    </header><p>Se você atualizou seu Puppet para a versão 3.6.x, possivelmente deve ter recebido o warning abaixo quando executa o puppet agent.</p>
+<pre tabindex="0"><code>Warning: The package type's allow_virtual parameter will be changing its default value from false to true in a future release. If you do not want to allow virtual packages, please explicitly set allow_virtual to false.
+   (at /usr/lib/ruby/site_ruby/1.8/puppet/type.rb:816:in `set_default')
+
+</code></pre><p>Esse warning informa que o parâmetro allow_virtual passará a ser true nas releases futuras do puppet. Caso deseje desativar esse recurso, você deverá fazê-lo de forma explícita no arquivo <strong>site.pp</strong>.</p>
+<pre tabindex="0"><code>if versioncmp($::puppetversion,'3.6.1') &gt;= 0 {
+
+  Package {
+    allow_virtual =&gt; false,
+  }
+}
+</code></pre><p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

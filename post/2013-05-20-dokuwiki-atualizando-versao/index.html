@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Dokuwiki atualizando versão</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Dokuwiki atualizando versão</h1>
+        <div>
+                <time>May 20, 2013</time>
+            </div>
+    </header><h2 id="1-dokuwiki">1. Dokuwiki</h2>
+<p>O dokuwiki é um sistema de blog que não usa banco de dados SQL, leve, simples e rápido, foi a minha escolha para aposentar o velho mediawiki.</p>
+<p>Esse post é uma nota mental para me lembrar dos passos para atualizar o dokuwiki ;)</p>
+<h2 id="2-atualização-do-dokuwiki">2. Atualização do dokuwiki</h2>
+<h3 id="21-backup">2.1 Backup</h3>
+<p>Faça o backup do seu dokuwiki.</p>
+<pre><code>tar jcvf dokuwiki-AAAA-MM-DD.tar dokuwiki/
+</code></pre>
+<p>Pronto o backup completo está feito, e como não tem banco SQL, é só isso mesmo, está tudo em disco, arquivos texto.</p>
+<h3 id="22-download">2.2 Download</h3>
+<p>Faça o download da versão mais nova.</p>
+<pre><code>wget http://www.splitbrain.org/_media/projects/dokuwiki/dokuwiki-2013-05-10.tgz
+</code></pre>
+<p>No momento deste post esta é a versão mais nova.</p>
+<h3 id="23-atualização">2.3 Atualização</h3>
+<p>Acesse o diretório do dokuwiki</p>
+<pre><code>cd dokuwiki/
+</code></pre>
+<p>Atualize os arquivos</p>
+<pre><code>tar -xzvf ../dokuwiki-2013-05-10.tgz --strip-components=1
+</code></pre>
+<p>Pronto, dokuwiki atualizado, essa foi rápida ;)</p>
+<h3 id="24-mensagem-de-upgrade">2.4 Mensagem de upgrade</h3>
+<p>Pode ser que ele continue mostrando que há atualização, mesmo após atualizar, então você tem duas opções, limpar o cache, aguardar 1 dia ou rodar um touch no arquivo doku.php, eu faço sempre a terceira.</p>
+<pre><code>touch doku.php
+</code></pre>
+<p>E pronto, mensagem a de atualização sumiu.</p>
+<h2 id="3-referências">3. Referências</h2>
+<ul>
+<li><a href="https://www.dokuwiki.org/changes">https://www.dokuwiki.org/changes</a></li>
+<li><a href="https://www.dokuwiki.org/install:upgrade">https://www.dokuwiki.org/install:upgrade</a></li>
+<li><a href="https://www.dokuwiki.org/install:unpacking">https://www.dokuwiki.org/install:unpacking</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

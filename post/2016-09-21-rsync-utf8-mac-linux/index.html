@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Rsync Unicode entre Mac e Linux</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Rsync Unicode entre Mac e Linux</h1>
+        <div>
+                <time>September 21, 2016</time>
+            </div>
+    </header><h2 id="o-problema">O problema</h2>
+<p>Case você use MacOS para trabalhar — com é o meu caso, e também para publicar sites em servidores Linux utilizando rsync, tenho uma dica preciosa para vocês.</p>
+<p>Há alguns meses eu criei um novo blog utilizando Hugo, neste blog quando eu criava posts com palavras com acento eu percebia que o link no site quebrava após a cópia para o servidor linux. Inicialmente eu achei que era um problema no Apache HTTPd, eu até setei default chartset e nada de resolver, estava quase jogando a toalha quando resolvi usar o Google de verdade, após alguma pesquisa entendi o problema.</p>
+<p>No FAQ ( <a href="https://rsync.samba.org/FAQ.html">https://rsync.samba.org/FAQ.html</a> ) do projeto RSYNC já tem a dica de como resolver isso, mas é um pouco obscuro de entender.</p>
+<pre tabindex="0"><code>rsync recopies the same files
+
+Some people occasionally report that rsync copies too many files when they expect it to copy only a few. In most cases the explanation is that you forgot to include the --times (-t) option in the original copy, so rsync is forced to (efficiently) transfer every file that differs in its modified time to discover what data (if any) has changed.
+
+Another common cause involves sending files to an Microsoft filesystem: if the file's modified time is an odd value but the receiving filesystem can only store even values, then rsync will re-transfer too many files. You can avoid this by specifying the --modify-window=1 option.
+
+Yet another periodic case can happen when daylight-savings time changes if your OS+filesystem saves file times in local time instead of UTC. For a full explanation of this and some suggestions on how to avoid them problem, see this document.
+
+Something else that can trip up rsync is a filesystem changeing the filename behind the scenes. This can happen when a filesystem changes an all-uppercase name into lowercase, or when it decomposes UTF-8 behind your back.
+
+An example of the latter can occur with HFS+ on Mac OS X: if you copy a directory with a file that has a UTF-8 character sequence in it, say a 2-byte umlaut-u (\0303\0274), the file will get that character stored by the filesystem using 3 bytes (\0165\0314\0210), and rsync will not know that these differing filenames are the same file (it will, in fact, remove a prior copy of the file if --delete is enabled, and then recreate it).
+
+You can avoid a charset problem by passing an appropriate --iconv option to rsync that tells it what character-set the source files are, and what character-set the destination files get stored in. For instance, the above Mac OS X problem would be dealt with by using --iconv=UTF-8,UTF8-MAC (UTF8-MAC is a pseudo-charset recognized by Mac OS X iconv in which all characters are decomposed).
+
+If you think that rsync is copying too many files, look at the itemized output (-i) to see why rsync is doing the update (e.g. the 't' flag indicates that the time differs, or all pluses indicates that rsync thinks the file doesn't exist). You can also look at the stats produced with -v and see if rsync is really sending all the data. See also the --checksum (-c) option for one way to avoid the extra copying of files that don't have synchronized modified times (but keep in mind that the -c option eats lots of disk I/O, and can be rather slow).
+</code></pre><p>Em resumo, quando você copia um arquivo do MacOS que usa sistema de arquivos HFS+ para um sistema linux há um problema pois o MacOS usa Unicode do tipo NFD enquanto o Linux usa Unicode do tipo NFC, com isso, dependendo do nome do arquivo, o Linux pode não reconhecer, em especial no meu caso em que um arquivo HTML possuia caracteres especiais.</p>
+<h2 id="como-resolver">Como resolver?</h2>
+<p>Eu copiava os arquivos dessa forma entre meu mac e o servidor linux</p>
+<pre><code>rsync -avz --stats --progress --delete /Mac/origem/* usuario@fqdn:/Linux/destino/
+</code></pre>
+<p>O segredo é acrescentar alguns parametros de conversão ao comando</p>
+<pre><code>--iconv=utf-8-mac,utf-8
+</code></pre>
+<p>O comando final ficará assim</p>
+<pre><code>rsync -avz --stats --progress --delete --iconv=utf-8-mac,utf-8 /Mac/origem/* usuario@fqdn:/Linux/destino/
+</code></pre>
+<p>Com isso meus arquivos são convertidos e transferidos corretamente.</p>
+<p>Agora posso usar acento nos títulos dos posts sem receio de quebrar os links.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

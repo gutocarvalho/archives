@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Octopress invalid byte sequence</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Octopress invalid byte sequence</h1>
+        <div>
+                <time>July 1, 2014</time>
+            </div>
+    </header><p>Após reinstalar meu mavericks, eu me deparei com um problema estranho ao rodar rake generate no octopress, veja abaixo o erro.</p>
+<pre tabindex="0"><code>jekyll/convertible.rb:29:in `read_yaml': invalid byte sequence in US-ASCII (ArgumentError)
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/jekyll-0.11.2/lib/jekyll/post.rb:39:in `initialize'
+	from /Users/gutocarvalho/Dropbox/@github/blog/plugins/preview_unpublished.rb:23:in `new'
+	from /Users/gutocarvalho/Dropbox/@github/blog/plugins/preview_unpublished.rb:23:in `block in read_posts'
+	from /Users/gutocarvalho/Dropbox/@github/blog/plugins/preview_unpublished.rb:21:in `each'
+	from /Users/gutocarvalho/Dropbox/@github/blog/plugins/preview_unpublished.rb:21:in `read_posts'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/jekyll-0.11.2/lib/jekyll/site.rb:128:in `read_directories'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/jekyll-0.11.2/lib/jekyll/site.rb:98:in `read'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/jekyll-0.11.2/lib/jekyll/site.rb:38:in `process'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/jekyll-0.11.2/bin/jekyll:250:in `&lt;top (required)&gt;'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/bin/jekyll:23:in `load'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/bin/jekyll:23:in `&lt;main&gt;'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/bin/ruby_executable_hooks:15:in `eval'
+	from /Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/bin/ruby_executable_hooks:15:in `&lt;main&gt;'
+</code></pre><p>Por alguma razão o meu locale estava setado para C.</p>
+<pre tabindex="0"><code>LANG=
+LC_COLLATE=&quot;C&quot;
+LC_CTYPE=&quot;C&quot;
+LC_MESSAGES=&quot;C&quot;
+LC_MONETARY=&quot;C&quot;
+LC_NUMERIC=&quot;C&quot;
+LC_TIME=&quot;C&quot;
+LC_ALL=
+</code></pre><p>Fiz um ajuste para en_US.UTF-8</p>
+<pre><code>export LC_CTYPE=en_US.UTF-8
+</code></pre>
+<p>Tentei novamente</p>
+<pre><code>rake generate
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre tabindex="0"><code>## Generating Site with Jekyll
+unchanged sass/screen.scss
+/Users/gutocarvalho/.rvm/gems/ruby-1.9.3-p547/gems/maruku-0.6.0/lib/maruku/input/parse_doc.rb:22:in `&lt;top (required)&gt;': iconv will be deprecated in the future, use String#encode instead.
+Configuration from /Users/gutocarvalho/Dropbox/@github/blog/_config.yml
+Building site: source -&gt; public/octopress
+Successfully generated site: source -&gt; public/octopress
+</code></pre><p>E o problema foi solucionado, fica a dica!</p>
+<h2 id="referências">Referências</h2>
+<ul>
+<li><a href="https://github.com/imathis/octopress/issues/144">https://github.com/imathis/octopress/issues/144</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

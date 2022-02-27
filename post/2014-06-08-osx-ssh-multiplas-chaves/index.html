@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>ssh com multiplas chaves no osx</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ssh com multiplas chaves no osx</h1>
+        <div>
+                <time>June 8, 2014</time>
+            </div>
+    </header><p>Uma das formas mais interessantes, práticas e seguras de acessar um host por ssh é fazer isto através de chaves, o processo de configuração de chaves é rápido e eficiente, contudo, muita gente tem dúvida de como utilizar múltiplas chaves, abaixo vou mostrar como fazer isto.</p>
+<h3 id="1-gerando-chaves">1. Gerando chaves</h3>
+<p>Estou utilizando OSX Mavericks para esse exemplo. Abra seu terminal para começarmos a gerar a primeira chave, por exemplo para o provedor dreamhost.</p>
+<pre><code>ssh-keygen
+</code></pre>
+<p>Digite o local e nome da chave quando consultado</p>
+<pre><code>/Users/gutocarvalho/.ssh/dreamhost
+</code></pre>
+<p>Especifique uma senha em formato de frase (passphrase), não use senhas em branco.</p>
+<pre tabindex="0"><code>Generating public/private rsa key pair.
+Enter file in which to save the key (/Users/gutocarvalho/.ssh/id_rsa): /Users/gutocarvalho/.ssh/dreamhost
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /Users/gutocarvalho/.ssh/dreamhost.
+Your public key has been saved in /Users/gutocarvalho/.ssh/dreamhost.pub.
+The key fingerprint is:
+3a:21:f4:9b:12:6c:0f:4f:87:d7:ce:1a:f0:e3:2b:b2 gutocarvalho@kaiten.local
+The key's randomart image is:
++--[ RSA 2048]----+
+|                 |
+|                 |
+|    .            |
+|   o . . .       |
+|    * * S .      |
+|   . B X o       |
+|    . B + o      |
+|    ...o +       |
+|    Eo .+.       |
++-----------------+
+</code></pre><p>Agora vamos criar uma segunda chave para outro provedor, por exemplo digitalocean.</p>
+<pre><code>ssh-keygen
+</code></pre>
+<p>Digite o local e nome da chave quando consultado</p>
+<pre><code>/Users/gutocarvalho/.ssh/digitalocean
+</code></pre>
+<p>Especifique uma senha em formato de frase, não use senhas em branco.</p>
+<pre tabindex="0"><code>Generating public/private rsa key pair.
+Enter file in which to save the key (/Users/gutocarvalho/.ssh/id_rsa): /Users/gutocarvalho/.ssh/digitalocean
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /Users/gutocarvalho/.ssh/digitalocean.
+Your public key has been saved in /Users/gutocarvalho/.ssh/digitalocean.pub.
+The key fingerprint is:
+a0:34:03:59:c5:59:12:13:af:85:a3:1c:eb:18:08:f0 gutocarvalho@kaiten.local
+The key's randomart image is:
++--[ RSA 2048]----+
+|. .o.o*=.        |
+|....  o=         |
+|. E = + o        |
+|.. o B =         |
+|. . = . S        |
+|   +             |
+|  . .            |
+|                 |
+|                 |
++-----------------+
+</code></pre><h3 id="2-configurando-acessos">2. Configurando acessos</h3>
+<p>Maravilha, as duas chaves foram criadas, agora vamos criar o arquivo <strong>config</strong> dentro de <strong>/Users/gutocarvalho/.ssh</strong> em seu OSX, é neste arquivo que vamos configurar qual chave deve ser utilizada para cada host, veja o exemplo.</p>
+<pre tabindex="0"><code>Host dreamhost
+	HostName gutocarvalho.net
+	PreferredAuthentications publickey
+	IdentityFile ~/.ssh/dreamhost
+	User gutocarvalho
+
+Host digitalocean
+	HostName mesintogravida.com.br
+	PreferredAuthentications publickey
+	IdentityFile ~/.ssh/digitalocean
+	User gutocarvalho
+</code></pre><h3 id="3-autorizando-acessos">3. Autorizando acessos</h3>
+<p>Agora acesse o host de destino gutocarvalho.net e adicione o conteúdo do arquivo gutocarvalho.pub - que foi criado no OSX - ao arquivo /home/gutocarvalho/.ssh/authorized_keys do servidor remoto (dreamhost), o conteúdo da chave púbica será algo assim</p>
+<pre><code>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOTGdNlaMrOtUTpKsWyhM3h0Hw4Kym2mtIO95pxZN8JKCMHTb9xn2ZqA87wTPDHXYQVDNYHyZMiRrTX+dYQcGx+d+W9qZncxWPZtrqOyxWIT9WrTn4M40nFTB0tyBD+0XnD8WZdef5L+/wueRqC+T8zLgZb6peHSkGWuj2tdnf/LcGzZ7CgK6r0yVSUFxCEFr9wtYx0rtV0rovTwHJVpvv8jbA9N8QFfA7WCv/Xtz3UpJL1tuj0/IN+VPXyHYKU9u9fq28U1lU3MfPR3nVayQyh+Ddp6ZzKLW2PwmSRdth/6BTYSdQ+9OiwQxYj3A+QsXcJ3M6UNPTuOcLFuTTvFJJ gutocarvalho@domain
+</code></pre>
+<p>Depois acesse o segundo host de destino (digitalocean), aqui no exemplo mesintogravida.com.br e faça o mesmo procedimento, desta vez com o conteúdo do arquivo mesintogravida.pub criado no OSX.</p>
+<p>Se o arquivo já existir, apenas acrescente a linha.</p>
+<p>Após criar ou modificar o arquivo, inserindo a chave pública, deslogue do servidor.</p>
+<h3 id="4-testando-acessos">4. Testando acessos</h3>
+<p>Agora vamos tentar acessar o servidor</p>
+<pre><code>ssh dreamhost
+</code></pre>
+<p>Se tudo der certo o OSX vai pedir a senha da chave, digite a senha e ela será salva no chaveiro (keychain), uma vez no keychain, a senha não será solicitada em futuros acessos.</p>
+<pre><code>Last login: Sun Jun  8 03:34:36 2014 from 191.176.xxx.xxx
+[gutocarvalho.net]$
+</code></pre>
+<p>mais um teste</p>
+<pre><code>ssh digitalocean
+</code></pre>
+<p>Acompanhe a saída</p>
+<pre><code>Last login: Sun Jun  8 05:34:36 2014 from 191.176.xxx.xxx
+[mesintogravida.com.br]$
+</code></pre>
+<p>Beleza, funcionou perfeitamente.</p>
+<h3 id="5-conferindo-permissões">5. Conferindo Permissões</h3>
+<p>As chaves privadas devem ter permissão 600.</p>
+<p>As chaves públicas devem ter permissão 644.</p>
+<p>O arquivo authorized_keys deve ter permissão 600.</p>
+<p>Se as permissões não estiverem corretas nestes arquivos o acesso por chaves não vai funcionar.</p>
+<h3 id="6-referências">6. Referências</h3>
+<ul>
+<li>
+<p><a href="http://www.openbsd.org/cgi-bin/man.cgi?query=ssh_config&amp;sektion=5">http://www.openbsd.org/cgi-bin/man.cgi?query=ssh_config&amp;sektion=5</a></p>
+</li>
+<li>
+<p><a href="http://nerderati.com/2011/03/simplify-your-life-with-an-ssh-config-file/">http://nerderati.com/2011/03/simplify-your-life-with-an-ssh-config-file/</a></p>
+</li>
+<li>
+<p><a href="http://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/">http://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/</a></p>
+</li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

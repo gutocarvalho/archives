@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>NIC no Virtualbox Host Only com NAT do OSX</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>NIC no Virtualbox Host Only com NAT do OSX</h1>
+        <div>
+                <time>September 10, 2015</time>
+            </div>
+    </header><p>Quando queremos fazer algum teste no VirtualBox com uma VM usando uma rede virtual, normalmente precisamos de duas interfaces na VM, uma interface para a rede virtual em modo hostonly e outra interface e modo nat para que possamos sair para a internet.</p>
+<p>Caso queria usar apenas uma interface em sua VM, em modo HostOnly, e que mesmo assim consiga sair para internet, será necessário configurar um NAT no seu OSX para aquela interface hostonly.</p>
+<p>Antes de começar verifique qual a interface no seu OSX está relaciona a rede hostonly que deseja nat, a primeira interface será sempre a vboxnet0, caso tenha outras redes hostonly esse número será incrementado, vboxnet1, vboxnet2 e assim por diante. Outra questão importante é saber qual a sua interface conectada a internet, no caso estou usando minha interface wifi que é identificada como en0.</p>
+<h2 id="1-configurando-nat-no-osx">1. Configurando NAT no OSX</h2>
+<p>se torne root</p>
+<pre><code>sudo -i
+</code></pre>
+<p>ative o ip forward</p>
+<pre><code>sysctl -w net.inet.ip.forwarding=1
+</code></pre>
+<p>edite o arquivo de configuração do pf</p>
+<pre><code>vim /etc/pf.conf
+</code></pre>
+<p>adicione a linha a seguir abaixo da linha &ldquo;nat-anchor&rdquo;</p>
+<pre><code>nat on en0 from vboxnet0:network -&gt; (en0)
+</code></pre>
+<p>recarregue as regras</p>
+<pre><code>pfctl -e -f /etc/pf.conf
+</code></pre>
+<p>se quiser deixar as regras persistentes no boot do osx rode</p>
+<pre><code>/usr/libexec/PlistBuddy -c 'add :ProgramArguments:3 string -e' /System/Library/LaunchDaemons/com.apple.pfctl.plist
+</code></pre>
+<p>pronto agora sua VM com interface hostonly conseguirá sair para a internet</p>
+<h3 id="referências">Referências</h3>
+<ul>
+<li><a href="http://kfigiela.github.io/2014/11/07/using-native-os-x-nat-with-virutalbox/">http://kfigiela.github.io/2014/11/07/using-native-os-x-nat-with-virutalbox/</a></li>
+<li><a href="http://blog.nasmart.me/internet-access-with-virtualbox-host-only-networks-on-os-x-mavericks/">http://blog.nasmart.me/internet-access-with-virtualbox-host-only-networks-on-os-x-mavericks/</a></li>
+</ul>
+<p>[s]
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

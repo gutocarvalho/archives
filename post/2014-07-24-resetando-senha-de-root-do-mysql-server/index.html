@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>resetando senha de root do mysql server</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>resetando senha de root do mysql server</h1>
+        <div>
+                <time>July 24, 2014</time>
+            </div>
+    </header><p>As vezes a gente começa um novo projeto e precisa dar manutenção em um ambiente não documentado, e na maioria das vezes, você não tem nem mesmo as senhas de administração do banco mysql registradas, e precisa se virar para cuidar do ambiente e atender seus chamados.</p>
+<p>Recentemente eu passei por isto e precisei quebrar a senha de root de alguns servidores MYSQL do meu novo cliente, abaixo segue o passo a passo, resumido, direto ao ponto, de como fiz, espero que possa ajudar alguém ;)</p>
+<p>Acesse o sevidor</p>
+<pre><code>$ ssh servidor –l usuario
+</code></pre>
+<p>Se torne root</p>
+<pre><code>$ sudo -i
+</code></pre>
+<p>Pare o mysql server</p>
+<pre><code># /etc/init.d/mysqld stop
+</code></pre>
+<p>Inicie o mysql em modo safe</p>
+<pre><code># mysqld_safe --skip-grant-tables &amp;
+</code></pre>
+<p>Acesse o mysql</p>
+<pre><code># mysql
+</code></pre>
+<p>Acesse a base mysql</p>
+<pre><code>mysql&gt; use mysql;
+</code></pre>
+<p>Troque a senha do usuário root</p>
+<pre><code>mysql&gt; update user set password=PASSWORD(&quot;senha&quot;) where User='root';
+</code></pre>
+<p>Saia do mysql</p>
+<pre><code>mysq&gt; exit
+</code></pre>
+<p>Pare o mysql</p>
+<pre><code># /etc/init.d/mysql stop
+</code></pre>
+<p>Inicie o mysql da forma normal</p>
+<pre><code># /etc/init.d/mysql start
+</code></pre>
+<p>Acesse o MYSQL com a senha que voce especificou</p>
+<pre><code># mysql –u root –p
+</code></pre>
+<p>Execute os grants necessários para atender seus tickets</p>
+<pre><code>mysql&gt; grant SELECT on base.* to usuario@10.1.30.xxx identified by 'senha';
+</code></pre>
+<p>Rode um flush nos privilégios</p>
+<pre><code>mysq&gt; flush privileges;
+</code></pre>
+<p>Saia do mysql</p>
+<pre><code>mysq&gt; exit;
+</code></pre>
+<p>Faça logout do root</p>
+<pre><code># exit
+</code></pre>
+<p>Faça logout do servidor</p>
+<pre><code>$ exit
+</code></pre>
+<p>Pronto, o MYSQL agora está sob seu controle.</p>
+<p>Eu particularmente recomendo que você faça isso via Puppet, veja o <a href="http://gutocarvalho.net/octopress/2014/03/26/utilizando-modulo-puppetlabs-mysql/">post</a> que eu abordo como gerenciar o MYSQL com Puppet, porém, essas dicas são sempre importantes ;)</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

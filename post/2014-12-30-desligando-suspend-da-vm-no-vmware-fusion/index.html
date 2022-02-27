@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Desligando Suspend da VM no VMWARE Fusion</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Desligando Suspend da VM no VMWARE Fusion</h1>
+        <div>
+                <time>December 30, 2014</time>
+            </div>
+    </header><h3 id="fusion">Fusion</h3>
+<p>Eu uso vários hypervisors, depende da necessidade e da situação, eu gosto muito do VMWARE FUSION principalmente se for preciso utilizar dispositivos removíveis como usb flash drives (pendrives) e também pela facilidade de mover arquivos do FUSION para o OSX e vice versa, faço isso apenas arrastando o arquivo de um local para o outro.</p>
+<p>O VMWARE Fusion é de longe o hypervisor mais maduro para OSX - IMHO, há quem defenda que o Parallels é o mais performático e melhor integrado, porém, para minhas necessidades, o FUSION dá conta do recado e sobra em recursos.</p>
+<p>Apesar de todas as qualidades eu tive que ajustar um detalhe importante para mim. Quando eu saia de perto do macbook por algum tempo a VM entrava em modo sleep, dei uma pesquisada e para desligar esse auto-suspend você precisa editar o arquivo .VMX da sua VM e adicionar a seguinte linha</p>
+<pre><code>suspend.disable =  &quot;TRUE&quot;
+</code></pre>
+<p>Com isso sua VM não vai mais entrar em modo sleep/suspend sem que você acione isso manualmente.</p>
+<p>Você precisa editar isso com a VM desligada e depois ligá-la para que ele seja ativado.</p>
+<p>Fica a dica!</p>
+<h3 id="referências">Referências</h3>
+<ul>
+<li><a href="http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&amp;cmd=displayKC&amp;externalId=2056501">http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&amp;cmd=displayKC&amp;externalId=2056501</a></li>
+</ul>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

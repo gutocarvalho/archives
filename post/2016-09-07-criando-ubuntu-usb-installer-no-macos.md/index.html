@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Criando ubuntu usb installer no MacOS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Criando ubuntu usb installer no MacOS</h1>
+        <div>
+                <time>September 7, 2016</time>
+            </div>
+    </header><p>Post #notamental que ensina como criar um usbstick no MacOS para instalar o Ubuntu 16.04.1.</p>
+<h2 id="1-processo-manual">1. Processo manual</h2>
+<h3 id="11-download-da-imagem">1.1 Download da imagem</h3>
+<p>Abra seu terminal e crie um diretório tmp</p>
+<pre><code>mkdir tmp; cd tmp/
+</code></pre>
+<p>Faça download da imagem</p>
+<pre><code>wget http://releases.ubuntu.com/16.04/ubuntu-16.04.1-desktop-amd64.iso
+</code></pre>
+<h3 id="12-convertendo-imagem">1.2 Convertendo imagem</h3>
+<p>Precisamos converter essa imagem para conseguir criar o usb installer</p>
+<pre><code>hdiutil convert -format UDRW -o ubuntu-16.04.1-desktop-amd64.img ubuntu-16.04.1-desktop-amd64.iso
+</code></pre>
+<h3 id="13-detectando-dispositivo-usb">1.3 Detectando dispositivo usb</h3>
+<p>Insira o usb stick que você pretende usar e logo após faça a detecção de discos</p>
+<pre><code>diskutil list
+</code></pre>
+<p>Você verá uma saída como esta</p>
+<pre tabindex="0"><code>/dev/disk0 (internal, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *500.3 GB   disk0
+   1:                        EFI EFI                     209.7 MB   disk0s1
+   2:          Apple_CoreStorage Macross                 499.4 GB   disk0s2
+   3:                 Apple_Boot Recovery HD             650.0 MB   disk0s3
+/dev/disk1 (internal, virtual):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:                  Apple_HFS Macross                +499.0 GB   disk1
+                                 Logical Volume on disk0s2
+                                 9FE0CB11-FC20-4BB4-9353-E115CB1FBF94
+                                 Unencrypted
+/dev/disk2 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *1.0 TB     disk2
+   1:                        EFI EFI                     209.7 MB   disk2s1
+   2:                  Apple_HFS WD1TB                   999.8 GB   disk2s2
+/dev/disk3 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *7.9 GB     disk3
+   1:               Windows_NTFS GUTO                    7.9 GB     disk3s1
+/dev/disk4 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +29.2 MB    disk4
+   1:                  Apple_HFS UNetbootin              29.1 MB    disk4s1    
+</code></pre><p>No meu caso vou usar o dispositivo /dev/disk3 de 8GB.</p>
+<h3 id="14-desmontando-dispositivo">1.4 Desmontando dispositivo</h3>
+<p>Precisamos desmontar para gravar a imagem no dispositivo</p>
+<pre><code>diskutil unmountDisk /dev/disk3
+</code></pre>
+<h3 id="15-criando-o-instalador">1.5 Criando o instalador</h3>
+<p>Agora vamos transferir a imagem para o usb stick usando o dd</p>
+<pre><code>sudo dd if=ubuntu-16.04.1-desktop-amd64.img.dmg of=/dev/disk3 bs=1m
+</code></pre>
+<p>Esse processo pode demorar, dependerá da velocidade do usb stick, no final a saída será similar a esta</p>
+<pre><code>1443+1 records in
+1443+1 records out
+</code></pre>
+<p>Ignore qualquer popup do finder que aparecer após a conclusão.</p>
+<h3 id="16-ejetando-o-instalador">1.6 Ejetando o instalador</h3>
+<p>Ao final do processo ejete o usb stick</p>
+<pre><code>diskutil eject /dev/disk3
+</code></pre>
+<p>Pronto, agora você pode instalar o Ubuntu em qualquer computador com esse USB Stick.</p>
+<h2 id="processo-via-script">Processo via script</h2>
+<p>Abaixo um exemplo de script para agilizar.</p>
+<pre tabindex="0"><code>#!/bin/bash
+
+ISONAME=&quot;ubuntu-16.04.1-desktop-amd64&quot;
+DEVICE=&quot;/dev/disk3&quot;
+
+echo &quot;convertendo imagem $ISONAME...&quot;
+
+hdiutil convert -format UDRW -o /Users/gutocarvalho/storage/isos/$ISONAME.img /Users/gutocarvalho/storage/isos/$ISONAME.iso
+
+echo &quot;desmontando dispositivo usb $DEVICE...&quot;
+
+diskutil unmountDisk $DEVICE
+
+echo &quot;Criando instalador usb no dispositivo $DEVICE...&quot;
+
+sudo dd if=/Users/gutocarvalho/storage/isos/$ISONAME.img.dmg of=$DEVICE bs=1m
+
+echo &quot;desmontando dispositivo usb $DEVICE...&quot;
+
+diskutil eject $DEVICE
+
+echo &quot;criacao de disco finalizada.&quot;
+</code></pre><p>Criei um snippet no GitLab para facilitar</p>
+<pre><code>https://gitlab.com/snippets/25673
+</code></pre>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

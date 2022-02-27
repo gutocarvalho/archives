@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Gerenciador de senhas TeamPass</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Gerenciador de senhas TeamPass</h1>
+        <div>
+                <time>January 7, 2015</time>
+            </div>
+    </header><p>Quando visito clientes e começo a ajudá-los é inevitável começar a pedir credenciais e acesso a ferramentas - senhas, é nesta hora que você acaba expondo um lado frágil da infraestrutura do seu cliente. E quando você menos espera, alguém te pergunta seu e-mail, de forma inocente você passa, e logo mais você recebe uma senha por e-mail - clear text, ou então via gtalk, skype, isso quando alguém não abre um arquivo TXT no desktop dele escrito &ldquo;senhas da rede.txt&rdquo;.</p>
+<p>É meus amigos, administrar senhas corretamente não é um hábito de muitas equipes, ainda mais com equipes apagando incêndios o tempo todo e administrando ambientes de forma manual e artesenal, se você encontra esse tipo de coisa é certo que não haverá um gerenciamento adequado de senhas.</p>
+<p>Há algumas exceções como o gerenciador KEEPASS/KEEPASSX que é um ótimo gestor PESSOAL de senhas, mas quando passa a ser utilizado por uma equipe, vão surgindo um monte de cópias do arquivo em diversos lugares, perde-se sincronia e perde-se o controle da coisa, o arquivo do keepass vai parar no pendrive do amigo do vizinho sem querer naquele dia que você foi passar o último vídeo do Game Of Thrones.</p>
+<p>Em resumo, use o keepass para guardar as suas senhas pessoais, mas não use o KEEPASS para gerenciar senhas do seu cliente ou da sua equipe.</p>
+<p>Há também aqueles gestores WEB de senhas como o LASTPASS, contudo, se você trabalha para o governo ou grandes empresas, colocar senhas internas de infraestrutura em um local EXTERNO, fora do seu controle, não é algo muito recomendado, pelo menos em minha humilde opinião.</p>
+<p>Para gerenciar senhas de clientes de governo, ou de grandes clientes privados, eu uso e recomendo o TeamPass.</p>
+<p>O TeamPasss é um gerenciador corporativo e colaboraivo de senhas e informações sensíveis. Ele foi especialmente desenvolvido para gerenciar, armazenar, prover senhas e oferecer meios de acesso a informação sensível de forma controlada, centralizada e dinâmica.</p>
+<p>O Teampass é uma ferramenta Web, a ferramenta foi escrita em PHP e seu banco de dados é o MYSQL. Isto o torna muito simples para ser implantado em ambientes Unix, BSD, OSX, Linux ou Windows.</p>
+<p>A instalação do tempass é bem direta, feita via web no bom estilo click-click-finish, se todos os requisitos de pacotes estiverem intalados, não haverá problema na instalação, é necessário também ter criado um banco MYSQL e um usuário com privilégios de acesso a esse banco, com tais credenciais em mão, basta preencher os dados e clicar em NEXT até o final da instalação.</p>
+<p>O uso do teampass é bastante simples, primeiro criam-se os usuários, depois criam-se as pastas que vão receber as senhas e informações sensíveis, após criar toda a estrutura de pastas, criam-se então os papéis (roles), uma role define quais pastas um usuário poderá acessar caso associado a essa role, e pode-se ainda dizer se o acesso a determinada pasta é completo (leitura e gravação) ou restrito (somente leitura).</p>
+<p>Não há limites para criação de usuários e não há limites para criação de roles, é possível inclusive criar roles por setores como Desenvolvimento, Infraestrutura, Diretoria, Comercial, Banco de dados, e depois restriginir o acesso de determinado grupo de usuários a um grupo específico de pastas através destas roles.</p>
+<p>Em resumo, você consegue configurar o Teampass de forma que só a equipe Comercial verá as senhas do seu setor, e só a equipe de Infraestrutura verá as senhas do seu setor, fazendo isto de forma segura.</p>
+<p>Em relação aos usuários, o keepass tem 3 tipos básicos, o primeiro é o ADMIN, esse tipo de usuário consegue criar e gerenciar outros usuários, criar e gerenciar roles, associar usuários a roles e administar configurações internas do TeamPass, porém ele não consegue ver as pastas, consequentemente ele não conseguirá criar e gerenciar senhas em tais pastas.</p>
+<p>O segundo tipo de usuário é o MANAGER, esse tipo de usuário conseguirá administrar uma ou mais roles - e suas pastas - e os usuários associados a esta role, ele também conseguirá criar e gerenciar senhas dentro das pastas pertecentes as roles que ele estiver associado. O MANAGER até consegue criar pastas em suas roles, mas será preciso o ADMIN para liberar o uso da pasta naquela ROLE.</p>
+<p>O terceiro tipo é o READ ONLY, este só consegue utilizar as pastas associadas a role que ele faz parte, ele não cria pastas, mas ele consegue criar, modificar e deletar senhas dentro das pastas que tem acesso.</p>
+<p>Com o TeamPass é possível ter controle de todas as senhas de seu parque de forma centralizada, segregada, segura e organizada.</p>
+<p>O TeamPass aceita importação de senhas em formato CSV ou XML, consegue importar senhas do Keepass ou KeePassX.</p>
+<p>O TeamPass tem suporte a autenticação LDAP (Active Directory e OpenLDAP).</p>
+<p>O TeamPass tem uma ferramenta interna de backup da base de dados SQL.</p>
+<p>Através desta ferramenta é possível inclusive gerar senhas fortes e determinar qual complexidade será exigida para se criar ou gerar uma senha dentro de uma pasta.</p>
+<p>O TeamPass é um projeto opensource, não há necessidade de adquirir licenças para seu uso, basta fazer o download, instalar e usar.</p>
+<p>Recomenda-se o uso do Teampass através de conexão segura HTTPs e seu acesso deve ser restrito à sua intranet.</p>
+<p>Acesse o site para saber mais =&gt; <a href="http://www.teampass.net/">http://www.teampass.net/</a></p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

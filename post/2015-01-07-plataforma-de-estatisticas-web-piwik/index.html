@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Plataforma de estatísticas web Piwik</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Plataforma de estatísticas web Piwik</h1>
+        <div>
+                <time>January 7, 2015</time>
+            </div>
+    </header><p>Métricas são as informações fundamentais para entendermos como nosso ambiente funciona e qual é o seu comportamento. Através destas métricas poderemos comparar, avaliar, analisar e tomar atitudes que visem melhorar, corrigir - prever problemas, planejar e aprimorar o nosso ambiente.</p>
+<p>Em relação a sites web, as métricas relevantes são aquelas que nos trazem dados de acesso aos sites de nossos clientes.</p>
+<p>Quando pensamos em monitorar as estatísticas de acesso a sites web, a primeira ferramenta que toca nossa memória é o Google Analytics, esta é uma ferramenta ótima para gerar relatórios, gráficos e nos dar informações detalhadas sobre acessos, comportamentos e dados gerais de tráfego de nossos sites.</p>
+<p>Porém, apesar de ser um serviço gratuito, essa é uma ferramenta externa, fora de nosso controle, a qual não temos como auditar e saber como esses dados são armazenados e utilizados pelo Google, afinal nada é realmente grátis, e por isto, não temos como afirmar que apenas o cliente acessa estes relatórios. Outro ponto importante é que e o dados da ferramenta - segundo contrato de uso da ferramenta - são de propriedade de Google e ele pode fazer o que bem entender com essa informação, até mesmo vendê-la para um concorrente se assim desejar.</p>
+<p>Quando estamos dentro do governo, ou quando atuamos em grandes clientes privados, a privacidade de informações e o controle adequado de onde tais informações são armazenadas é um fator de primeira importância para proteger o cliente e o seu negócio.</p>
+<p>Para tanto, existem algumas alternativas open source ao Google Analytics, dentre elas podemos citar o Piwik.</p>
+<p>A ferramenta Piwik é de longe a mais madura e eficiente, sendo atualmente a lider no segmento open source para esse tipo de monitoramento.</p>
+<p>Graças a sua característica open source, o Piwik pode ser instalado em infraestrutura própria, assim o cliente terá o controle dos dados e o controle de acesso a ferramenta, com isso os dados relativos aos sites do cliente que no fim são dados de negócio, estarão seguros e em local controlado.</p>
+<p>O Piwik oferece diversos tipos de estatísticas, podemos citar algumas destas:</p>
+<ul>
+<li>Top palavras chaves</li>
+<li>Top motores de busca</li>
+<li>Top URLs acessadas</li>
+<li>Acessos de páginas por títulos</li>
+<li>Acessos de usuários por navegador</li>
+<li>Acessos de usuários por sistema operacional</li>
+<li>Acessos de usuários por países, estados e cidades</li>
+<li>Marketshare do site</li>
+<li>Resolução de tela dos usuários que acessam os sites</li>
+<li>Acessos de usuários de sistemas móveis</li>
+<li>Acessos de usuários de desktops</li>
+<li>Engajamento
+<ul>
+<li>Tempo no site</li>
+<li>Páginas visitadas</li>
+<li>Repetição de visitas</li>
+</ul>
+</li>
+<li>Criação de campanhas com metas de acesso</li>
+<li>Criação de variáveis personalizadas</li>
+<li>Dados de downloads de arquivos</li>
+<li>Visitantes</li>
+<li>Visitantes únicos</li>
+<li>Page Views</li>
+<li>Ações</li>
+<li>Referências</li>
+<li>Termos pesquisados que levaram ao site</li>
+<li>Páginas que fizeram referência ao site</li>
+</ul>
+<p>Existem muitas outras estatísticas oferecidas pela ferramenta, estas são apenas as principais do ponto de vista de negócio.</p>
+<p>O Piwik também oferece diversos tipos de relatórios em gráficos de pizza, gráficos em barra verticais e horizontais e até nuvem de tags.</p>
+<p>O Piwik permite exportar os dados e estatísticas nos formatos CSV, XML e JSON.</p>
+<p>Além disto, o acesso aos dados é feito em tempo real, você entra na ferramenta e acompanha o fluxo de acesso ao sites naquele momento, o dashboard mostra quem está acessando o site e a url utilizada pelo usuário, podendo então o operador analisar o comportamento e as características daquele usuário, tais quais sistema operacional, navegador, endereço ip, país, estado, cidade, tempo de acesso, dentre outras métricas, tudo isso é apresentado no dashboard de forma simples e objetiva.</p>
+<p>É possível configurar e personalizar o dashboard principal da ferramenta com as métricas mais importantes e relevantes para o cliente e seu negócio, e podemos inclusive criar novos dashboards.</p>
+<p>É possível monitorar vários sites e criar usuários com acessos específicos para cada site.</p>
+<p>A integração do Piwik com sites internos é bastante simples, pode-se utilizar um simples javascript no rodapé das páginas para que o tracking aconteça, assim a ferramenta passa a gerar os dados e relatórios.</p>
+<p>Abaixo um exemplo de código javascript:</p>
+<pre tabindex="0"><code>&lt;script type=&quot;text/javascript&quot;&gt;
+  var _paq = _paq || [];
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u=((&quot;https:&quot; == document.location.protocol) ? &quot;https&quot; : &quot;http&quot;) + &quot;://10.10.2.92/piwik/&quot;;
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', 1]);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0]; g.type='text/javascript';
+    g.defer=true; g.async=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+&lt;/script&gt;
+&lt;noscript&gt;&lt;p&gt;&lt;img src=&quot;http://piwik.dominio.gov.br/piwik/piwik.php?idsite=1&quot; style=&quot;border:0;&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;&lt;/noscript&gt;
+</code></pre><p>O Piwik oferece clientes para Iphone e Android, com isso é possível acompanhar as estatísticas dos sites a partir de qualquer dispositivo móvel atual.</p>
+<p>Há uma empresa por trás do Piwik, logo pode-se contratar suporte caso seja necessário e também pode-se contratar melhorias específicas na ferramenta se o cliente assim desejar.</p>
+<p>O Piwik é uma ferramenta Web, a ferramenta foi escrita em PHP e seu banco de dados é o MYSQL. Isto o torna muito simples para ser implantado em ambientes Unix, BSD, OSX, Linux ou Windows.</p>
+<p>O Piwik é uma ferramenta opensource, não há necessidade de adquirir licenças para seu uso, basta fazer o download, instalar e utilizar.</p>
+<p>Recomenda-se o uso do Piwik através de conexão segura HTTPs e seu acesso deve ser restrito à sua intranet.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

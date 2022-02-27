@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Mirror Yum CentOS</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Mirror Yum CentOS</h1>
+        <div>
+                <time>June 22, 2013</time>
+            </div>
+    </header><p>Em um cliente me foi solicitado criar um mirror local para pacotes CentOS 5 e 6, abaixo compartilho os scripts que foram criados, vai que te ajuda ;)</p>
+<p>Os scripts utilizam rsync para pegar os pacotes.</p>
+<h2 id="1-scripts">1. Scripts</h2>
+<h3 id="11-centos-baseupdatesextrasmedia">1.1. CentOS Base/Updates/Extras/Media</h3>
+<p>Este baixa pacotes oficiais CentOS para CentOS 5 e 6.</p>
+<pre tabindex="0"><code>#!/bin/bash
+
+LOCKFILE=&quot;/var/lock/subsys/rsync_centos_updates&quot;
+CENTOSDIR=&quot;/srv/mirror/centos&quot;
+MIRROR6=&quot;rsync://mirror.steadfast.net/centos/6.4&quot;
+MIRROR5=&quot;rsync://mirror.steadfast.net/centos/5.9&quot;
+if [ -f $LOCKFILE ]; then
+    echo &quot;Updates via rsync already running.&quot;
+    exit 0
+else
+	if [ -d $CENTOSDIR ] ; then
+	   touch $LOCKFILE
+           rsync -avSHP $MIRROR6 --delete --exclude 'local*' --exclude isos --exclude SRPMS $CENTOSDIR
+           rsync -avSHP $MIRROR5 --delete --exclude 'local*' --exclude isos --exclude SRPMS $CENTOSDIR
+	   rm -f $LOCKFILE
+	else
+	    echo &quot;Target directory $CENTOSDIR not present.&quot;
+	fi
+fi
+</code></pre><h3 id="12-epel">1.2. Epel</h3>
+<p>Este baixa pacotes EPEL para CentOS 5 e 6.</p>
+<pre tabindex="0"><code>!/bin/bash
+
+LOCKFILE=&quot;/var/lock/subsys/rsync_updates_epel&quot;
+
+EPELDIR6=&quot;/srv/mirror/epel/centos/6/x86_64&quot;
+MIRROR6=&quot;rsync://fedora.mirror.nexicom.net/Fedora-EPEL/6/x86_64/&quot;
+
+EPELDIR5=&quot;/srv/mirror/epel/centos/5/x86_64&quot;
+MIRROR5=&quot;rsync://fedora.mirror.nexicom.net/Fedora-EPEL/5/x86_64/&quot;
+
+if [ -f $LOCKFILE ]; then
+    echo &quot;Updates via rsync already running.&quot;
+    exit 0
+else
+	if [ -d $EPELDIR6 ] &amp;&amp; [ -d $EPELDIR5 ] ; then
+	   touch $LOCKFILE
+           rsync -avSHP $MIRROR6 --delete --exclude SRPMS $EPELDIR6/
+           rsync -avSHP $MIRROR5 --delete --exclude SRPMS $EPELDIR5/
+	   rm -f $LOCKFILE
+	else
+	    echo &quot;Target directory $EPELDIR6 or $EPELDIR5 not present.&quot;
+	fi
+fi
+</code></pre><h3 id="13-puppetlabs">1.3. PuppetLabs</h3>
+<p>Este baixa pacotes oficiais Puppet para CentOS 5 e 6.</p>
+<pre tabindex="0"><code>#!/bin/bash
+
+LOCKFILE=&quot;/var/lock/subsys/rsync_updates_puppet&quot;
+
+PUPPETDIR5=&quot;/srv/mirror/puppet/products/5/x86_64&quot;
+MIRROR5=&quot;rsync://yum.puppetlabs.com/packages/yum/el/5/products/x86_64/&quot;
+
+DEPPUPPETDIR5=&quot;/srv/mirror/puppet/dependencies/5/x86_64&quot;
+DEPMIRROR5=&quot;rsync://yum.puppetlabs.com/packages/yum/el/5/dependencies/x86_64/&quot;
+
+PUPPETDIR6=&quot;/srv/mirror/puppet/products/6/x86_64&quot;
+MIRROR6=&quot;rsync://yum.puppetlabs.com/packages/yum/el/6/products/x86_64/&quot;
+
+DEPPUPPETDIR6=&quot;/srv/mirror/puppet/dependencies/6/x86_64&quot;
+DEPMIRROR6=&quot;rsync://yum.puppetlabs.com/packages/yum/el/6/dependencies/x86_64/&quot;
+
+PARAMS=&quot;-av --exclude SRPMS --delete&quot;
+
+if [ -f $LOCKFILE ]; then
+    echo &quot;Updates via rsync already running.&quot;
+    exit 0
+else
+	if [ -d $PUPPETDIR5 ] &amp;&amp; [ -d $PUPPETDIR6 ] &amp;&amp; [ -d $DEPPUPPETDIR5 ] &amp;&amp; [ -d $DEPPUPPETDIR6 ]   ; then
+	   touch $LOCKFILE
+	   rsync $PARAMS $MIRROR6 $PUPPETDIR6
+	   rsync $PARAMS $MIRROR5 $PUPPETDIR5
+	   rsync $PARAMS $DEPMIRROR6 $DEPPUPPETDIR6
+	   rsync $PARAMS $DEPMIRROR5 $DEPPUPPETDIR5
+	   rm -f $LOCKFILE
+	else
+	    echo &quot;Target directory $PUPPETDIR5 or $PUPPETDIR6 not present.&quot;
+	fi
+fi
+</code></pre><h3 id="13-zabbix">1.3. Zabbix</h3>
+<p>Este baixa pacotes oficiais Zabbix para CentOS 5 e 6.</p>
+<pre tabindex="0"><code>#!/bin/bash
+
+LOCKFILE=&quot;/var/lock/subsys/rsync_updates_zabbix&quot;
+
+ZBXDIR5=&quot;/srv/mirror/zabbix/centos/5/x86_64&quot;
+MIRROR5=&quot;rsync://repo.zabbixzone.com/centos/5/x86_64/&quot;
+
+ZBXDIR6=&quot;/srv/mirror/zabbix/centos/6/x86_64&quot;
+MIRROR6=&quot;rsync://repo.zabbixzone.com/centos/6/x86_64/&quot;
+
+PARAMS=&quot;-av --exclude SRPMS --delete&quot;
+
+if [ -f $LOCKFILE ]; then
+    echo &quot;Updates via rsync already running.&quot;
+    exit 0
+else
+        if [ -d $ZBXDIR5 ] &amp;&amp; [ -d $ZBXDIR6 ] ; then
+           touch $LOCKFILE
+           rsync $PARAMS $MIRROR6 $ZBXDIR6
+           rsync $PARAMS $MIRROR5 $ZBXDIR5
+           rm -f $LOCKFILE
+        else
+            echo &quot;Target directory $ZBXDIR5 or $ZBXDIR6 not present.&quot;
+        fi
+fi
+</code></pre><h2 id="2-apache-config">2. Apache Config</h2>
+<p>No apache apenas criei um arquivo chamado mirror.conf dentro de /etc/httpd/conf.d com o conteúdo abaixo:</p>
+<pre tabindex="0"><code>#
+# repositorio
+#
+
+Alias /mirror /srv/mirror
+
+&lt;Directory /srv/mirror&gt;
+	Options Indexes
+	Options +FollowSymLinks
+	AllowOverride none
+	Order Allow,Deny
+	Allow from all
+&lt;/Directory&gt;
+
+</code></pre><h2 id="3-yum-config">3. YUM Config</h2>
+<h3 id="31-para-centos-6">3.1 Para CentOS 6</h3>
+<pre tabindex="0"><code># repositorio centos
+
+[base]
+name=CentOS 6.4 Base x86_64
+baseurl=http://mirror.local/mirror/centos/6.4/os/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*,zabbix*
+
+[updates]
+name=CentOS 6.4 Updates x86_64
+baseurl=http://mirror.local/mirror/centos/6.4/updates/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*,zabbix*
+
+# repositorio epel, pacotes extras enterprise
+
+[epel]
+name=CentOS 6 EPEL x86_64
+baseurl=http://mirror.local/epel/centos/6/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*
+
+# puppet-agent packages from http://yum.puppetlabs.com/
+
+[puppet-products]
+name=CentOS 6 PuppetLabs Packages x86_64
+baseurl=http://mirror.local/mirror/puppet/products/6/x86_64
+enabled=1
+gpgcheck=0
+
+[puppet-dependencies]
+name=CentOS 6 PuppetLabs Packages x86_64
+baseurl=http://mirror.local/mirror/puppet/dependencies/6/x86_64
+enabled=1
+gpgcheck=0
+</code></pre><h3 id="31-para-centos-5">3.1 Para CentOS 5</h3>
+<pre tabindex="0"><code>[base]
+name=CentOS 5 Base x86_64
+baseurl=http://mirror.local/mirror/centos/5.9/os/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*,zabbix*
+
+[updates]
+name=CentOS 5 Updates x86_64
+baseurl=http://mirror.local/mirror/centos/5.9/updates/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*,zabbix*
+
+# repositorio epel, pacotes extras enterprise
+
+[epel]
+name=CentOS 5 EPEL x86_64
+baseurl=http://mirror.local/epel/centos/5/x86_64
+enabled=1
+gpgcheck=0
+exclude=puppet*
+
+# puppet-agent packages from http://yum.puppetlabs.com/
+
+[puppet-products]
+name=CentOS 5 PuppetLabs Packages x86_64
+baseurl=http://mirror.local/mirror/puppet/products/5/x86_64
+enabled=1
+gpgcheck=0
+
+[puppet-dependencies]
+name=CentOS 5 PuppetLabs Packages x86_64
+baseurl=http://mirror.local/mirror/puppet/dependencies/5/x86_64
+enabled=1
+gpgcheck=0
+</code></pre><p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Ghost&#43;Mysql via Docker-Compose</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Ghost&#43;Mysql via Docker-Compose</h1>
+        <div>
+                <time>June 13, 2020</time>
+            </div>
+    </header><p>Aqui vamos mostrar como instalar um Ghost via Docker, usando banco MySQL em poucos minutos.</p>
+<h3 id="prereq">PreReq</h3>
+<ul>
+<li>Ubuntu &gt;= 18.04</li>
+<li>Docker &gt;= 19
+<ul>
+<li>Ghost</li>
+<li>MySQL</li>
+</ul>
+</li>
+</ul>
+<h3 id="instalando-docker">Instalando Docker</h3>
+<p>Vamos instalar o docker com o script fornecido pelo projeto</p>
+<pre><code>curl -fsSL https://get.docker.com -o get-docker.sh
+</code></pre>
+<p>Saída esperada</p>
+<pre tabindex="0"><code># Executing docker install script, commit: 442e66405c304fa92af8aadaa1d9b31bf4b0ad94
++ sh -c 'apt-get update -qq &gt;/dev/null'
++ sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apt-transport-https ca-certificates curl &gt;/dev/null'
++ sh -c 'curl -fsSL &quot;https://download.docker.com/linux/ubuntu/gpg&quot; | apt-key add -qq - &gt;/dev/null'
+Warning: apt-key output should not be parsed (stdout is not a terminal)
++ sh -c 'echo &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable&quot; &gt; /etc/apt/sources.list.d/docker.list'
++ sh -c 'apt-get update -qq &gt;/dev/null'
++ '[' -n '' ']'
++ sh -c 'apt-get install -y -qq --no-install-recommends docker-ce &gt;/dev/null'
++ sh -c 'docker version'
+Client: Docker Engine - Community
+ Version:           19.03.8
+ API version:       1.40
+ Go version:        go1.12.17
+ Git commit:        afacb8b7f0
+ Built:             Wed Mar 11 01:25:46 2020
+ OS/Arch:           linux/amd64
+ Experimental:      false
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          19.03.8
+  API version:      1.40 (minimum version 1.12)
+  Go version:       go1.12.17
+  Git commit:       afacb8b7f0
+  Built:            Wed Mar 11 01:24:19 2020
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.2.13
+  GitCommit:        7ad184331fa3e55e52b890ea95e65ba581ae3429
+ runc:
+  Version:          1.0.0-rc10
+  GitCommit:        dc9208a3303feef5b3839f4323d9beb36df0a9dd
+ docker-init:
+  Version:          0.18.0
+  GitCommit:        fec3683
+If you would like to use Docker as a non-root user, you should now consider
+adding your user to the &quot;docker&quot; group with something like:
+
+  sudo usermod -aG docker your-user
+
+Remember that you will have to log out and back in for this to take effect!
+
+WARNING: Adding a user to the &quot;docker&quot; group will grant the ability to run
+         containers which can be used to obtain root privileges on the
+         docker host.
+         Refer to https://docs.docker.com/engine/security/security/#docker-daemon-attack-surface
+         for more information.
+</code></pre><h3 id="instalando-docker-compose">Instalando docker compose</h3>
+<p>Faça download do binário</p>
+<pre><code>curl -L “https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)” -o /usr/local/bin/docker-compose
+</code></pre>
+<p>Ajuste a permissão para execução</p>
+<pre><code>chmod +x /usr/local/bin/docker-compose
+</code></pre>
+<p>Pronto docker e docker-compose instalados, agora vamos ativar o docker no boot</p>
+<pre><code>systemctl enable docker
+</code></pre>
+<p>Feito, agora vamos iniciar o serviço do docker</p>
+<pre><code>systemctl start docker
+</code></pre>
+<h3 id="instalando-ghost">Instalando Ghost</h3>
+<p>Crie um diretório para servir de volume para mysql e ghost.</p>
+<pre><code>mkdir -p /srv/sites/guto/ghost/content
+mkdir -p /srv/sites/guto/ghost/config
+mkdir -p /srv/sites/guto/ghost/mysql
+</code></pre>
+<p>Crie o arquivo config.json em ghost/config</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;url&#34;</span><span class="p">:</span> <span class="s2">&#34;https://mindnotes.sh&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;server&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;port&#34;</span><span class="p">:</span> <span class="mi">2368</span><span class="p">,</span>
+    <span class="nt">&#34;host&#34;</span><span class="p">:</span> <span class="s2">&#34;0.0.0.0&#34;</span>
+  <span class="p">},</span>
+  <span class="nt">&#34;database&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;client&#34;</span><span class="p">:</span> <span class="s2">&#34;mysql&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;connection&#34;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&#34;host&#34;</span><span class="p">:</span> <span class="s2">&#34;db&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;port&#34;</span><span class="p">:</span> <span class="mi">3306</span><span class="p">,</span>
+      <span class="nt">&#34;user&#34;</span><span class="p">:</span> <span class="s2">&#34;root&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;password&#34;</span><span class="p">:</span> <span class="s2">&#34;sua senha&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;database&#34;</span><span class="p">:</span> <span class="s2">&#34;ghost&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;ssl&#34;</span><span class="p">:</span> <span class="kc">false</span>
+     <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&#34;mail&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;from&#34;</span><span class="p">:</span> <span class="s2">&#34;ghost@mindnotes.sh&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;transport&#34;</span><span class="p">:</span> <span class="s2">&#34;SMTP&#34;</span><span class="p">,</span>
+      <span class="nt">&#34;options&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;service&#34;</span><span class="p">:</span> <span class="s2">&#34;sendinblue&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;host&#34;</span><span class="p">:</span> <span class="s2">&#34;smtp-relay.sendinblue.com&#34;</span><span class="p">,</span>
+        <span class="nt">&#34;port&#34;</span><span class="p">:</span> <span class="mi">587</span><span class="p">,</span>
+        <span class="nt">&#34;secureConnection&#34;</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nt">&#34;auth&#34;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&#34;user&#34;</span><span class="p">:</span> <span class="s2">&#34;seu_user&#34;</span><span class="p">,</span>
+          <span class="nt">&#34;pass&#34;</span><span class="p">:</span> <span class="s2">&#34;sua_senha&#34;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&#34;paths&#34;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&#34;contentPath&#34;</span><span class="p">:</span> <span class="s2">&#34;/var/lib/ghost/content&#34;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+</code></pre></div><p>Vamos agora criar do docker-compose.yml</p>
+<pre><code>cd /srv/sites/guto/ghost/
+vim docker-compose.yml
+</code></pre>
+<p>Insira o conteúdo abaixo</p>
+<pre tabindex="0"><code>version: '3'
+services:
+
+  ghost:
+    image: ghost:latest
+    container_name: mindnotes_ghost_app
+    restart: always
+    depends_on:
+      - db
+    environment:
+      url: https://mindnotes.sh
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: root
+      database__connection__password: sua_senha
+      database__connection__database: ghost
+    volumes:
+      - /srv/sites/guto/ghost/site/content:/var/lib/ghost/content
+      - /srv/sites/guto/ghost/site/config/config.json:/var/lib/ghost/config.production.json
+    ports:
+      - 80:2368
+
+  db:
+    image: mysql:5.7
+    container_name: mindnotes_ghost_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: sua_senha
+    volumes:
+      -  /srv/sites/guto/ghost/site/mysql:/var/lib/mysql
+</code></pre><p>Execute o docker-compose</p>
+<pre><code>docker-compose up -d
+</code></pre>
+<p>E pronto, acesse seu ghost pelo navegador e finalize a instalação :)</p>
+<pre><code>http://coloque-seu-ip-aqui/
+</code></pre>
+<h3 id="dicas-soltas">Dicas soltas</h3>
+<p>Caso queira reiniciar os containers</p>
+<pre><code>docker-compose restart
+</code></pre>
+<p>Caso queria matar os containers</p>
+<pre><code>docker-compose kill
+</code></pre>
+<p>Caso queira ver o log de um dos containers</p>
+<pre><code>docker-compose logs -f mindnotes_ghost_app
+</code></pre>
+<p>Caso queria entrar em um dos containers</p>
+<pre><code>docker exec -ti mindnotes_ghost_app sh
+</code></pre>
+<h3 id="amarrando-as-pontas">Amarrando as pontas</h3>
+<p>Instalar qualquer coisa via docker-compose é muito fácil, especialmente quando você quer testar algo ou conhecer alguma tecnologia.</p>
+<p>Neste cenário criamos um ambiente ghost composto por 1 container com a aplicação, e outro container rodando o banco <strong>MySQL</strong>. Ambos containers persistem os dados em disco, no <strong>HOST</strong>, utilizando o diretório <strong>/srv/sites/guto/ghost</strong>.</p>
+<p>Observe que eu monto um volume para os dados, outro para o banco e outro para o arquivo de configuração, assim fica fácil alterar qualquer coisa e reiniciar o container em seguida.</p>
+<p>Com a persistência de dados você pode reiniciar o seu containers e não perderá seus dados.</p>
+<p>Usar docker em produção requer alguns cuidados além deste, como o uso de um orquestrador mais eficiente que ofereça <em><strong>alta disponibilidade</strong></em>, <em><strong>resiliência</strong></em>, <em><strong>escalabilidade</strong></em> e <em><strong>persistência</strong></em>, além de claro, um sólido <em><strong>plano de backup</strong></em> dos dados além de um procedimento bem claro para <em><strong>Disaster Recovery</strong></em>.</p>
+<p>Bye!</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

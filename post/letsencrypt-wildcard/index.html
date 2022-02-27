@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Criando certificados LetsEncrypt Wildcard com o Certbot</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Criando certificados LetsEncrypt Wildcard com o Certbot</h1>
+        <div>
+                <time>April 18, 2020</time>
+            </div>
+    </header><h3 id="o-que-é-um-certificado-wildcard">O que é um certificado wildcard?</h3>
+<p>Em resumo é um certificado <em><strong>coringa</strong></em> que vai funcionar com qualquer entrada em primeiro nível.</p>
+<p>Por exemplo, se eu criar um certificado wildcard como o abaixo</p>
+<pre><code>*.gutocarvalho.net
+</code></pre>
+<p>Qualquer domínio em primeiro nível vai conseguir utilizar os certificados, exemplos:</p>
+<pre><code>gitlab.gutocarvalho.net
+jitsi.gutocarvalho.net
+mattermost.gutocarvalho.net
+nextcloud.gutocarvalho
+</code></pre>
+<p>Agora veja, wildcard só funciona em primeiro nível, se voce tentar usar em níveis abaixo, em segundo nível como o exemplo abaixo&hellip;</p>
+<pre><code>app.dev.gutocarvalho.net
+</code></pre>
+<p>&hellip; não vai dar bom, neste caso você precisaria criar um certificado wildcard para *<em><strong>.dev.gutocarvalho.net</strong></em>.</p>
+<p>É isso, chega de teoria, vamos colocar a mão na massa. ;)</p>
+<h3 id="ambiente">Ambiente</h3>
+<ul>
+<li>ProxMox 6.1
+<ul>
+<li>CentOS 7
+<ul>
+<li>Certbot 1.3.0</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="prereqs">PreReqs</h3>
+<ul>
+<li>Crie um entrada *.seudominio.com.br em seu provedor de DNS</li>
+<li>Essa entrada deve apontar para seu balanceador ou reverse proxy.</li>
+</ul>
+<h3 id="preparando-a-coisa">Preparando a coisa</h3>
+<pre><code>yum install -y epel-release
+</code></pre>
+<h3 id="instalando-o-certbot">Instalando o certbot</h3>
+<pre><code>yum install -y certbot python2-certbot-dns-cloudflare-1.3.0-2.el7.noarch
+</code></pre>
+<h3 id="gerando-o-cerfificado-wildcard">Gerando o cerfificado wildcard</h3>
+<p>Vamos rodar o comando</p>
+<pre><code>certbot --server https://acme-v02.api.letsencrypt.org/directory -d gutocarvalho.net,*.gutocarvalho.net --manual --preferred-challenges dns-01 certonly
+</code></pre>
+<p>Veja que eu passo <em><strong>gutocarvalho.net</strong></em>,*<em><strong>.gutocarvalho.net</strong></em> no parâmetro <em><strong>-d</strong></em>, isso é essencial, não esqueça de colocar o domínio principal junto ao wildcard.</p>
+<p>Agora vamos ver a saída esperada.</p>
+<pre tabindex="0"><code>Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Plugins selected: Authenticator manual, Installer None
+Starting new HTTPS connection (1): acme-v02.api.letsencrypt.org
+Obtaining a new certificate
+Performing the following challenges:
+dns-01 challenge for gutocarvalho.net
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+NOTE: The IP of this machine will be publicly logged as having requested this
+certificate. If you're running certbot in manual mode on a machine that is not
+your server, please ensure you're okay with that.
+
+Are you OK with your IP being logged?
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(Y)es/(N)o: y
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Please deploy a DNS TXT record under the name
+_acme-challenge.gutocarvalho.net with the following value:
+
+glkhjdljlJKDlkdjksdhlkshjd-_ctdL5ve8Vn2Nnd0
+</code></pre><p>OK, aqui precisamos ir no nosso provedor de DNS e criar a entrada abaixo</p>
+<pre><code>_acme-challenge.
+</code></pre>
+<p>com o seguinte conteúdo</p>
+<pre><code>glkhjdljlJKDlkdjksdhlkshjd-_ctdL5ve8Vn2Nnd0
+</code></pre>
+<p>Beleza, depois mandar um ENTER e continue</p>
+<pre tabindex="0"><code>Before continuing, verify the record is deployed.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Press Enter to Continue
+Waiting for verification...
+Cleaning up challenges
+
+IMPORTANT NOTES:
+ - Congratulations! Your certificate and chain have been saved at:
+   /etc/letsencrypt/live/gutocarvalho.net-0001/fullchain.pem
+   Your key file has been saved at:
+   /etc/letsencrypt/live/gutocarvalho.net-0001/privkey.pem
+   Your cert will expire on 2020-07-17. To obtain a new or tweaked
+   version of this certificate in the future, simply run certbot
+   again. To non-interactively renew *all* of your certificates, run
+   &quot;certbot renew&quot;
+ - If you like Certbot, please consider supporting our work by:
+
+   Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+   Donating to EFF:                    https://eff.org/donate-le
+</code></pre><p>O certificados foram gerados em /etc/letsencrypt/live/gutocarvalho.net</p>
+<pre tabindex="0"><code>[root@lb conf.d]# ls /etc/letsencrypt/live/gutocarvalho.net/ -1
+cert.pem
+chain.pem
+fullchain.pem
+privkey.pem
+README
+</code></pre><p>Certificados gerados, agora você pode usar em seu NGINX, Apache HTTPd ou qualquer outro serviço que deseje utilizar SSL.</p>
+<p>Enjoy!</p>
+<p>[s]
+Guto</p>
+<hr>
+<p>Se você precisa de ajuda para começar a utilizar certificados LetsEncrypt, fale com a JAC, nosso braço de projetos e consultoria!A JAC oferece um atendimento diferenciado e profissionais bem antenados, pode confiar :)[contato@jac.bsb.br]<a href="https://jac.bsb.br">https://jac.bsb.br</a></p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

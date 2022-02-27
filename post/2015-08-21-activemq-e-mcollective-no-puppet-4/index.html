@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando ActiveMQ 5.9 para Mcollective 2.8.2 do Puppet Agent 1.2.2 no CentOS 7 (v1.0)</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando ActiveMQ 5.9 para Mcollective 2.8.2 do Puppet Agent 1.2.2 no CentOS 7 (v1.0)</h1>
+        <div>
+                <time>August 21, 2015</time>
+            </div>
+    </header><iframe width="420" height="315" src="https://www.youtube.com/embed/-stgc_CUTsM" frameborder="0" allowfullscreen></iframe>
+<h2 id="1-mcollective-no-puppet-4">1. Mcollective no Puppet 4</h2>
+<p>O Puppet Agent 1.2.2 do Puppet 4.2 já traz o Mcollective embutido, se você instalou o agente do puppet você também instalou o Mcollective. Neste post vou mostrar como instalar o ActiveMQ e como configurar o Mcollective do Puppet Agent 1.2.2 do Puppet 4 para falar com o ActiveMQ.</p>
+<p>Este post é resultado de um dia de hacklab que fiz com o Miguel Filho (@mciurcio).</p>
+<h2 id="2-dependências">2. Dependências</h2>
+<p>Instalar o Puppet Agent e Server do Puppet 4.2 conforme o post <a href="http://gutocarvalho.net/octopress/2015/08/18/instalando-puppet-4-agent-and-master/">anterior</a> é pré-requisito, vamos usar a mesma VM para rodar o ActiveMQ e utilizar o Mcollective.</p>
+<h2 id="21-cenário">2.1 Cenário</h2>
+<pre><code>Vagrant+Virtualbox rodando VM com CentOS 7
+Puppet Agent 1.2.2 (Puppet 4.2)
+Mcollective 2.8.2 embutido no puppet-agent 1.2.2 (Puppet 4.2)
+ActiveMQ 5.9
+</code></pre>
+<h2 id="3-apache-activemq-59">3. Apache ActiveMQ 5.9</h2>
+<p>O ActiveMQ é o serviço de fila utilizado pelo Mcollective.</p>
+<h3 id="32-instalando-repositório">3.2 Instalando Repositório</h3>
+<p>Para instalar o ActiveMQ é necessário utilizar pacotes do Puppet 3.x pois ele ainda não está no repositório PC1 do Puppet 4.2.</p>
+<pre><code>[root@puppetserver4 ~]# yum install http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm -y
+</code></pre>
+<h3 id="31-instalando-activemq">3.1 Instalando ActiveMQ</h3>
+<pre><code>[root@puppetserver4 ~]# yum install activemq -y
+</code></pre>
+<h3 id="32-configurando-activemq">3.2 Configurando ActiveMQ</h3>
+<p>Edite o arquivo de configuração do Mcollective Server</p>
+<pre><code>[root@puppetserver4 ~]# vim /etc/activemq/activemq.xml
+</code></pre>
+<p>Apague o conteúdo anteriror, adicione o conteúdo abaixo ao arquivo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;beans</span>
+  <span class="na">xmlns=</span><span class="s">&#34;http://www.springframework.org/schema/beans&#34;</span>
+  <span class="na">xmlns:amq=</span><span class="s">&#34;http://activemq.apache.org/schema/core&#34;</span>
+  <span class="na">xmlns:xsi=</span><span class="s">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+  <span class="na">xsi:schemaLocation=</span><span class="s">&#34;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+</span><span class="s">  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd
+</span><span class="s">  http://activemq.apache.org/camel/schema/spring http://activemq.apache.org/camel/schema/spring/camel-spring.xsd&#34;</span><span class="nt">&gt;</span>
+
+    <span class="nt">&lt;broker</span> <span class="na">xmlns=</span><span class="s">&#34;http://activemq.apache.org/schema/core&#34;</span> <span class="na">brokerName=</span><span class="s">&#34;puppetserver4.hacklab&#34;</span> <span class="na">useJmx=</span><span class="s">&#34;true&#34;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;managementContext&gt;</span>
+            <span class="nt">&lt;managementContext</span> <span class="na">createConnector=</span><span class="s">&#34;false&#34;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/managementContext&gt;</span>
+
+
+        <span class="nt">&lt;plugins&gt;</span>
+          <span class="nt">&lt;statisticsBrokerPlugin/&gt;</span>
+          <span class="nt">&lt;simpleAuthenticationPlugin&gt;</span>
+            <span class="nt">&lt;users&gt;</span>
+              <span class="nt">&lt;authenticationUser</span> <span class="na">username=</span><span class="s">&#34;mcollective&#34;</span> <span class="na">password=</span><span class="s">&#34;marionette&#34;</span> <span class="na">groups=</span><span class="s">&#34;mcollective,everyone&#34;</span><span class="nt">/&gt;</span>
+              <span class="nt">&lt;authenticationUser</span> <span class="na">username=</span><span class="s">&#34;admin&#34;</span> <span class="na">password=</span><span class="s">&#34;admin&#34;</span> <span class="na">groups=</span><span class="s">&#34;mcollective,admins,everyone&#34;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;/users&gt;</span>
+          <span class="nt">&lt;/simpleAuthenticationPlugin&gt;</span>
+          <span class="nt">&lt;authorizationPlugin&gt;</span>
+            <span class="nt">&lt;map&gt;</span>
+              <span class="nt">&lt;authorizationMap&gt;</span>
+                <span class="nt">&lt;authorizationEntries&gt;</span>
+                  <span class="nt">&lt;authorizationEntry</span> <span class="na">queue=</span><span class="s">&#34;&gt;&#34;</span> <span class="na">write=</span><span class="s">&#34;admins&#34;</span> <span class="na">read=</span><span class="s">&#34;admins&#34;</span> <span class="na">admin=</span><span class="s">&#34;admins&#34;</span> <span class="nt">/&gt;</span>
+                  <span class="nt">&lt;authorizationEntry</span> <span class="na">topic=</span><span class="s">&#34;&gt;&#34;</span> <span class="na">write=</span><span class="s">&#34;admins&#34;</span> <span class="na">read=</span><span class="s">&#34;admins&#34;</span> <span class="na">admin=</span><span class="s">&#34;admins&#34;</span> <span class="nt">/&gt;</span>
+                  <span class="nt">&lt;authorizationEntry</span> <span class="na">topic=</span><span class="s">&#34;mcollective.&gt;&#34;</span> <span class="na">write=</span><span class="s">&#34;mcollective&#34;</span> <span class="na">read=</span><span class="s">&#34;mcollective&#34;</span> <span class="na">admin=</span><span class="s">&#34;mcollective&#34;</span> <span class="nt">/&gt;</span>
+                  <span class="nt">&lt;authorizationEntry</span> <span class="na">queue=</span><span class="s">&#34;mcollective.&gt;&#34;</span> <span class="na">write=</span><span class="s">&#34;mcollective&#34;</span> <span class="na">read=</span><span class="s">&#34;mcollective&#34;</span> <span class="na">admin=</span><span class="s">&#34;mcollective&#34;</span> <span class="nt">/&gt;</span>
+                  <span class="nt">&lt;authorizationEntry</span> <span class="na">topic=</span><span class="s">&#34;ActiveMQ.Advisory.&gt;&#34;</span> <span class="na">read=</span><span class="s">&#34;everyone&#34;</span> <span class="na">write=</span><span class="s">&#34;everyone&#34;</span> <span class="na">admin=</span><span class="s">&#34;everyone&#34;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;/authorizationEntries&gt;</span>
+              <span class="nt">&lt;/authorizationMap&gt;</span>
+            <span class="nt">&lt;/map&gt;</span>
+          <span class="nt">&lt;/authorizationPlugin&gt;</span>
+        <span class="nt">&lt;/plugins&gt;</span>
+
+        <span class="nt">&lt;systemUsage&gt;</span>
+            <span class="nt">&lt;systemUsage&gt;</span>
+                <span class="nt">&lt;memoryUsage&gt;</span>
+                    <span class="nt">&lt;memoryUsage</span> <span class="na">limit=</span><span class="s">&#34;20 mb&#34;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;/memoryUsage&gt;</span>
+                <span class="nt">&lt;storeUsage&gt;</span>
+                    <span class="nt">&lt;storeUsage</span> <span class="na">limit=</span><span class="s">&#34;1 gb&#34;</span> <span class="na">name=</span><span class="s">&#34;foo&#34;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;/storeUsage&gt;</span>
+                <span class="nt">&lt;tempUsage&gt;</span>
+                    <span class="nt">&lt;tempUsage</span> <span class="na">limit=</span><span class="s">&#34;100 mb&#34;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;/tempUsage&gt;</span>
+            <span class="nt">&lt;/systemUsage&gt;</span>
+        <span class="nt">&lt;/systemUsage&gt;</span>
+
+        <span class="nt">&lt;transportConnectors&gt;</span>
+            <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;openwire&#34;</span> <span class="na">uri=</span><span class="s">&#34;tcp://0.0.0.0:61616&#34;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;transportConnector</span> <span class="na">name=</span><span class="s">&#34;stomp+nio&#34;</span> <span class="na">uri=</span><span class="s">&#34;stomp://0.0.0.0:61613&#34;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/transportConnectors&gt;</span>
+    <span class="nt">&lt;/broker&gt;</span>
+
+<span class="nt">&lt;/beans&gt;</span>
+</code></pre></div><p>Salve</p>
+<pre><code>:wq
+</code></pre>
+<p>Crie o link simbólico do diretório data</p>
+<pre><code>[root@puppetserver4 ~]# ln -s /usr/share/activemq/data /usr/share/activemq/activemq-data
+</code></pre>
+<p>Há um issue aberto para corrigir essa questão do link, vote pela correção!</p>
+<pre><code>https://github.com/puppetlabs/puppetlabs-activemq/pull/38
+</code></pre>
+<h3 id="33-iniciando-activemq">3.3 Iniciando ActiveMQ</h3>
+<p>Inicie o serviço com o comando abaixo</p>
+<pre><code>[root@puppetserver4 ~]# systemctl start activemq
+</code></pre>
+<h3 id="34-verificando-serviço">3.4 Verificando Serviço</h3>
+<p>Verifique no arquivo de log do serviço se ele subiu</p>
+<pre><code>[root@puppetserver4 ~]# tail -f  /var/log/activemq/activemq.log
+</code></pre>
+<p>Uma linha similar a esta deve estar presente nas últimas linhas</p>
+<pre><code>2015-08-21 19:50:40,791 [main           ] INFO  BrokerService                  - Apache ActiveMQ 5.9.1 (puppetserver4.hacklab, ID:puppetserver4.hacklab-52815-1440186640199-0:1) started
+</code></pre>
+<p>Verifique se a porta 61613 TCP está em modo LISTEN</p>
+<pre><code>[root@puppetserver4 activemq]# netstat -ntpl|grep 61613
+ tcp6       0      0 :::61613                :::*                    LISTEN      19183/java
+</code></pre>
+<p>Se teve todas essas saídas seu ActiveMQ está ok!</p>
+<h2 id="4-mcollective-282">4. Mcollective 2.8.2</h2>
+<p>O Mcollective é o oquestrador do Puppet, o principal objetivo dele é invocar o agente do puppet de forma direta e paralela caso necessário, fazendo isto em todos os nodes do seu parque - quando for preciso fazê-lo.</p>
+<h3 id="41-configurando-mcollective-server">4.1 Configurando Mcollective Server</h3>
+<p>Edite o arquivo abaixo server.cfg do mcollective</p>
+<pre><code>[root@puppetserver4 ~]# vim /etc/puppetlabs/mcollective/server.cfg
+</code></pre>
+<p>Apague o conteúdo anteriror, adicione o conteúdo abaixo ao arquivo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="na">main_collective</span> <span class="o">=</span> <span class="s">mcollective</span>
+<span class="na">collectives</span> <span class="o">=</span> <span class="s">mcollective</span>
+<span class="na">libdir</span> <span class="o">=</span> <span class="s">/opt/puppetlabs/puppet/lib/ruby/vendor_ruby:/opt/puppetlabs/mcollective/plugins</span>
+<span class="na">logfile</span> <span class="o">=</span> <span class="s">/var/log/mcollective.log</span>
+<span class="na">loglevel</span> <span class="o">=</span> <span class="s">info</span>
+<span class="na">identity</span> <span class="o">=</span> <span class="s">puppetserver4.hacklab</span>
+<span class="na">daemonize</span> <span class="o">=</span> <span class="s">1</span>
+<span class="na">direct_addressing</span> <span class="o">=</span> <span class="s">0</span>
+
+<span class="c1"># Plugins</span>
+<span class="na">securityprovider</span> <span class="o">=</span> <span class="s">psk</span>
+
+<span class="na">plugin.psk</span> <span class="o">=</span> <span class="s">hacklab</span>
+
+<span class="na">connector</span> <span class="o">=</span> <span class="s">activemq</span>
+
+<span class="na">plugin.activemq.pool.size</span> <span class="o">=</span> <span class="s">1</span>
+<span class="na">plugin.activemq.pool.1.host</span> <span class="o">=</span> <span class="s">puppetserver4.hacklab</span>
+<span class="na">plugin.activemq.pool.1.port</span> <span class="o">=</span> <span class="s">61613</span>
+<span class="na">plugin.activemq.pool.1.user</span> <span class="o">=</span> <span class="s">mcollective</span>
+<span class="na">plugin.activemq.pool.1.password</span> <span class="o">=</span> <span class="s">marionette</span>
+<span class="na">plugin.activemq.pool.1.ssl</span> <span class="o">=</span> <span class="s">false</span>
+
+<span class="na">plugin.package.provider</span> <span class="o">=</span> <span class="s">puppet</span>
+
+<span class="na">plugin.puppetca.cadir</span> <span class="o">=</span> <span class="s">/srv/puppetca/ca/</span>
+
+<span class="c1"># Facts</span>
+<span class="na">factsource</span> <span class="o">=</span> <span class="s">yaml</span>
+<span class="na">plugin.yaml</span> <span class="o">=</span> <span class="s">/etc/puppetlabs/mcollective/facts.yaml</span>
+
+<span class="na">classesfile</span> <span class="o">=</span> <span class="s">/var/lib/puppet/state/classes.txt</span>
+
+<span class="c1"># Registration</span>
+<span class="na">registerinterval</span> <span class="o">=</span> <span class="s">300</span>
+<span class="na">registration</span> <span class="o">=</span> <span class="s">Agentlist</span>
+</code></pre></div><p>Reinicie o Mcollective.</p>
+<pre><code>[root@puppetserver4 ~]# systemctl restart mcollective
+</code></pre>
+<h4 id="411-verificando-mcollective-server">4.1.1 Verificando Mcollective Server</h4>
+<p>Verifique no log se o mcollective se conectou ao activeMQ</p>
+<pre><code>[root@puppetserver4 mcollective]# tail -f /var/log/mcollective.log
+</code></pre>
+<p>Você verá uma mensagem similar a esta</p>
+<pre><code>[2015-08-21T19:50:53.749595 #20554]  INFO -- : activemq.rb:119:in `on_connected' Connected to stomp://mcollective@puppetserver4.hacklab:61613
+</code></pre>
+<p>Se recebeu uma linha similar, seu Mcollective Server está Ok</p>
+<h3 id="42-configurando-mcollective-client">4.2 Configurando Mcollective Client</h3>
+<p>Edite o arquivo de configuração do Mcollective Client</p>
+<pre><code>[root@puppetserver4 ~]# vim /etc/activemq/activemq.xml
+</code></pre>
+<p>Adicione o conteúdo abaixo ao arquivo</p>
+<pre tabindex="0"><code>main_collective = mcollective
+collectives = mcollective
+libdir = /opt/puppetlabs/puppet/lib/ruby/vendor_ruby:/opt/puppetlabs/mcollective/plugins
+logfile = /dev/null
+loglevel = info
+direct_addressing = 0
+
+# Plugins
+securityprovider = psk
+
+plugin.psk = hacklab
+
+plugin.package.provider = puppet
+
+connector = activemq
+
+plugin.activemq.pool.size = 1
+plugin.activemq.pool.1.host = puppetserver4.hacklab
+plugin.activemq.pool.1.port = 61613
+
+plugin.activemq.pool.1.user = mcollective
+plugin.activemq.pool.1.password = marionette
+
+plugin.activemq.pool.1.ssl = false
+
+# Facts
+factsource = yaml
+plugin.yaml = /etc/puppetlabs/mcollective/facts.yaml
+
+default_discovery_method = mc
+</code></pre><h3 id="43-testando-mcollective">4.3 Testando Mcollective</h3>
+<p>Buscando nodes com serviço mcollective rodando</p>
+<pre><code>[root@puppetserver4 mcollective]# mco find
+puppetserver4.hacklab
+</code></pre>
+<p>Enviando ping para verificar tempo de resposta dos nodes</p>
+<pre><code>[root@puppetserver4 mcollective]# mco ping
+puppetserver4.hacklab                    time=18.49 ms
+</code></pre>
+<h2 id="5-amarrando-as-pontas">5. Amarrando as pontas</h2>
+<p>Apesar das mudanças em Paths o Mcollective continua o mesmo. No momento ainda não existem pacotes com os plugins para manipular seviços, pacotes e o próprio Puppet, é necessário instalar os plugins manualmente, vou tratar da instalação destes plugins no próximo post.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Instalando Puppet Agent 4 e Puppet Master 4 em CentOS 7 (v1.5)</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Instalando Puppet Agent 4 e Puppet Master 4 em CentOS 7 (v1.5)</h1>
+        <div>
+                <time>August 18, 2015</time>
+            </div>
+    </header><iframe width="560" height="315" src="https://www.youtube.com/embed/BRuK6ZTzV74" frameborder="0" allowfullscreen></iframe>
+<p>Este é o primeiro post que escrevo sobre o Puppet 4, a ideia aqui é demonstrar a instalação e a configuração mínima para você ter um Puppet Agent e Puppet Server do Puppet 4.2 rodando na mesma VM.</p>
+<p>Este post é resultado de um dia de hacklab que fiz com o Miguel Filho (@mciurcio).</p>
+<h2 id="1-cenário-do-hacklab">1. Cenário do HackLab</h2>
+<p>O hacklab foi realizado no cenário abaixo:</p>
+<pre><code>Macbook Pro 11.1
+- OSX 10.11 (El Capitan)
+  - VAGRANT 1.7.4
+    - BOX CentOS 7 da Puppet Labs 
+  - VIRTUALBOX 5.0
+</code></pre>
+<h2 id="2-configurando-vagrant">2. Configurando Vagrant</h2>
+<p>Crie um diretório para seu projeto</p>
+<pre><code>$ mkdir -p ~/vagrant/projects/puppet4
+$ cd ~/vagrant/projects/puppet4
+</code></pre>
+<p>Adicione a box ao vagrant</p>
+<pre><code>$ vagrant box add —-name centos7x64 https://atlas.hashicorp.com/puppetlabs/boxes/centos-7.0-64-puppet/versions/1.0.2/providers/virtualbox.box
+</code></pre>
+<p>Crie o arquivo Vagrantfile dentro do diretório do projeto</p>
+<pre><code>$ pwd
+~/vagrant/projects/puppet4
+$ vim Vagrantfile 
+</code></pre>
+<p>Adicione o conteúdo abaixo ao arquivo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ruby" data-lang="ruby"><span class="c1"># -*- mode: ruby -*-</span>
+
+<span class="c1"># vi: set ft=ruby :</span>
+
+<span class="no">VAGRANTFILE_API_VERSION</span> <span class="o">=</span> <span class="s2">&#34;2&#34;</span>
+
+<span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="no">VAGRANTFILE_API_VERSION</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+		<span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="s2">&#34;puppetserver4.hacklab&#34;</span>
+		<span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&#34;centos7x64&#34;</span>
+		<span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="s2">&#34;private_network&#34;</span><span class="p">,</span> <span class="ss">ip</span><span class="p">:</span> <span class="s2">&#34;192.168.200.88&#34;</span>
+
+		<span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="s2">&#34;virtualbox&#34;</span> <span class="k">do</span> <span class="o">|</span><span class="n">virtualbox</span><span class="o">|</span>
+			<span class="n">virtualbox</span><span class="o">.</span><span class="n">customize</span> <span class="o">[</span> <span class="s2">&#34;modifyvm&#34;</span><span class="p">,</span> <span class="ss">:id</span><span class="p">,</span> <span class="s2">&#34;--cpus&#34;</span><span class="p">,</span> <span class="s2">&#34;2&#34;</span> <span class="o">]</span>
+			<span class="n">virtualbox</span><span class="o">.</span><span class="n">customize</span> <span class="o">[</span> <span class="s2">&#34;modifyvm&#34;</span><span class="p">,</span> <span class="ss">:id</span><span class="p">,</span> <span class="s2">&#34;--memory&#34;</span><span class="p">,</span> <span class="s2">&#34;4096&#34;</span> <span class="o">]</span>
+	   <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div><p>Salve</p>
+<pre><code>:wq
+</code></pre>
+<p>Agora inicie a VM</p>
+<pre><code>$ vagrant up
+</code></pre>
+<p>Acesse a VM</p>
+<pre><code>$ vagrant ssh
+[vagrant@puppetserver4 ~]$ sudo -i
+[root@puppetserver4 ~]#
+</code></pre>
+<p>Pronto, agora podemos começar.</p>
+<h2 id="3-instalando-repositório">3. Instalando Repositório</h2>
+<h3 id="31-repositório">3.1 Repositório</h3>
+<p>Instale o repositório da puppetlabs para o puppet 4</p>
+<pre><code>[root@puppetserver4 ~]# yum install http://yum.puppetlabs.com/el/7/PC1/x86_64/puppetlabs-release-pc1-0.9.2-1.el7.noarch.rpm -y
+</code></pre>
+<h2 id="4-instalando-agent">4. Instalando Agent</h2>
+<h3 id="41-removendo-puppet-agent-3">4.1 Removendo Puppet Agent 3</h3>
+<p>Remova o puppet 3 que vem na box</p>
+<pre><code>[root@puppetserver4 ~]# yum remove puppet -y
+</code></pre>
+<h3 id="42-pesquisando-por-pacotes">4.2 Pesquisando por pacotes</h3>
+<p>Pesquise por pacotes Puppet</p>
+<pre><code>[root@puppetserver4 ~]# yum search puppet
+</code></pre>
+<p>A saída da busca deve ser similar a esta</p>
+<pre tabindex="0"><code>puppet-agent.x86_64 : The Puppet Agent package contains all of the elements needed to run puppet, including ruby,
+                    : facter, hiera and mcollective.
+puppetdb.noarch : Puppet Labs - puppetdb
+puppetdb-termini.noarch : Termini for puppetdb
+puppetdb-terminus.noarch : Metapackage to allow easy upgrades from PuppetDB 2
+puppetlabs-release-pc1.noarch : Release packages for the Puppet Labs PC1 repository
+puppetserver.noarch : Puppet Labs - puppetserver
+</code></pre><p>Se viu uma saída similar, isto significa que a instalação do repositório teve sucesso.</p>
+<h3 id="43-configurando-hosts">4.3 Configurando Hosts</h3>
+<p>Ajuste o endereço localhost em s
+eu arquivo hosts</p>
+<pre><code>[root@puppetserver4 ~]# echo &quot;127.0.0.1 localhost localhost.localdomain&quot; &gt; /etc/hosts
+</code></pre>
+<p>Ajuste o endereço do servidor puppet</p>
+<pre><code>[root@puppetserver4 ~]# echo &quot;192.168.200.88 puppetserver4.hacklab puppetserver4 puppet&quot; &gt;&gt; /etc/hosts
+</code></pre>
+<h3 id="44-configurando-hostname">4.4 Configurando Hostname</h3>
+<p>Vamos ajustar hostname do OS para gerar certificados mais adiante</p>
+<pre><code>[root@puppetserver4 ~]# echo &quot;puppetserver4.hacklab&quot; &gt; /etc/hostname
+</code></pre>
+<p>Por default o certificados do agente tem o mesmo nome do conteúdo desse arquivo.</p>
+<h3 id="45-instalando-puppet-agent-122-do-puppet-42">4.5 Instalando Puppet Agent 1.2.2 do Puppet 4.2</h3>
+<p>Instale puppet agent 1.2.2</p>
+<pre><code>[root@puppetserver4 ~]# yum install puppet-agent -y
+</code></pre>
+<h3 id="46-ajustando-path-para-binários">4.6 Ajustando Path para binários</h3>
+<p>Teste o puppet agent</p>
+<pre><code>[root@puppetserver4 ~]# puppet
+-bash: puppet: command not found
+</code></pre>
+<p>Corrija o path para utilizar os recursos do Puppet 4.2</p>
+<pre><code>[root@puppetserver4 ~]# echo &quot;export PATH=/opt/puppetlabs/bin:$PATH&quot; &gt; /etc/profile.d/puppet_path.sh
+[root@puppetserver4 ~]# source /etc/profile.d/puppet_path.sh
+</code></pre>
+<h3 id="47-corrigindo-locales">4.7 Corrigindo locales</h3>
+<p>Após definir o path rode o puppet</p>
+<pre><code>[root@puppetserver4 ~]# puppet
+</code></pre>
+<p>Você provavelmente vai receber esta saída</p>
+<pre><code>terminate called after throwing an instance of 'std::runtime_error' what():  locale::facet::_S_create_c_locale name not valid
+Aborted
+</code></pre>
+<p>Defina o valor para a variável LC_ALL globalmente para resolver isto até que o bug seja corrijido.</p>
+<pre><code>[root@puppetserver4 ~]# echo &quot;export LC_ALL=en_US.UTF-8&quot; &gt; /etc/profile.d/puppet_locale.sh
+</code></pre>
+<p>Carregue a configuração de locale</p>
+<pre><code>[root@puppetserver4 ~]# source /etc/profile.d/puppet_locale.sh
+</code></pre>
+<p>Teste novamente</p>
+<pre><code>[root@puppetserver4 ~]# puppet --version
+4.2.1
+</code></pre>
+<p>Há um ticket aberto para corrigir o problema, vote e acompanhe.</p>
+<pre><code>https://tickets.puppetlabs.com/browse/SERVER-779
+</code></pre>
+<h3 id="48-testando-o-novo-facter">4.8 Testando o novo facter</h3>
+<p>Verificando informações de uptime</p>
+<pre><code>[root@puppetserver4 production]# facter system_uptime
+</code></pre>
+<pre tabindex="0"><code>{
+  days =&gt; 0,
+  hours =&gt; 0,
+  seconds =&gt; 2546,
+  uptime =&gt; &quot;0:42 hours&quot;
+}
+</code></pre><p>Verificando informações de ruby</p>
+<pre><code>[root@puppetserver4 production]# facter ruby
+</code></pre>
+<pre tabindex="0"><code>{
+  platform =&gt; &quot;x86_64-linux&quot;,
+  sitedir =&gt; &quot;/opt/puppetlabs/puppet/lib/ruby/site_ruby/2.1.0&quot;,
+  version =&gt; &quot;2.1.6&quot;
+}
+</code></pre><p>Verificando informações de OS</p>
+<pre><code>[root@puppetserver4 production]# facter os
+</code></pre>
+<pre tabindex="0"><code>{
+  architecture =&gt; &quot;x86_64&quot;,
+  family =&gt; &quot;RedHat&quot;,
+  hardware =&gt; &quot;x86_64&quot;,
+  name =&gt; &quot;CentOS&quot;,
+  release =&gt; {
+    full =&gt; &quot;7.0.1406&quot;,
+    major =&gt; &quot;7&quot;,
+    minor =&gt; &quot;0&quot;
+  },
+  selinux =&gt; {
+    enabled =&gt; false
+  }
+}
+</code></pre><p>Verificando informações de load average</p>
+<pre><code>[root@puppetserver4 production]# facter load_averages
+</code></pre>
+<pre tabindex="0"><code>load_averages =&gt; {
+  15m =&gt; 0.09,
+  1m =&gt; 0.09,
+  5m =&gt; 0.07
+}
+</code></pre><p>Verificando informações de networking</p>
+<pre><code>[root@puppetserver4 production]# facter networking
+</code></pre>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ruby" data-lang="ruby"><span class="p">{</span>
+  <span class="n">dhcp</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.2&#34;</span><span class="p">,</span>
+  <span class="n">domain</span> <span class="o">=&gt;</span> <span class="s2">&#34;hacklab&#34;</span><span class="p">,</span>
+  <span class="n">fqdn</span> <span class="o">=&gt;</span> <span class="s2">&#34;puppetserver4.hacklab&#34;</span><span class="p">,</span>
+  <span class="n">hostname</span> <span class="o">=&gt;</span> <span class="s2">&#34;puppetserver4&#34;</span><span class="p">,</span>
+  <span class="n">interfaces</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="n">enp0s3</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="n">dhcp</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.2&#34;</span><span class="p">,</span>
+      <span class="n">ip</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.15&#34;</span><span class="p">,</span>
+      <span class="n">ip6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::a00:27ff:fe19:cd16&#34;</span><span class="p">,</span>
+      <span class="n">mac</span> <span class="o">=&gt;</span> <span class="s2">&#34;08:00:27:19:cd:16&#34;</span><span class="p">,</span>
+      <span class="n">mtu</span> <span class="o">=&gt;</span> <span class="mi">1500</span><span class="p">,</span>
+      <span class="n">netmask</span> <span class="o">=&gt;</span> <span class="s2">&#34;255.255.255.0&#34;</span><span class="p">,</span>
+      <span class="n">netmask6</span> <span class="o">=&gt;</span> <span class="s2">&#34;ffff:ffff:ffff:ffff::&#34;</span><span class="p">,</span>
+      <span class="n">network</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.0&#34;</span><span class="p">,</span>
+      <span class="n">network6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::&#34;</span>
+    <span class="p">},</span>
+    <span class="n">enp0s8</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="n">dhcp</span> <span class="o">=&gt;</span> <span class="s2">&#34;192.168.56.100&#34;</span><span class="p">,</span>
+      <span class="n">ip</span> <span class="o">=&gt;</span> <span class="s2">&#34;192.168.200.88&#34;</span><span class="p">,</span>
+      <span class="n">ip6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::a00:27ff:fe7a:5943&#34;</span><span class="p">,</span>
+      <span class="n">mac</span> <span class="o">=&gt;</span> <span class="s2">&#34;08:00:27:7a:59:43&#34;</span><span class="p">,</span>
+      <span class="n">mtu</span> <span class="o">=&gt;</span> <span class="mi">1500</span><span class="p">,</span>
+      <span class="n">netmask</span> <span class="o">=&gt;</span> <span class="s2">&#34;255.255.255.0&#34;</span><span class="p">,</span>
+      <span class="n">netmask6</span> <span class="o">=&gt;</span> <span class="s2">&#34;ffff:ffff:ffff:ffff::&#34;</span><span class="p">,</span>
+      <span class="n">network</span> <span class="o">=&gt;</span> <span class="s2">&#34;192.168.200.0&#34;</span><span class="p">,</span>
+      <span class="n">network6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::&#34;</span>
+    <span class="p">},</span>
+    <span class="n">lo</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="n">ip</span> <span class="o">=&gt;</span> <span class="s2">&#34;127.0.0.1&#34;</span><span class="p">,</span>
+      <span class="n">ip6</span> <span class="o">=&gt;</span> <span class="s2">&#34;::1&#34;</span><span class="p">,</span>
+      <span class="n">mtu</span> <span class="o">=&gt;</span> <span class="mi">65536</span><span class="p">,</span>
+      <span class="n">netmask</span> <span class="o">=&gt;</span> <span class="s2">&#34;255.0.0.0&#34;</span><span class="p">,</span>
+      <span class="n">netmask6</span> <span class="o">=&gt;</span> <span class="s2">&#34;ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff&#34;</span><span class="p">,</span>
+      <span class="n">network</span> <span class="o">=&gt;</span> <span class="s2">&#34;127.0.0.0&#34;</span><span class="p">,</span>
+      <span class="n">network6</span> <span class="o">=&gt;</span> <span class="s2">&#34;::1&#34;</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="n">ip</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.15&#34;</span><span class="p">,</span>
+  <span class="n">ip6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::a00:27ff:fe19:cd16&#34;</span><span class="p">,</span>
+  <span class="n">mac</span> <span class="o">=&gt;</span> <span class="s2">&#34;08:00:27:19:cd:16&#34;</span><span class="p">,</span>
+  <span class="n">mtu</span> <span class="o">=&gt;</span> <span class="mi">1500</span><span class="p">,</span>
+  <span class="n">netmask</span> <span class="o">=&gt;</span> <span class="s2">&#34;255.255.255.0&#34;</span><span class="p">,</span>
+  <span class="n">netmask6</span> <span class="o">=&gt;</span> <span class="s2">&#34;ffff:ffff:ffff:ffff::&#34;</span><span class="p">,</span>
+  <span class="n">network</span> <span class="o">=&gt;</span> <span class="s2">&#34;10.0.2.0&#34;</span><span class="p">,</span>
+  <span class="n">network6</span> <span class="o">=&gt;</span> <span class="s2">&#34;fe80::&#34;</span>
+<span class="p">}</span>
+</code></pre></div><p>Veja que puppet 4 já usa novo facter (projeto cfacter), esse novo facter traz todos os fatos de forma estruturada e organizada, permitindo um uso muito mais simples dessas informações em nossos manifests.</p>
+<p>Se voce quer referenciar o fato fqdn do agrupamento networking faça isso</p>
+<pre><code>[root@puppetserver4 production]# facter networking.fqdn
+</code></pre>
+<p>Se voce quer referenciar o mesmo fato em um manifest faça assim</p>
+<pre><code>$::networking['fqdn']
+</code></pre>
+<h3 id="49-novos-paths">4.9 Novos Paths</h3>
+<p>Agora o puppet é instalado em modo AIO (all in one), isto significa que ele é um pacote único que já traz tudo o que você precisa, incluindo ai neste pacote binários, libs, confs, é tudo independente do OS. E tem um novo diretório também</p>
+<pre><code>/opt/puppetlabs
+</code></pre>
+<p>As configurações ficam em</p>
+<pre><code>/etc/puppetlabs
+/etc/puppetlabs/puppet
+/etc/puppetlabs/mcollective
+</code></pre>
+<p>Agora o mcollective já vem junto no pacote como parte integrante e permanente do agente.</p>
+<h2 id="5-puppet-server">5 Puppet Server</h2>
+<h3 id="51-instalando-o-pacote">5.1 Instalando o pacote</h3>
+<p>Agora vamos instalar o Puppet Server novo</p>
+<pre><code>[root@puppetserver4 ~]# yum install puppetserver -y
+</code></pre>
+<h3 id="52-gerando-certificados">5.2 Gerando certificados</h3>
+<p>Antes de iniciar o Puppet Server, rode o comando abaixo para gerar os certificados, os certificados deveriam ser gerados na inicialização do serviço, mas no momento isto não está ocorrendo, então você vai gerá-los com os comandos abaixo</p>
+<pre><code>[root@puppetserver4 ~]# puppet cert list -a
+[root@puppetserver4 ~]# puppet cert generate puppetserver4.hacklab --dns_alt_names=puppet
+</code></pre>
+<p>A saída esperada é esta</p>
+<pre tabindex="0"><code>Notice: puppetserver4.hacklab has a waiting certificate request
+Notice: Signed certificate request for puppetserver4.hacklab
+Notice: Removing file Puppet::SSL::CertificateRequest puppetserver4.hacklab at '/etc/puppetlabs/puppet/ssl/ca/requests/puppetserver4.hacklab.pem'
+Notice: Removing file Puppet::SSL::CertificateRequest puppetserver4.hacklab at '/etc/puppetlabs/puppet/ssl/certificate_requests/puppetserver4.hacklab.pem'
+</code></pre><p>Há um ticket aberto para corrigir o problema, vote e acompanhe.</p>
+<pre><code>https://tickets.puppetlabs.com/browse/SERVER-528
+</code></pre>
+<h3 id="53-parametrização-jvm">5.3 Parametrização JVM</h3>
+<p>Veja os parâmetros de memória da JVM, ajuste conforme sua necessidade</p>
+<pre><code>[root@puppetserver4 ~]# cat /etc/sysconfig/puppetserver|grep JAVA_ARGS
+JAVA_ARGS=&quot;-Xms2g -Xmx2g -XX:MaxPermSize=256m&quot;
+</code></pre>
+<h3 id="54-parametrização-do-systemd">5.4 Parametrização do Systemd</h3>
+<p>Dependendo do HW de sua VM e da quantidade de recursos, o serviço puppetserver pode demorar a subir, o systemd tem um timeout padrão que pode ser atingido antes do puppetserver iniciar, se isto acontecer o próprio systemd mata o processo, para resolver isto temos que aumentar esse timeout default do systemd.</p>
+<pre><code>echo &quot;START_TIMEOUT=300&quot; &gt;&gt; /etc/sysconfig/puppetserver
+</code></pre>
+<p>Inicie o puppet server (isto pode demorar)</p>
+<pre><code>[root@puppetserver4 ~]# systemctl start puppetserver
+</code></pre>
+<p>Verifique se o processo subiu</p>
+<pre><code>[root@puppetserver4 ~]# ps afxwww|grep java
+</code></pre>
+<p>A saída esperada será similar a esta</p>
+<pre><code> 3277 ?        Ssl    0:53 /usr/bin/java -Xms2g -Xmx2g -XX:MaxPermSize=256m -XX:OnOutOfMemoryError=kill -9 %p -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/puppetlabs/puppetserver -Djava.security.egd=/dev/urandom -cp /opt/puppetlabs/server/apps/puppetserver/puppet-server-release.jar clojure.main -m puppetlabs.trapperkeeper.main --config /etc/puppetlabs/puppetserver/conf.d -b /etc/puppetlabs/puppetserver/bootstrap.cfg
+</code></pre>
+<p>Há um ticket aberto para corrigir o problema, vote e acompanhe.</p>
+<pre><code> https://tickets.puppetlabs.com/browse/SERVER-557   
+</code></pre>
+<h3 id="55-ajustando-o-puppetconf">5.5 Ajustando o puppet.conf</h3>
+<p>Edite o arquivo puppet.conf</p>
+<pre><code>[root@puppetserver4 ~]# yum install vim -y
+[root@puppetserver4 ~]# vim /etc/puppetlabs/puppet/puppet.conf
+</code></pre>
+<p>Adicione a configuração abaixo no puppet.conf ao final do arquivo</p>
+<pre><code>[agent]
+certname = puppet4server.hacklab
+</code></pre>
+<p>Salve</p>
+<pre><code>:wq!
+</code></pre>
+<p>Essa configuração se faz necessária para o agente não regerar o certificado caso algo no /etc/hostname mude, isso poderia quebrar o master e o agent.</p>
+<h3 id="56-testando-puppet-server">5.6 Testando Puppet Server</h3>
+<p>Uma vez que temos o Puppet Agent e Server instalados, podemos agora empurrar uma configuração para validar o ambiente, vale informar que o diretório dos environments mudou para</p>
+<pre><code> /etc/puppetlabs/code/environments
+</code></pre>
+<p>Verifque o fato fqdn</p>
+<pre><code>[root@puppetserver4 puppetlabs]# facter networking.fqdn
+ puppetserver4.hacklab
+</code></pre>
+<p>Agora crie uma configuração simples</p>
+<pre><code>[root@puppetserver4 ~]# vim /etc/puppetlabs/code/environments/production/manifests/site.pp
+</code></pre>
+<p>Adicione o conteúdo abaixo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-puppet" data-lang="puppet"><span class="k">node</span> <span class="s">&#34;puppetserver4.hacklab&#34;</span> <span class="p">{</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span>  <span class="k">package</span> <span class="p">{</span> <span class="s">&#39;nmap&#39;</span><span class="p">:</span><span class="err">
+</span><span class="err"></span>    <span class="na">ensure</span> <span class="o">=&gt;</span> <span class="k">present</span><span class="p">,</span><span class="err">
+</span><span class="err"></span>  <span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span>  <span class="k">notify</span> <span class="p">{</span> <span class="s">&#34;O FQDN desta VM eh ${::networking[&#39;fqdn&#39;]}&#34;</span><span class="p">:</span> <span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span></code></pre></div><p>Salve</p>
+<pre><code>:wq
+</code></pre>
+<p>Rode o agente</p>
+<pre tabindex="0"><code>[root@puppetserver4 puppetlabs]# puppet agent -t
+Info: Retrieving pluginfacts
+Info: Retrieving plugin
+Info: Caching catalog for puppetserver4.hacklab
+Info: Applying configuration version '1440097652'
+Notice: /Stage[main]/Main/Node[puppetserver4.hacklab]/Package[nmap]/ensure: created
+Notice: O FQDN desta VM eh puppetserver4.hacklab
+Notice: /Stage[main]/Main/Node[puppetserver4.hacklab]/Notify[O FQDN desta VM eh puppetserver4.hacklab]/message: defined 'message' as 'O FQDN desta VM eh puppetserver4.hacklab'
+Notice: Applied catalog in 4.74 seconds
+</code></pre><h2 id="6-amarrando-as-pontas">6. Amarrando as pontas</h2>
+<p>Você empurrou uma configuração com sucesso utilizando Puppet Server/Agent do Puppet 4.2 e já utilizou um fato - em hash - do novo cfacter.</p>
+<p>Esse post foi direto ao ponto, há muito ainda para ler, ver, estudar, aprender e compartilhar.</p>
+<p>Bons estudos!</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Octopress feeds por categoria</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Octopress feeds por categoria</h1>
+        <div>
+                <time>May 15, 2013</time>
+            </div>
+    </header><p>Hoje eu precisei aprender a habilitar feeds xml por categoria em meu octopress, esse procedimento é simples, o recurso é nativo, contudo, vem desabilitado.</p>
+<p>Primeiro acesse o feed principal e veja que o arquivo chama-se atom.xml</p>
+<pre><code>http://gutocarvalho/octopress/atom.xml
+</code></pre>
+<p>Agora ative o feed de categorias no arquivo _config.yml</p>
+<pre><code>category_feeds: true
+</code></pre>
+<p>E depois rode um generate e deploy</p>
+<pre><code>rake generate &amp;&amp; rake deploy
+</code></pre>
+<p>A partir daí basta entrar na página de uma categoria</p>
+<pre><code>http://gutocarvalho.net/octopress/categories/puppet
+</code></pre>
+<p>Neste mesmo diretório teremos um arquivo chamado atom.xml, acesse o arquivo para visualizar o feed XML.</p>
+<pre><code>http://gutocarvalho.net/octopress/categories/puppet/atom.xml
+</code></pre>
+<p>Simples, rápido e sem gambiarras.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

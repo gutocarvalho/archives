@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>LVM novas dicas</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>LVM novas dicas</h1>
+        <div>
+                <time>December 25, 2013</time>
+            </div>
+    </header><h2 id="1-novas-dicas">1. Novas dicas</h2>
+<p>Já mostrei algumas dicas de LVM aqui neste <a href="http://gutocarvalho.net/octopress/2013/05/17/lvm-dicas-rapidas/">post</a>, mas essa semana eu passei por alguns apertos que me ajudaram a descobrir novos macetes que compartilho aqui com vocês.</p>
+<p>O Zabbix vinha alertando que alguns servidores estavam com pouco de espaço em algumas partições, aproveitando o final do ano partimos para realizar alguns ajustes e expandir algumas partições.</p>
+<p>Abaixo respondo algumas perguntas comuns e compartilho as soluções encontradas.</p>
+<h3 id="11-linux-single-vs-livecd">1.1 Linux Single vs LiveCD</h3>
+<p>Devo usar linux single para fazer a manutenção de uma partição ou um livecd?</p>
+<p>Na realidade depende, se você quer redimensionar uma partição que não seja a / ou /usr, fazendo o procedimento da forma recomendada, verificando os discos antes e depois de redimensionar (e2fsck) é bem possível utilizar o linux single, desmontar a partição e depois utilizar as ferramentas LVM para aumentá-la ou diminuí-la, dependendo de sua necessidade.</p>
+<p>Se precisa mexer no / ou /usr, e vai seguir as recomendações verificando as partições antes e depois de redimensionar (e2fsck), prefira utilizar sempre um livecd pois em modo single você não vai conseguir desmontar o / ou /usr.</p>
+<p>Vou pode também fazer resize <strong>on-the-fly</strong>, sem verificar os volumes, veremos isto mais a frente.</p>
+<h3 id="12-devo-adicionar-um-novo-disco-ou-expandir-o-disco-existente-em-caso-de-máquina-virtual">1.2 Devo adicionar um novo disco ou expandir o disco existente em caso de máquina virtual?</h3>
+<p>Se você está utilizando um hypervisor - como o VMWARE - que permite a utilização de discos inteligentes, é possível apenas aumentar o disco (inclusive com a vm ligada), criar uma nova partição com o espaço livre que acrescentou, forçar a releitura da geometria do disco, transformá-la em PV, adicioná-la ao VG e depois utilizar o novo espaço livre no VG para expandir o LV que necessita de disco.</p>
+<h4 id="121-vários-discos-em-uma-vm-vmware">1.2.1 Vários discos em uma VM (VMWARE)</h4>
+<p>Já me perguntaram se tem algum problema ter vários discos em uma VM, eu particularmente não vejo, mas o pessoal especializado em VMWARE alerta que ter vários discos pode aumentar a complexidade de administração e a VM terá maior custo no cluster HA do VMWARE, vale o alerta. Outro detalhe é que perder algum destes discos significará perder o VG, por isso sempre esteja com o seu backup em dia.</p>
+<h3 id="13-eu-dei-boot-em-modo-rescue-utilizando-o-cddvd-da-distribuição-porém-no-shell-os-comandos-pvdisplay-vgdisplay-e-lvdisplay-não-mostram-nada">1.3 Eu dei boot em modo rescue utilizando o CD/DVD da distribuição, porém no shell os comandos pvdisplay, vgdisplay e lvdisplay não mostram nada.</h3>
+<p>Isso pode acontecer, inclusive aconteceu comigo recentemente e foi o que me motivou a escrever este post.</p>
+<p>No caso do CentOS 6.x e Debian 7.x, o modo rescue não está ativando os volumes LVM por default, então neste caso precisamos fazer isto manualmente.</p>
+<h4 id="131-resolvendo-a-questão">1.3.1 Resolvendo a questão</h4>
+<p>Você pode forçar a detecção desta forma no shell do livecd</p>
+<pre><code># lvm pvscan
+# lvm vgscan
+# lvm lvscan
+</code></pre>
+<p>No meu caso ele até detectou o PV e até encontrou o VG, contudo não vi os LVs. Para ativar os VGs e LVs precisamos utilizar o seguinte comando:</p>
+<pre><code># lvm vgchange -a y
+</code></pre>
+<p>A partir daí você conseguirá enxergar e manipular os volumes lógicos, fica a dica.</p>
+<h3 id="14-devo-fazer-resize-on-the-fly-de-partições-ext3ext4">1.4 Devo fazer resize on-the-fly de partições ext3/ext4?</h3>
+<p>O recurso existe e funciona muito bem desde o kernel 2.6, você pode ver neste <a href="http://theducks.org/2009/11/expanding-lvm-on-boot-disk-under-vmware-3-5-without-rebooting/">post</a> um exemplo disto, contudo você não rodará o e2fsck para checar sua partição antes e depois de fazer o resize, e caso o resize2fs reclame você terá de fazer o resize da forma tradicional.</p>
+<p>Eu acho arriscado dependendo da criticidade e do tamanho do volume, prefiro estar em um ambiente LiveCD com as partições desmontadas para fazer a manutenção. Em determinados cenários eu particularmente acho que o risco de corromper a partição é maior do que o benefício de fazer o resize on-the-fly, mas em determinados cenários pode ser a salvação da pátria, então vamos entender como isso funciona.</p>
+<h3 id="141-método-on-the-fly-adicionando-nova-partição">1.4.1 Método on-the-fly adicionando nova partição</h3>
+<p>Primeiro aumente o tamanho do disco no VMWARE com a VM ligada mesmo, isto só é possível com discos THIN.</p>
+<p>Depois vá no OS, se você aumentou por exemplo espaço do disco SDA, entre nas configurações deste disco</p>
+<pre><code># cfdisk /dev/sda
+</code></pre>
+<p>Se você não está enxergando o espaço que você adicionou, saia do cfdisk e rode o comando abaixo</p>
+<pre><code># echo '1' &gt; /sys/class/scsi_disk/0\:0\:0\:0/device/rescan
+</code></pre>
+<p>Entre novamente no cfdisk e verifique se está enxergando o espaço livre</p>
+<pre><code># cfdisk /dev/sda 
+</code></pre>
+<p>Agora crie uma nova partição do tipo LVM como espaço em disco que você adicionou, depois saia do cfdisk e transforme essa nova partição em PV (volume físico)</p>
+<pre><code># pvcreate /dev/sdaX
+</code></pre>
+<p>Se o sei OS não deixou você rodar o comando e está pendido reboot, apenas rode o comando abaixo</p>
+<pre><code> # partprobe -s
+</code></pre>
+<p>Tente novamente, agora vai funcionar</p>
+<pre><code># pvcreate /dev/sdaX
+</code></pre>
+<p>Adicione o PV ao VG existente</p>
+<pre><code># vgextent vg_nome /dev/sdaX
+</code></pre>
+<p>Expanda seu LV (exemplo /opt)</p>
+<pre><code># lvextent -L +100G /dev/mapper/vg_nome_opt
+</code></pre>
+<p>Faça o resize da partição</p>
+<pre><code># resiz2fs -p /dev/mappaer/vg_nome_opt 
+</code></pre>
+<p>Rode o DF para verificar se a partição aumentou</p>
+<pre><code># df -h
+</code></pre>
+<p>E a magia on-the-fly aconteceu.</p>
+<p>Eu fiz em dois servidores em produção, sem downtime, sem reboot, sem umount, funciona mesmo.</p>
+<h3 id="142-método-on-the-fly-expandindo-um-pv-existente">1.4.2 Método on-the-fly expandindo um PV existente</h3>
+<p>É possível fazer o resize do PV existente ao invés de criar um novo PV, neste <a href="http://theducks.org/2009/11/expanding-lvm-partitions-in-vmware-on-the-fly">post</a> você verá esse procedimento de forma detalhada, contudo, isto envolve deletar e recriar uma partição de seu disco, e ao recriar você precisa marcar o setor exato de início e fim, segundo o tutorial funciona, mas eu acho arriscado, e só funcionará de forma fácil se o seu PV for a última partição do disco, enfim, é mais uma alternativa, fica a dica.</p>
+<h2 id="2-referências">2. Referências</h2>
+<p>Oficiais:</p>
+<ul>
+<li><a href="http://www.tldp.org/HOWTO/LVM-HOWTO/activatevgs.html">http://www.tldp.org/HOWTO/LVM-HOWTO/activatevgs.html</a></li>
+<li><a href="http://www.redhat.com/archives/anaconda-devel-list/2012-April/msg00210.html">http://www.redhat.com/archives/anaconda-devel-list/2012-April/msg00210.html</a></li>
+</ul>
+<p>Blogs:</p>
+<ul>
+<li><a href="http://theducks.org/2009/11/expanding-lvm-partitions-in-vmware-on-the-fly">http://theducks.org/2009/11/expanding-lvm-partitions-in-vmware-on-the-fly</a></li>
+<li><a href="http://theducks.org/2009/11/expanding-lvm-on-boot-disk-under-vmware-3-5-without-rebooting/">http://theducks.org/2009/11/expanding-lvm-on-boot-disk-under-vmware-3-5-without-rebooting/</a></li>
+<li><a href="http://www.linuxuser.co.uk/features/resize-your-disks-on-the-fly-with-lvm">http://www.linuxuser.co.uk/features/resize-your-disks-on-the-fly-with-lvm</a></li>
+<li><a href="http://dailypackage.fedorabook.com/index.php?/archives/159-System-Recovery-Week-Using-LVM-In-Rescue-Mode.html=">http://dailypackage.fedorabook.com/index.php?/archives/159-System-Recovery-Week-Using-LVM-In-Rescue-Mode.html=</a></li>
+<li><a href="http://grokbase.com/t/centos/centos/11187s4xr4/livecd-system-recovery-mounting-lvm">http://grokbase.com/t/centos/centos/11187s4xr4/livecd-system-recovery-mounting-lvm</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

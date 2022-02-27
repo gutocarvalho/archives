@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Criando módulo NTP</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Criando módulo NTP</h1>
+        <div>
+                <time>October 1, 2012</time>
+            </div>
+    </header><p>Hoje trago um exemplo de criação de módulo no Puppet com tratamento de condicionais e fatos, espero que os novos entusiastas consigam enxergar com mais
+clareza como fazer esse tipo de tratamento.</p>
+<h2 id="1-requisitos">1. requisitos</h2>
+<ul>
+<li>Verificar se a distribuição é Debian, Ubuntu, RHEL ou CENTOS</li>
+<li>Declarar as variáveis $package_name, $service_name e $conf_file de acordo com o SO</li>
+<li>Instalar o pacote NTP</li>
+<li>Empurrar o arquivo de configuração NTP
+<ul>
+<li>Só fazer isto se o pacote estiver instalado</li>
+<li>O arquivo deve pertencer ao usuário root, grupo root e ter permissão 644</li>
+</ul>
+</li>
+<li>Declarar que o serviço NTP deve estar rodando e habilitado no boot
+<ul>
+<li>Só fazer isso se o pacote estiver instalado e se o arquivo de configuração estiver presente</li>
+</ul>
+</li>
+</ul>
+<h3 id="mão-na-massa">mão-na-massa</h3>
+<p>crie o diretório ntp</p>
+<pre><code>mkdir ntp
+</code></pre>
+<p>entre no diretório</p>
+<pre><code>cd ntp
+</code></pre>
+<p>crie o subdir files</p>
+<pre><code>mkdir files
+</code></pre>
+<p>crie o subdir manifests</p>
+<pre><code>mkdir manifests
+</code></pre>
+<p>entre no subdir manifests</p>
+<pre><code>cd manifests
+</code></pre>
+<p>crie o subdir classes</p>
+<pre><code>mkdir classes
+</code></pre>
+<p>entre no subdir classes</p>
+<pre><code>cd classes
+</code></pre>
+<p>crie o arquivo ntp.pp</p>
+<pre><code>vim ntp.pp 
+</code></pre>
+<p>insira os seguinte conteúdo</p>
+<p>{% codeblock lang:puppet %}
+class ntp {</p>
+<pre><code># tratando distribuições
+
+case $operatingsystem {
+    	CentOS,RedHat: { 
+		$package_name = 'ntp'
+        	$service_name = 'ntpd'
+        	$conf_file    = 'ntp.conf.el'
+	}
+	Debian,Ubuntu: { 
+		$package_name = 'ntp'
+		$service_name = 'ntp'
+		$conf_file    = 'ntp.conf.debian'
+	}
+}
+
+# declarando o pacote
+
+package { &quot;$package_name&quot;:
+	ensure =&gt; present,
+}
+
+# declarando o arquivo de configuração
+
+file { '/etc/ntp.conf':
+	ensure  =&gt; present,
+	source  =&gt; &quot;puppet:///ntp/${conf_file}&quot;,
+	notify  =&gt; Service[&quot;$service_name&quot;],
+	require =&gt; Package[&quot;$package_name&quot;],
+}
+
+# declarando o serviço
+
+service { &quot;$service_name&quot;:
+	ensure     =&gt; running,
+	enable     =&gt; true,
+	hasrestart =&gt; true,
+	hasstatus  =&gt; true,
+	require    =&gt; [ Package['ntp'], File['/etc/ntp.conf' ], ],
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>salve o arquivo</p>
+<pre><code>:wq
+</code></pre>
+<p>retorne ao diretório manifests</p>
+<pre><code>cd ..
+</code></pre>
+<p>crie o arquivo init.pp</p>
+<pre><code>vim init.pp
+</code></pre>
+<p>edite arquivo</p>
+<pre><code>vim init.pp
+</code></pre>
+<p>insira a linha abaixo</p>
+<pre><code>import &quot;classes/*.pp&quot;
+</code></pre>
+<p>salve o arquivo</p>
+<pre><code>:wq
+</code></pre>
+<p>crie os arquivos <strong>ntp.conf.el</strong> e <strong>ntp.conf.debian</strong> no diretório files. Fazendo isto, nosso módulo estará pronto para testarmos.</p>
+<h2 id="2-testando-módulo">2. testando módulo</h2>
+<p>partindo do pressuposto de que o módulo já foi carregado no arquivo site.pp, siga e declare esse módulo em algum node, veja o exemplo abaixo:</p>
+<pre tabindex="0"><code>node xpto {
+    include ntp
+}
+</code></pre><p>no node, execute o puppet</p>
+<pre><code>puppet agent --test
+</code></pre>
+<p>acompanhe a saída</p>
+<pre tabindex="0"><code>info: Caching catalog for puppetmaster.hacklab
+info: Applying configuration version '1349105440'
+notice: /Stage[main]/Ntp/Package[ntp]/ensure: ensure changed 'purged' to 'present'
+notice: /Stage[main]/Ntp/File[/etc/ntp.conf]/content: 
+--- /etc/ntp.conf	2010-10-17 11:35:26.000000000 -0200
++++ /tmp/puppet-file20121001-2558-1l2emqx-0	2012-10-01 12:33:20.000000000 -0300
+@@ -1,55 +1,16 @@
+-# /etc/ntp.conf, configuration for ntpd; see ntp.conf(5) for help
+-
+ driftfile /var/lib/ntp/ntp.drift
+-
+-
+-# Enable this if you want statistics to be logged.
+-#statsdir /var/log/ntpstats/
+-
+ statistics loopstats peerstats clockstats
++
+ filegen loopstats file loopstats type day enable
+ filegen peerstats file peerstats type day enable
+ filegen clockstats file clockstats type day enable
+ 
++server ntp.dominio iburst dynamic
+ 
+-# You do need to talk to an NTP server or two (or three).
+-#server ntp.your-provider.example
+-
+-# pool.ntp.org maps to about 1000 low-stratum NTP servers.  Your server will
+-# pick a different set every time it starts up.  Please consider joining the
+-# pool: &lt;http://www.pool.ntp.org/join.html&gt;
+-server 0.debian.pool.ntp.org iburst
+-server 1.debian.pool.ntp.org iburst
+-server 2.debian.pool.ntp.org iburst
+-server 3.debian.pool.ntp.org iburst
+-
+-
+-# Access control configuration; see /usr/share/doc/ntp-doc/html/accopt.html for
+-# details.  The web page &lt;http://support.ntp.org/bin/view/Support/AccessRestrictions&gt;
+-# might also be helpful.
+-#
+-# Note that &quot;restrict&quot; applies to both servers and clients, so a configuration
+-# that might be intended to block requests from certain clients could also end
+-# up blocking replies from your own upstream servers.
+-
+-# By default, exchange time with everybody, but don't allow configuration.
+ restrict -4 default kod notrap nomodify nopeer noquery
+ restrict -6 default kod notrap nomodify nopeer noquery
+-
+-# Local users may interrogate the ntp server more closely.
+ restrict 127.0.0.1
+ restrict ::1
+ 
+-# Clients from this (example!) subnet have unlimited access, but only if
+-# cryptographically authenticated.
+-#restrict 192.168.123.0 mask 255.255.255.0 notrust
+-
+-
+-# If you want to provide time to your local subnet, change the next line.
+-# (Again, the address is an example only.)
+-#broadcast 192.168.123.255
+-
+-# If you want to listen to time broadcasts on your local subnet, de-comment the
+-# next lines.  Please do this only if you trust everybody on the network!
+-#disable auth
+-#broadcastclient
++disable kernel
++logfile   /var/log/ntp.log
+
+info: /Stage[main]/Ntp/File[/etc/ntp.conf]: Filebucketed /etc/ntp.conf to main with sum 3e250ecaf470e1d3a2b68edd5de46bfd
+notice: /Stage[main]/Ntp/File[/etc/ntp.conf]/content: content changed '{md5}3e250ecaf470e1d3a2b68edd5de46bfd' to '{md5}b54a36abe675e96723eb2e5562195c91'
+info: /Stage[main]/Ntp/File[/etc/ntp.conf]: Scheduling refresh of Service[ntp]
+notice: /Stage[main]/Ntp/Service[ntp]: Triggered 'refresh' from 1 events
+notice: Finished catalog run in 16.80 seconds
+
+</code></pre><p>vamos conferir se o pacote está instalado</p>
+<pre><code>root@puppetmaster:~# dpkg --list|grep ntp
+ii  ntp                                 1:4.2.6.p2+dfsg-1+b1         Network Time Protocol daemon and utility programs
+</code></pre>
+<p>vamos conferir se o arquivo está com as permissões declaradas</p>
+<pre><code>root@puppetmaster:~# ls -la /etc/ntp.conf 
+-rw-r--r-- 1 root root 446 Oct  1 12:33 /etc/ntp.conf
+</code></pre>
+<p>vamos conferir se o serviço está rodando</p>
+<pre><code>root@puppetmaster:~# /etc/init.d/ntp status
+NTP server is running.
+</code></pre>
+<p>bacana, fez tudo que o foi declarado, com isto o módulo atendeu a todos os requisitos.</p>
+<h2 id="3-amarrando-as-pontas">3. Amarrando as pontas</h2>
+<p>Espero que o exemplo lhe ajude a compreender melhor o tratamento de codicionais e o uso de fatos em um manifest.</p>
+<p>Esse módulo está disponível no Github =&gt; <a href="http://github.com/gutocarvalho/puppet-ntp">https://github.com/gutocarvalho/puppet-ntp</a></p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archives">
+    
+    <link rel="shortcut icon" href="https://archives.gutocarvalho.net/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Puppet Limpando Node Reports</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://archives.gutocarvalho.net">Guto Carvalho Archives</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="https://gutocarvalho.net/quem-sou/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Puppet Limpando Node Reports</h1>
+        <div>
+                <time>October 2, 2012</time>
+            </div>
+    </header><h3 id="node-reports">Node Reports</h3>
+<p>Quando usamos o puppet-dashboard, precisamos habilitar em cada agente o parâmetro <code>report = true</code>. Com isso, a cada execução do puppet em um node, um relatório é enviado para o puppetmaster, este por sua vez empurra os dados recebidos para o puppet-dashboard.</p>
+<p>Se quiseremos, podemos gravar esses <strong>relatórios</strong> em disco, um arquivo YAML será gerado no servidor puppetmaster no diretório /var/lib/puppet/reports a cada execução do puppet em nossos nodes.</p>
+<p>{% blockquote %}
+Mas qual seria a finalidade de manter esses arquivos?
+{% endblockquote %}</p>
+<p>É muito simples, você pode popular a base do puppet-dashboard utilizando esses arquivos no caso de um corrompimento de sua base (mysql) de produção.</p>
+<p>No caso de um desastre, para importar esses arquivos bastaria rodar o comando abaixo:</p>
+<pre><code>puppet-dashboard rake RAILS_ENV=production reports:import
+</code></pre>
+<p>Eu mantenho por segurança cerca de 2 semanas de arquivos, assim caso ocorra alguma coisa eu posso re-popular os dados do dashboard dos últimos 14 dias.</p>
+<h3 id="1-transtornos-ocasionais">1. Transtornos ocasionais</h3>
+<p>O problema de armazenar esses arquivos é que o disco vai enchendo e pode acontecer o famoso DISK FULL, fazendo seu puppetmaster parar de funcionar.</p>
+<h3 id="2-limpando-diretório">2. Limpando diretório</h3>
+<p>Precisamos evitar esse tipo de transtorno, vou mostrar algumas formas de limpar o disco, deixando apenas os relatórios das duas últimas semanas.</p>
+<h4 id="21-usando-find">2.1 Usando Find</h4>
+<p>Podemos fazer isto usando simplesmente o comando abaixo.</p>
+<pre><code>find /var/lib/puppet/reports -name *.yaml -mtime +14 -exec rm -rf {} \;
+</code></pre>
+<p>Esse comando vai apagar todos os arquivos com extensão <code>yaml</code> do diretório <code>reports</code> com idade maior ou igual a <code>14</code> dias.</p>
+<h4 id="22-usando-find-dentro-de-cron-no-puppet">2.2 Usando Find dentro de Cron no Puppet</h4>
+<p>Podemos ainda criar no puppet um cron para executar isto diariamente, veja o exemplo abaixo:</p>
+<p>{% codeblock lang:puppet %}
+class cleanreports {</p>
+<pre><code>cron { &quot;clean reports&quot;:
+	command =&gt; &quot;find /var/lib/puppet/reports -name *.yaml -mtime +14 -exec rm -rf {} \;&quot;,
+	user =&gt; root, 
+	hour =&gt; 01, 
+	minute =&gt; 00,  
+}
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Neste exemplo estou orientando que o comando seja executado diariamente às 01:00 da manhã.</p>
+<h4 id="23-usando-o-recurso-tidy-do-puppet">2.3 Usando o recurso Tidy do Puppet</h4>
+<p>Ou podemos ainda usar o tidy que é um recurso nativo do puppet para limpeza de arquivos em diretórios com base em um critério pré-definido.</p>
+<p>{% codeblock lang:puppet %}
+class cleanreports {</p>
+<pre><code>    tidy { &quot;/var/lib/puppet/reports/&quot;:
+            age     =&gt; &quot;2w&quot;,
+            matches =&gt; &quot;*.yaml&quot;,
+            recurse =&gt; true ,
+    }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>Veja que estou dizendo ao Tidy que ele deve limpar arquivos com extensão <code>yaml</code> , com idade igual ou maior a <code>2 semanas</code>, de forma recursiva.</p>
+<p>O único inconveniente desta alternativa é que ele vai rodar o tidy a cada execução do puppet no master, e caso sua janela seja curta (10 min) isso pode ser um problema, causando um aumento excessivo do load de seu puppetmaster de forma regular.</p>
+<h4 id="24-usando-exec--schedule">2.4 Usando Exec + Schedule</h4>
+<p>Podemos combinar o resource type exec com o resource type schedule, veja um exemplo:</p>
+<p>{% codeblock lang:puppet %}
+class cleanreports {</p>
+<pre><code>    schedule { 'daily':
+           range  =&gt; &quot;01:00 - 02:00&quot;,
+           period =&gt; daily,
+           repeat =&gt; 1,
+    }
+
+    exec { 'cleanrepors':
+           command  =&gt; &quot;/usr/bin/find /var/lib/puppet/reports -name *.yaml -mtime +14 -exec rm -rf {} \;&quot;,
+           schedule =&gt; 'daily',
+    }
+</code></pre>
+<p>}
+{% endcodeblock %}</p>
+<p>No exemplo acima o exec vai rodar 1 vez ao dia entre 01 e 02 da manhã.</p>
+<h3 id="3-amarrando-as-pontas">3. Amarrando as pontas</h3>
+<p>Existem diferentes formas de evitar um disk full, podemos fazer a limpeza de arquivos usando comandos do linux (find), podemos usar recursos nativos do puppet (tidy), podemos combinar comandos do sistema (find) com recursos do puppet (cron), isso vai depender de sua criatividade e necessidade.</p>
+<p>Eu apresentei apenas quatro exemplos que podem resolver problemas deste tipo,
+porém cada cenário normalmente pede uma solução específica.</p>
+<p>É sempre bacana ler a documentação do puppet para entender e encontrar recursos que possam nos ajudar a resolver um problema, eu não conhecia o TIDY, mas vi que ele pode ser muito útil nesta situação.</p>
+<p>Ainda há muito a ler e aprender, sigo compartilhando o que descubro.</p>
+<p>[s]<br>
+Guto</p>
+</article>
+
+        </main><footer id="footer">
+    CC-BY-SA 2022 Guto Carvalho
+</footer>
+</body>
+</html>
